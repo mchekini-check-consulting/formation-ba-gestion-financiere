@@ -6,7 +6,7 @@ applications:
   - name: backend
     type: backend
     image: 205493924920.dkr.ecr.eu-west-3.amazonaws.com/formation-ba-gestion-financiere/backend
-    tag: {dev: "de026d41760747262cf7823ee873a54691fd26aa", qualif: "", prod: ""} # dev : écrit par la CI ; qualif/prod : promotion manuelle (PR)
+    tag: {dev: "21b25fb", qualif: "", prod: ""} # dev : écrit par la CI ; qualif/prod : promotion manuelle (PR)
     containerPort: 8080
     replicas: {dev: 1, qualif: 2, prod: 3}
     service:
@@ -21,7 +21,7 @@ applications:
   - name: frontend
     type: frontend
     image: 205493924920.dkr.ecr.eu-west-3.amazonaws.com/formation-ba-gestion-financiere/frontend
-    tag: {dev: "de026d41760747262cf7823ee873a54691fd26aa", qualif: "", prod: ""} # dev : écrit par la CI ; qualif/prod : promotion manuelle (PR)
+    tag: {dev: "21b25fb", qualif: "", prod: ""} # dev : écrit par la CI ; qualif/prod : promotion manuelle (PR)
     containerPort: 8080
     replicas: {dev: 1, qualif: 2, prod: 3}
     service:
