@@ -1,18 +1,17 @@
 # syntax=docker/dockerfile:1
-# Backend Spring Boot (Java 21, module Maven gestion-financiere) -> image distroless, non-root.
+# Backend Spring Boot (Java 21, projet Maven gestion-financiere) -> image distroless, non-root.
 
 # ---- Build : Maven + JDK, jamais livré en production
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /src
 
-# Les pom d'abord : la couche des dépendances reste en cache tant qu'ils ne changent pas
+# Le pom d'abord : la couche des dépendances reste en cache tant qu'il ne change pas
 COPY pom.xml .
-COPY gestion-financiere/pom.xml gestion-financiere/
-RUN --mount=type=cache,target=/root/.m2 mvn -B -q -pl gestion-financiere -am dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 mvn -B -q dependency:go-offline
 
-COPY gestion-financiere/src gestion-financiere/src
-RUN --mount=type=cache,target=/root/.m2 mvn -B -q -pl gestion-financiere -am package -DskipTests \
- && cp gestion-financiere/target/gestion-financiere-*.jar /app.jar
+COPY src src
+RUN --mount=type=cache,target=/root/.m2 mvn -B -q package -DskipTests \
+ && cp target/gestion-financiere-*.jar /app.jar
 
 # ---- Runtime : JRE seul, sans shell ni gestionnaire de paquets, utilisateur 65532
 FROM gcr.io/distroless/java21-debian12:nonroot
