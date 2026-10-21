@@ -1,0 +1,427 @@
+<header class="header">
+  <div class="container header__inner">
+    <a href="#top" class="brand">
+      <span class="brand__logo"><span></span></span>
+      Pointéo
+    </a>
+    <nav class="nav">
+      <a href="#fonctionnement">Fonctionnement</a>
+      <a href="#modules">Modules</a>
+      <a href="#securite">Sécurité</a>
+      <a href="#prix">Prix</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a href="#pilote" class="btn btn--dark btn--sm">Demander une démo</a>
+  </div>
+</header>
+
+<!-- HERO -->
+<section id="top" class="hero">
+  <div class="container hero__grid">
+    <div>
+      <div class="pill"><span class="dot"></span>Pour les cabinets d'expertise comptable</div>
+      <h1>Le pointage qui se fait tout seul.</h1>
+      <p class="hero__lead">
+        Pointéo rapproche chaque nuit les opérations bancaires de vos clients avec leurs factures.
+        Vous n'avez plus qu'à valider.
+      </p>
+      <div class="hero__ctas">
+        <a href="#pilote" class="btn btn--primary">Demander une démo</a>
+        <a href="#configurateur" class="btn btn--ghost">Composer mon offre</a>
+      </div>
+      <div class="hero__pilot">
+        <span class="tag">Pilote</span>
+        Programme pilote en cours avec un cabinet partenaire.
+      </div>
+    </div>
+
+    <div class="mockup">
+      <div class="mockup__bar">
+        <strong>Rapprochement · SARL Martin Bois</strong>
+        <span class="mono">Mars 2026</span>
+      </div>
+      <div class="mockup__body">
+        <div class="mono mockup__label">Opération bancaire</div>
+        <div class="line">
+          <div>
+            <div class="line__title">VIR SEPA BOULANGERIE LEROY</div>
+            <div class="line__sub">12/03/2026 · Crédit Agricole</div>
+          </div>
+          <div class="line__amount">+ 1 842,00 €</div>
+        </div>
+        <div class="match"><span></span>Montant et référence identiques</div>
+        <div class="mono mockup__label">Facture proposée</div>
+        <div class="line line--proposed">
+          <div>
+            <div class="line__title">Facture F-2026-0318</div>
+            <div class="line__sub">Boulangerie Leroy · compte 411LER</div>
+          </div>
+          <div class="line__amount">1 842,00 €</div>
+        </div>
+      </div>
+      <div class="mockup__foot">
+        <div>{{ validated() ? "Lettré · écriture prête pour l'export" : '1 proposition à valider' }}</div>
+        <div class="mockup__actions">
+          <button type="button" class="btn btn--ghost btn--xs">Modifier</button>
+          <button
+            type="button"
+            class="btn btn--xs"
+            [class.btn--primary]="!validated()"
+            [class.btn--dark]="validated()"
+            (click)="validated.set(!validated())"
+          >
+            {{ validated() ? 'Validé ✓' : 'Valider' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLÈME -->
+<section class="section section--white">
+  <div class="container">
+    <div class="eyebrow">Le problème</div>
+    <h2>Le pointage prend du temps. Beaucoup trop.</h2>
+    <div class="grid grid--260">
+      <div class="stat"><div class="stat__value">1 h</div><p>par dossier et par mois, à pointer les relevés ligne par ligne.</p></div>
+      <div class="stat"><div class="stat__value">15 jours</div><p>pour clôturer un mois. Les dossiers s'empilent.</p></div>
+      <div class="stat"><div class="stat__value">À la main</div><p>les relances pour chaque justificatif manquant.</p></div>
+    </div>
+    <div class="goals">
+      <div class="goals__intro">Notre objectif avec Pointéo</div>
+      <div><strong>jusqu'à 60 %</strong><span>de temps gagné</span></div>
+      <div><strong>5 jours</strong><span>de clôture au lieu de 15</span></div>
+      <div><strong>80 %</strong><span>des lignes rapprochées seules</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMENT ÇA MARCHE -->
+<section id="fonctionnement" class="section">
+  <div class="container">
+    <div class="eyebrow">Comment ça marche</div>
+    <h2>Trois étapes. Vous gardez la main.</h2>
+    <div class="grid grid--280">
+      <div class="step">
+        <div class="step__num">1</div>
+        <h3>Connexion bancaire sécurisée</h3>
+        <p>Le client connecte sa banque via un agrégateur agréé (DSP2). Les opérations arrivent chaque nuit.</p>
+      </div>
+      <div class="step">
+        <div class="step__num">2</div>
+        <h3>Rapprochement automatique</h3>
+        <p>Pointéo relie chaque opération à sa facture et propose le lettrage.</p>
+      </div>
+      <div class="step">
+        <div class="step__num step__num--accent">3</div>
+        <h3>Vous validez et exportez</h3>
+        <p>La comptable vérifie, valide, puis exporte vers son logiciel comptable.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCLE -->
+<section class="section section--white">
+  <div class="container split">
+    <div>
+      <div class="eyebrow">Le socle</div>
+      <h2 class="h2--tight">Inclus pour tous les cabinets.</h2>
+      <p class="lead">Tout ce qu'il faut pour pointer, lettrer et exporter. Sans option cachée.</p>
+    </div>
+    <div class="socle">
+      @for (
+        item of [
+          { title: 'Synchronisation bancaire chaque nuit', sub: '' },
+          { title: 'Catégorisation automatique des opérations', sub: '' },
+          { title: 'Rapprochement et lettrage', sub: 'Y compris un virement qui paie plusieurs factures.' },
+          { title: 'Écritures et export FEC', sub: 'Vers votre logiciel comptable.' },
+          { title: 'Import PDF ou CSV', sub: 'Si un client refuse de connecter sa banque.' },
+          { title: 'Rôles et droits', sub: 'Administrateur, comptable, associé, dirigeant client.' },
+        ];
+        track item.title
+      ) {
+        <div class="socle__item">
+          <span class="socle__bullet"><span></span></span>
+          <div>
+            <div class="socle__title">{{ item.title }}</div>
+            @if (item.sub) {
+              <div class="socle__sub">{{ item.sub }}</div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- MODULES -->
+<section id="modules" class="section">
+  <div class="container">
+    <div class="eyebrow">Les modules à la carte</div>
+    <div class="modules__head">
+      <h2>Ajoutez seulement ce qui vous sert.</h2>
+      <p>Cliquez sur un interrupteur pour composer votre offre.</p>
+    </div>
+    <div class="grid grid--fill">
+      @for (m of modules; track m.name; let i = $index) {
+        <div
+          class="module"
+          tabindex="0"
+          [class.module--on]="enabled()[i]"
+          (click)="toggleModule(i)"
+          (keydown.enter)="toggleModule(i)"
+          (keydown.space)="$event.preventDefault(); toggleModule(i)"
+        >
+          <div class="module__top">
+            <span class="module__icon mono">{{ m.icon }}</span>
+            <div class="module__state">
+              <span>{{ enabled()[i] ? 'Activé' : 'Désactivé' }}</span>
+              <span class="switch" role="switch" [attr.aria-checked]="enabled()[i]" [attr.aria-label]="m.name"><span></span></span>
+            </div>
+          </div>
+          <div>
+            <div class="module__name">
+              <h3>{{ m.name }}</h3>
+              @if (m.soon) {
+                <span class="tag tag--sm">Bientôt</span>
+              }
+            </div>
+            <p>{{ m.desc }}</p>
+          </div>
+        </div>
+      }
+    </div>
+    <p class="modules__note">
+      Activez seulement ce dont vous avez besoin, dossier par dossier, en un clic depuis votre espace
+      administrateur. Vous pouvez changer d'avis à tout moment.
+    </p>
+
+    <div id="configurateur" class="config">
+      <div class="config__form">
+        <div class="eyebrow eyebrow--sm">Configurateur</div>
+        <h3 class="config__title">Composez votre offre</h3>
+        <label class="config__label" for="dossiers">Nombre de dossiers : <span>{{ dossiers() }}</span></label>
+        <input
+          id="dossiers"
+          type="range"
+          min="100"
+          max="1000"
+          step="50"
+          [value]="dossiers()"
+          (input)="setDossiers($event)"
+        />
+        <div class="config__label">Modules</div>
+        <div class="checks">
+          @for (m of modules; track m.name; let i = $index) {
+            <label class="check">
+              <input type="checkbox" [checked]="enabled()[i]" (change)="toggleModule(i)" />
+              {{ m.name }}
+            </label>
+          }
+        </div>
+      </div>
+      <div class="config__summary">
+        <div class="muted">Votre offre</div>
+        <div class="config__row">
+          <div>
+            <div class="config__row-title">Socle</div>
+            <div class="muted small">{{ dossiers() }} dossiers × 8 € HT</div>
+          </div>
+          <div class="config__total">{{ format(socleTotal()) }} € <span>/ mois</span></div>
+        </div>
+        <div class="config__row config__row--column">
+          <div class="config__row-head">
+            <div class="config__row-title">Modules ({{ selected().length }})</div>
+            <div class="config__pilot">Inclus pendant le pilote</div>
+          </div>
+          @if (selected().length) {
+            <div class="chips">
+              @for (s of selected(); track s.name) {
+                <span>{{ s.name }}</span>
+              }
+            </div>
+          } @else {
+            <div class="muted small">Aucun module pour l'instant. Le socle suffit pour démarrer.</div>
+          }
+        </div>
+        <div class="config__setup">
+          <div class="muted">Mise en place (une fois)</div>
+          <strong>1 500 €</strong>
+        </div>
+        <a href="#pilote" class="btn btn--primary config__cta">Demander une démo avec cette offre</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- POURQUOI -->
+<section class="section section--white">
+  <div class="container">
+    <div class="eyebrow">Pourquoi Pointéo</div>
+    <h2>Un outil précis, qui s'adapte à vous.</h2>
+    <div class="grid grid--240 grid--gap-32">
+      <div class="why"><h3>Se branche sur votre logiciel</h3><p>Gardez votre logiciel comptable. Pas de migration.</p></div>
+      <div class="why"><h3>Spécialiste du pointage</h3><p>Pointage et lettrage : nous faisons une chose, et nous la faisons bien.</p></div>
+      <div class="why"><h3>La comptable garde la main</h3><p>Pointéo propose. Rien n'est passé sans validation.</p></div>
+      <div class="why why--accent"><h3>Modules à la carte</h3><p>Payez pour ce que vous utilisez, dossier par dossier.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SÉCURITÉ -->
+<section id="securite" class="section section--dark">
+  <div class="container split">
+    <div>
+      <div class="eyebrow eyebrow--light">Sécurité</div>
+      <h2 class="h2--tight">Les données de vos clients restent protégées.</h2>
+      <p class="lead lead--dark">Pointéo lit les comptes. Il ne peut rien payer, rien virer.</p>
+    </div>
+    <div class="grid grid--220 grid--gap-12">
+      @for (
+        s of [
+          { title: 'Chiffrement', desc: 'Pendant le transport et au stockage.' },
+          { title: 'Hébergement en France', desc: 'Vos données ne quittent pas le territoire.' },
+          { title: 'Double authentification', desc: 'Pour chaque utilisateur.' },
+          { title: 'Accès tracés', desc: 'Qui a vu quoi, et quand.' },
+          { title: 'Lecture seule', desc: 'Aucun paiement possible.' },
+          { title: 'Conforme RGPD', desc: 'Traitement encadré et documenté.' },
+        ];
+        track s.title
+      ) {
+        <div class="security">
+          <strong>{{ s.title }}</strong>
+          <span>{{ s.desc }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- PRIX -->
+<section id="prix" class="section">
+  <div class="container">
+    <div class="eyebrow">Prix</div>
+    <h2>Simple et transparent.</h2>
+    <div class="grid grid--300">
+      <div class="price price--socle">
+        <div class="price__name">Socle</div>
+        <div class="price__amount"><strong>8 €</strong><span>HT par dossier et par mois</span></div>
+        <p>Synchronisation, catégorisation, rapprochement, lettrage, export FEC, import PDF/CSV, rôles et droits.</p>
+      </div>
+      <div class="price">
+        <div class="price__name">Mise en place</div>
+        <div class="price__amount"><strong>1 500 €</strong><span>une seule fois</span></div>
+        <p>Installation et formation de vos équipes.</p>
+      </div>
+      <div class="price price--modules">
+        <div class="price__name">Modules</div>
+        <div class="price__variable">Tarif selon les modules choisis</div>
+        <p><strong>Inclus pendant le programme pilote.</strong></p>
+      </div>
+    </div>
+
+    <div class="referral">
+      <div>
+        <div class="eyebrow eyebrow--light eyebrow--sm">Parrainage</div>
+        <div class="referral__title">Recommandez Pointéo à un confrère.</div>
+      </div>
+      <div class="referral__item"><span class="dot dot--lg"></span><div><strong>1 mois offert</strong><span>au cabinet parrain.</span></div></div>
+      <div class="referral__item"><span class="dot dot--lg"></span><div><strong>Mise en place offerte</strong><span>au nouveau cabinet.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="section section--white">
+  <div class="container container--narrow">
+    <div class="eyebrow">FAQ</div>
+    <h2 class="h2--faq">Vos questions.</h2>
+    <div class="faq">
+      @for (f of faqs; track f.q; let i = $index) {
+        <div class="faq__item" [class.faq__item--open]="openFaq() === i">
+          <button type="button" class="faq__question" [attr.aria-expanded]="openFaq() === i" (click)="toggleFaq(i)">
+            {{ f.q }}
+            <span class="faq__icon">+</span>
+          </button>
+          <div class="faq__answer">
+            <div><p>{{ f.a }}</p></div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- PROGRAMME PILOTE -->
+<section id="pilote" class="section">
+  <div class="container pilot">
+    <div>
+      <div class="eyebrow">Programme pilote</div>
+      <h2 class="pilot__title">Rejoignez le programme pilote.</h2>
+      <p class="lead pilot__lead">
+        Un premier cabinet partenaire teste Pointéo. Nous ouvrons quelques places. Les modules sont
+        inclus pendant le pilote.
+      </p>
+      <div class="pilot__points">
+        <div><span class="dot"></span>Démo de 30 minutes sur vos propres cas</div>
+        <div><span class="dot"></span>Aucun engagement pour la démo</div>
+        <div><span class="dot"></span>Réponse sous 48 h ouvrées</div>
+      </div>
+    </div>
+    <div class="form-card">
+      @if (sent()) {
+        <div class="thanks">
+          <div class="thanks__icon">✓</div>
+          <h3>Merci, c'est noté.</h3>
+          <p>Nous revenons vers vous sous 48 h ouvrées.</p>
+        </div>
+      } @else {
+        <form class="form" (submit)="submit($event)">
+          <div class="form__row">
+            <label>Nom<input required name="nom" autocomplete="name" placeholder="Claire Dubois" /></label>
+            <label>Cabinet<input required name="cabinet" autocomplete="organization" placeholder="Cabinet Dubois &amp; Associés" /></label>
+          </div>
+          <div class="form__row">
+            <label>Nombre de dossiers
+              <select name="dossiers">
+                <option>Moins de 100</option>
+                <option>100 à 300</option>
+                <option>300 à 600</option>
+                <option>600 à 1 000</option>
+                <option>Plus de 1 000</option>
+              </select>
+            </label>
+            <label>E-mail<input required type="email" name="email" autocomplete="email" placeholder="claire@cabinet.fr" /></label>
+          </div>
+          <fieldset>
+            <legend>Modules qui vous intéressent</legend>
+            <div class="checks">
+              @for (m of modules; track m.name; let i = $index) {
+                <label class="check">
+                  <input type="checkbox" [checked]="enabled()[i]" (change)="toggleModule(i)" />
+                  {{ m.name }}
+                </label>
+              }
+            </div>
+          </fieldset>
+          <button type="submit" class="btn btn--primary">Rejoindre le programme pilote</button>
+          <p class="form__note">Vos informations servent uniquement à vous recontacter. Conforme RGPD.</p>
+        </form>
+      }
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">Pointéo · Le pointage qui se fait tout seul.</div>
+    <div class="footer__links">
+      <a href="#securite">Sécurité</a>
+      <a href="#prix">Prix</a>
+      <a href="#faq">FAQ</a>
+      <a href="#pilote">Contact</a>
+    </div>
+  </div>
+</footer>
