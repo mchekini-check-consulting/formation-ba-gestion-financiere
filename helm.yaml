@@ -22,9 +22,13 @@ applications:
       enabled: true
       path: /
       stripPrefix: false
-    # Base PostgreSQL "backend" créée automatiquement (Cluster app-db du namespace,
-    # sauvegardée sur S3) ; connexion injectée : SPRING_DATASOURCE_*, PG*, DATABASE_URL
-    database: true
+    # Base PostgreSQL gestion_financiere : créée et sauvegardée automatiquement.
+    # Consigne : dans backend/src/main/resources/application.yaml, déclarer
+    #   spring.datasource.url, spring.datasource.username, spring.datasource.password
+    # (valeurs locales) ; sur le cluster, Spring Boot les remplace par les variables
+    # injectées SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD.
+    database:
+      name: gestion_financiere
     envList:
       - key: LOG_LEVEL
         value: {dev: debug, qualif: info, preprod: info, prod: warn}
