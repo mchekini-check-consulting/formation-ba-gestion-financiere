@@ -36,7 +36,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: a80940b
-      qualif: 49fca3d
+      qualif: a80940b
       preprod: ""
       prod: ""
     containerPort: 8080
