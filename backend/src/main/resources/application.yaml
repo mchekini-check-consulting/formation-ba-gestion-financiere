@@ -1,3 +1,13 @@
 spring:
   application:
     name: gestion-financiere
+  # Base PostgreSQL. Valeurs locales (compose.yaml) ; sur le cluster, remplacées par
+  # SPRING_DATASOURCE_URL, _USERNAME, _PASSWORD (helm.yaml : database).
+  datasource:
+    url: jdbc:postgresql://localhost:5432/gestion_financiere
+    username: app
+    password: app
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # le schéma vient uniquement des migrations Flyway
