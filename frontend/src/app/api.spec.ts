@@ -3,7 +3,7 @@ import { apiBase } from './api';
 describe('apiBase', () => {
   it('pointe la passerelle de l\'environnement du frontend', () => {
     expect(apiBase('frontend.formation-ba-gestion-financiere.qualif.check-consulting.net')).toBe(
-      'https://api.qualif.check-consulting.net/formation-ba-gestion-financiere/backend',
+      'https://gateway.formation-ba-gestion-financiere.qualif.check-consulting.net/backend',
     );
   });
 
