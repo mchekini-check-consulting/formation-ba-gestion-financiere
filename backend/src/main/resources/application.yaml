@@ -1,3 +1,7 @@
+logging:
+  level:
+    root: ${LOG_LEVEL:info}
+
 spring:
   application:
     name: gestion-financiere

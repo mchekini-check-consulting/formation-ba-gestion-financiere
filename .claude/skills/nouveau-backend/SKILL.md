@@ -1,6 +1,6 @@
 ---
 name: nouveau-backend
-description: Initialise un nouveau microservice backend minimal ("Hello World" uniquement) pour un Business Analyst (BA) qui ne maîtrise pas git — synchronise main, crée la branche, détecte la stack déjà utilisée dans CE dépôt (Node/Java/Python — ce skill est réutilisé tel quel dans plusieurs dépôts `formation-ba-*` qui n'ont pas tous la même stack), duplique un composant backend existant comme modèle vivant pour sa plomberie (Dockerfile/Makefile/sonar-project.properties/build), lui donne sa propre base de données, l'ajoute à `helm.yaml`, et vérifie/met à jour le gateway du projet (type: gateway dans helm.yaml, et gateway.yaml s'il fige un routage personnalisé) pour que ce backend soit joignable depuis l'extérieur. Ne commit ni ne push rien (c'est le rôle du skill `deploy`). À utiliser quand le BA veut créer un nouveau backend / microservice / service, en plus de ceux qui existent déjà.
+description: Initialise un nouveau microservice backend minimal ("Hello World" uniquement) pour un Business Analyst (BA) qui ne maîtrise pas git — synchronise main, crée la branche, détecte la stack déjà utilisée dans CE dépôt (Node/Java/Python — ce skill est réutilisé tel quel dans plusieurs dépôts `formation-ba-*` qui n'ont pas tous la même stack), duplique un composant backend existant comme modèle vivant pour sa plomberie (Dockerfile/Makefile/sonar-project.properties/build, et sa convention de logs structurés JSON à trois couches controller/service/db si le modèle l'a déjà), lui donne sa propre base de données, l'ajoute à `helm.yaml`, et vérifie/met à jour le gateway du projet (type: gateway dans helm.yaml, et gateway.yaml s'il fige un routage personnalisé) pour que ce backend soit joignable depuis l'extérieur. Ne commit ni ne push rien (c'est le rôle du skill `deploy`). À utiliser quand le BA veut créer un nouveau backend / microservice / service, en plus de ceux qui existent déjà.
 ---
 
 # Initialiser un nouveau backend (microservice)
@@ -112,15 +112,30 @@ Puis, en lisant le code copié (peu importe le langage), réduire au minimum
 "Hello World" :
 - **Garder** : le point d'entrée de l'application, le branchement à la base
   de données (générique, lu depuis des variables d'environnement — cf.
-  `helm.yaml`), et **une seule route minimale qui répond "Hello World"**
+  `helm.yaml`), **une seule route minimale qui répond "Hello World"**
   (ou équivalent déjà présent dans le modèle — ne pas en inventer une si le
-  modèle en a déjà une).
+  modèle en a déjà une), et **la convention de logs structurés du modèle,
+  si elle existe** (logger JSON, champ `layer` à `controller`/`service`/
+  `db`, variable `LOG_LEVEL`, mécanisme réutilisable de la couche service
+  type décorateur/annotation/aspect, interception des requêtes lentes ou en
+  erreur côté base de données) : ce n'est pas un exemple métier, c'est une
+  convention de plateforme (Alloy/Loki ne collectent que les lignes avec ce
+  champ `layer`) au même titre que le `Dockerfile` ou le `Makefile`. La
+  route "Hello World" doit continuer à passer par cette convention
+  exactement comme les routes du modèle (couche controller toujours ;
+  couche service aussi si le modèle fait déjà transiter sa route de
+  démonstration par une couche service annotée/décorée en ce sens — garder
+  alors un service minimal équivalent pour la route "Hello World" plutôt que
+  de faire appeler la base directement depuis le contrôleur).
 - **Retirer** tout module/ressource métier d'exemple plus riche qu'un
   "Hello World" (ex. un module CRUD de démonstration, ses migrations, ses
   tests dédiés) — et toute référence à ce module dans le fichier
   d'assemblage de l'application. L'objectif est un squelette qui démarre,
   répond, passe les tests, et que le BA remplira lui-même — pas un exemple
-  métier à adapter.
+  métier à adapter. Ne jamais confondre ce module métier de démonstration
+  avec le mécanisme de logs structurés ci-dessus : celui-ci reste, même s'il
+  vit dans un dossier qui ressemble à du code métier (ex. un package/dossier
+  `logging`).
 - Adapter les quelques identifiants qui doivent changer, quel que soit le
   langage : nom du projet/paquet dans son fichier de métadonnées
   (`package.json`, `pom.xml`, `pyproject.toml`...), nom de la base de
@@ -170,6 +185,16 @@ doit donc jamais être sauté silencieusement :
    http://localhost:8099/`, ou équivalent si le modèle répond sur une autre
    route "Hello World") : la commande doit réussir et renvoyer le contenu
    attendu, pas seulement démarrer sans erreur.
+   - Si le modèle dupliqué à l'étape 7 a une convention de logs structurés
+     (champ `layer`) : vérifier aussi que cette requête a bien produit une
+     ligne JSON avec `"layer":"controller"` dans les logs du conteneur
+     (`docker logs <slug>-test`). Si le modèle fait transiter cette route
+     par une couche service de la même façon, vérifier également
+     `"layer":"service"`. Une réponse HTTP correcte mais sans ces lignes
+     signalerait que la convention de logs ne s'est pas recopiée
+     correctement malgré la duplication des fichiers à l'étape 7 — dans ce
+     cas, corriger directement (c'est un problème de ce skill, pas du
+     travail du BA), pas seulement noter que "ça répond".
 5. Nettoyer dans tous les cas (même en cas d'échec) :
    `docker rm -f <slug>-test` puis `docker compose down`.
 
@@ -247,6 +272,11 @@ version, `deploy` s'occupera du commit, du push, de la PR et du suivi.
   n'y a encore aucun backend.
 - Ne copie jamais un exemple métier complet (type CRUD de démonstration) —
   s'en tient à "Hello World", quelle que soit la stack.
+- Ne retire jamais, en réduisant à "Hello World", la convention de logs
+  structurés du modèle (logger JSON, champ `layer`, `LOG_LEVEL`, mécanisme
+  de la couche service, interception des requêtes lentes/en erreur côté
+  base) : ce n'est pas un exemple métier, c'est une convention de
+  plateforme à reconduire telle quelle sur chaque nouveau backend.
 - Ne commit, ne push et n'ouvre jamais de PR — 100% local, comme
   `nouvelle-fonctionnalite`. C'est `deploy` qui s'occupe de tout envoi vers
   GitHub.
