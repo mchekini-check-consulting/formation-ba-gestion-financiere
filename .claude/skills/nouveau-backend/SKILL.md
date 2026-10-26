@@ -1,6 +1,6 @@
 ---
 name: nouveau-backend
-description: Initialise un nouveau microservice backend minimal ("Hello World" uniquement) pour un Business Analyst (BA) qui ne maîtrise pas git — synchronise main, crée la branche, détecte la stack déjà utilisée dans CE dépôt (Node/Java/Python — ce skill est réutilisé tel quel dans plusieurs dépôts `formation-ba-*` qui n'ont pas tous la même stack), duplique un composant backend existant comme modèle vivant pour sa plomberie (Dockerfile/Makefile/sonar-project.properties/build, et sa convention de logs structurés JSON à trois couches controller/service/db si le modèle l'a déjà), lui donne sa propre base de données, l'ajoute à `helm.yaml`, et vérifie/met à jour le gateway du projet (type: gateway dans helm.yaml, et gateway.yaml s'il fige un routage personnalisé) pour que ce backend soit joignable depuis l'extérieur. Ne commit ni ne push rien (c'est le rôle du skill `deploy`). À utiliser quand le BA veut créer un nouveau backend / microservice / service, en plus de ceux qui existent déjà.
+description: Initialise un nouveau microservice backend minimal ("Hello World" uniquement) pour un Business Analyst (BA) qui ne maîtrise pas git — synchronise main, crée la branche, détecte la stack déjà utilisée dans CE dépôt (Node/Java/Python — ce skill est réutilisé tel quel dans plusieurs dépôts `formation-ba-*` qui n'ont pas tous la même stack), duplique un composant backend existant comme modèle vivant pour sa plomberie (Dockerfile/Makefile/sonar-project.properties/build), lui donne sa propre base de données, met en place dès la création le logging structuré minimal (JSON, champ layer controller/service/db), l'ajoute à `helm.yaml`, et vérifie/met à jour le gateway du projet (type: gateway dans helm.yaml, et gateway.yaml s'il fige un routage personnalisé) pour que ce backend soit joignable depuis l'extérieur. Ne commit ni ne push rien (c'est le rôle du skill `deploy`). À utiliser quand le BA veut créer un nouveau backend / microservice / service, en plus de ceux qui existent déjà.
 ---
 
 # Initialiser un nouveau backend (microservice)
@@ -112,30 +112,15 @@ Puis, en lisant le code copié (peu importe le langage), réduire au minimum
 "Hello World" :
 - **Garder** : le point d'entrée de l'application, le branchement à la base
   de données (générique, lu depuis des variables d'environnement — cf.
-  `helm.yaml`), **une seule route minimale qui répond "Hello World"**
+  `helm.yaml`), et **une seule route minimale qui répond "Hello World"**
   (ou équivalent déjà présent dans le modèle — ne pas en inventer une si le
-  modèle en a déjà une), et **la convention de logs structurés du modèle,
-  si elle existe** (logger JSON, champ `layer` à `controller`/`service`/
-  `db`, variable `LOG_LEVEL`, mécanisme réutilisable de la couche service
-  type décorateur/annotation/aspect, interception des requêtes lentes ou en
-  erreur côté base de données) : ce n'est pas un exemple métier, c'est une
-  convention de plateforme (Alloy/Loki ne collectent que les lignes avec ce
-  champ `layer`) au même titre que le `Dockerfile` ou le `Makefile`. La
-  route "Hello World" doit continuer à passer par cette convention
-  exactement comme les routes du modèle (couche controller toujours ;
-  couche service aussi si le modèle fait déjà transiter sa route de
-  démonstration par une couche service annotée/décorée en ce sens — garder
-  alors un service minimal équivalent pour la route "Hello World" plutôt que
-  de faire appeler la base directement depuis le contrôleur).
+  modèle en a déjà une).
 - **Retirer** tout module/ressource métier d'exemple plus riche qu'un
   "Hello World" (ex. un module CRUD de démonstration, ses migrations, ses
   tests dédiés) — et toute référence à ce module dans le fichier
   d'assemblage de l'application. L'objectif est un squelette qui démarre,
   répond, passe les tests, et que le BA remplira lui-même — pas un exemple
-  métier à adapter. Ne jamais confondre ce module métier de démonstration
-  avec le mécanisme de logs structurés ci-dessus : celui-ci reste, même s'il
-  vit dans un dossier qui ressemble à du code métier (ex. un package/dossier
-  `logging`).
+  métier à adapter.
 - Adapter les quelques identifiants qui doivent changer, quel que soit le
   langage : nom du projet/paquet dans son fichier de métadonnées
   (`package.json`, `pom.xml`, `pyproject.toml`...), nom de la base de
@@ -152,7 +137,54 @@ Puis, en lisant le code copié (peu importe le langage), réduire au minimum
   lint/format/build de la stack) : ils sont déjà corrects pour cette
   plateforme et cette stack.
 
-### 8. Vérifier que le squelette fonctionne avant de rendre la main
+### 8. Mettre en place le logging structuré minimal (controller/service/db)
+
+Convention fixée côté infrastructure (formation-ba-gitops/Alloy/Loki),
+valable pour tous les backends de tous les dépôts `formation-ba-*` : une
+ligne JSON par log sur stdout, avec au minimum les champs time/level/msg,
+PLUS un champ `layer` qui vaut `controller`, `service` ou `db` selon
+l'origine du log. Seules les lignes qui ont ce champ `layer` sont
+collectées dans Loki (catégorie "business") ; tout le reste (démarrage,
+câblage) n'a pas besoin de ce champ et reste simplement visible via
+`kubectl logs`. Niveau minimal : variable d'environnement `LOG_LEVEL`
+(déjà injectée par `helm.yaml`, envList) — ne jamais en inventer une autre.
+
+- **Si le modèle vivant (étape 6) a déjà cette infrastructure** (un dossier
+  `logging/` ou équivalent parmi ses fichiers suivis par git) : elle a été
+  copiée avec le reste à l'étape 7 — la garder telle quelle, c'est de la
+  plomberie, pas du code métier de démo à retirer. Vérifier seulement
+  qu'elle reste branchée après la réduction à "Hello World" : le
+  middleware/intercepteur global (couche controller) n'a rien à faire de
+  spécifique ; la couche service, elle, doit décorer/envelopper au moins la
+  fonction ou méthode qui répond "Hello World" (même minimal, pour que le
+  mécanisme reste visible et testé).
+- **Si le modèle n'a pas encore cette infrastructure** (premier backend de
+  ce dépôt à l'avoir) : la mettre en place pour la stack détectée, de façon
+  idiomatique — pas en copiant du code d'un autre langage :
+  - Un logger qui écrit en JSON sur stdout et respecte `LOG_LEVEL` (ex.
+    SLF4J+Logback+encoder JSON pour Spring Boot, module `logging` standard +
+    formatter JSON + `extra` pour Django, un logger JSON dédié pour
+    NestJS).
+  - Couche **controller** : intercepteur/middleware global qui logue chaque
+    requête HTTP (`layer: controller`) avec la route **déclarée** (jamais
+    l'URL avec ses valeurs, ex. `/items` pas `/items/42`), le code de
+    statut, la durée.
+  - Couche **service** : un mécanisme réutilisable (décorateur, aspect
+    AOP, wrapper...) qui logue `layer: service` à la fin de chaque méthode
+    publique de la couche métier — jamais les arguments ni la valeur de
+    retour, appliqué au moins à la méthode qui répond "Hello World".
+  - Couche **db** : logger `layer: db` uniquement pour les requêtes en
+    erreur ou lentes (seuil ~200ms), jamais les requêtes normales (trop de
+    volume), jamais les paramètres SQL (valeurs réelles).
+  - Aucune donnée personnelle ou sensible dans aucun de ces logs.
+  - Pour comprendre l'esprit exact de ces 4 points (pas pour copier du
+    code), s'inspirer de ce qui existe déjà : `backend/quali_formation/logging/`
+    dans ce dépôt s'il y est déjà (Python/Django), ou
+    `formation-ba-assurance-iard/backend/src/logging/` (json-logger.ts,
+    logging.interceptor.ts, loggable.decorator.ts, typeorm-logger.ts) pour
+    la version Node/NestJS de référence.
+
+### 9. Vérifier que le squelette fonctionne avant de rendre la main
 
 Depuis `<slug>/`, lancer les commandes d'installation puis `make lint` et
 `make test-unit` (les commandes d'installation dépendent de la stack
@@ -211,7 +243,7 @@ n'a pas encore touché.
 Docker, etc.) et être lent : le lancer si les prérequis sont disponibles,
 sinon le dire simplement au BA plutôt que de bloquer dessus.
 
-### 9. Ajouter le service à `helm.yaml`
+### 10. Ajouter le service à `helm.yaml`
 
 Ajouter une entrée sous `applications:` (à la racine du dépôt), sur le même
 modèle que l'entrée backend existante utilisée comme modèle à l'étape 6 :
@@ -226,7 +258,7 @@ qu'écoute réellement l'app copiée), `replicas` identiques au modèle,
 `database.name: <nom-de-base-du-slug>`. Reprendre les commentaires
 existants (DATABASE_URL, etc.) en les adaptant au nouveau nom.
 
-### 10. Vérifier le gateway du projet, et le mettre à jour si nécessaire
+### 11. Vérifier le gateway du projet, et le mettre à jour si nécessaire
 
 Un backend `type: backend` dans `helm.yaml` est **automatiquement**
 surveillé par Kargo dès le premier merge (aucune action externe, cf.
@@ -255,12 +287,13 @@ que soit ce projet. Reste la question de savoir si ce nouveau backend sera
       — puis relire le fichier modifié en entier (pas de `helm template`
       possible depuis ce dépôt, le chart vit dans `formation-ba-gitops`).
 
-### 11. Conclure en langage simple
+### 12. Conclure en langage simple
 
-Résumer : le dossier `<slug>/` est prêt (squelette "Hello World" vérifié),
-la base de données dédiée est déclarée, l'espace de travail "<nom>" est
-ouvert, et l'état du gateway (étape 10) a été vérifié et mis à jour si
-besoin. Le BA peut maintenant développer sa logique métier dans `<slug>/`.
+Résumer : le dossier `<slug>/` est prêt (squelette "Hello World" vérifié,
+logging structuré minimal en place), la base de données dédiée est
+déclarée, l'espace de travail "<nom>" est ouvert, et l'état du gateway
+(étape 11) a été vérifié et mis à jour si besoin. Le BA peut maintenant
+développer sa logique métier dans `<slug>/`.
 **Ce skill n'a rien commité ni poussé** — quand le BA aura une première
 version, `deploy` s'occupera du commit, du push, de la PR et du suivi.
 
@@ -272,11 +305,10 @@ version, `deploy` s'occupera du commit, du push, de la PR et du suivi.
   n'y a encore aucun backend.
 - Ne copie jamais un exemple métier complet (type CRUD de démonstration) —
   s'en tient à "Hello World", quelle que soit la stack.
-- Ne retire jamais, en réduisant à "Hello World", la convention de logs
-  structurés du modèle (logger JSON, champ `layer`, `LOG_LEVEL`, mécanisme
-  de la couche service, interception des requêtes lentes/en erreur côté
-  base) : ce n'est pas un exemple métier, c'est une convention de
-  plateforme à reconduire telle quelle sur chaque nouveau backend.
+- Ne retire jamais l'infrastructure de logging du modèle en la confondant
+  avec du code métier de démo à réduire (étape 7) — c'est de la plomberie,
+  comme le Dockerfile ou le Makefile, et le nouveau backend ne doit jamais
+  démarrer sans elle (étape 8).
 - Ne commit, ne push et n'ouvre jamais de PR — 100% local, comme
   `nouvelle-fonctionnalite`. C'est `deploy` qui s'occupe de tout envoi vers
   GitHub.
@@ -284,7 +316,7 @@ version, `deploy` s'occupera du commit, du push, de la PR et du suivi.
   s'arrête et demande un autre nom.
 - Ne crée jamais lui-même une application `type: gateway` si le projet n'en
   a pas déjà une — c'est une décision à part, pas une conséquence
-  automatique de la création d'un backend (étape 10).
+  automatique de la création d'un backend (étape 11).
 - Ne supprime jamais de travail en cours sans réponse explicite du BA.
 - Ne modifie jamais le dépôt `formation-ba-gitops` — n'en a plus besoin pour
   un nouveau composant d'un projet déjà existant (ApplicationSet par projet,
