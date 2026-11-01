@@ -1,0 +1,119 @@
+$navy: #14213d;
+$orange: #e07a1f;
+$bg: #f4f6fa;
+$line: #e2e6ee;
+$text-2: #46526b;
+$muted: #6b7690;
+$mono: 'DM Mono', monospace;
+
+:host {
+  display: block;
+  min-height: 100vh;
+  background: $bg;
+}
+
+.container {
+  max-width: 1160px;
+  margin: 0 auto;
+}
+
+.header {
+  border-bottom: 1px solid $line;
+  padding: 0 24px;
+
+  &__inner {
+    padding-block: 14px;
+  }
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: $navy;
+  text-decoration: none;
+
+  &__logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: $navy;
+    display: grid;
+    place-items: center;
+
+    span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: $orange;
+    }
+  }
+}
+
+.page {
+  padding: 48px 24px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.summary {
+  margin: 0 0 24px;
+  color: $muted;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid $line;
+  border-radius: 14px;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+th,
+td {
+  padding: 14px 20px;
+  text-align: left;
+  border-bottom: 1px solid $line;
+}
+
+th {
+  font-size: 13px;
+  font-weight: 600;
+  color: $muted;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.num {
+  text-align: right;
+  font-family: $mono;
+}
+
+.muted {
+  color: $text-2;
+}
+
+.state {
+  color: $muted;
+
+  &--error {
+    color: #b42318;
+  }
+}

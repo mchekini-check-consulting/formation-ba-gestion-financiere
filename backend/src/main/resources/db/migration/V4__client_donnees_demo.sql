@@ -1,0 +1,22 @@
+-- Données de démonstration (noms fictifs) de l'écran /clients.
+insert into client (nom_client, nom_entreprise, nombre_donnees_connectees) values
+    ('Sophie Martin', 'Boulangerie Martin', 3),
+    ('Lucas Bernard', 'Bernard Transports', 7),
+    ('Emma Dubois', 'Dubois Conseil', 2),
+    ('Hugo Thomas', 'Thomas BTP', 12),
+    ('Chloé Robert', 'Atelier Robert', 1),
+    ('Nathan Richard', 'Richard & Fils', 5),
+    ('Léa Petit', 'Petit Immobilier', 9),
+    ('Louis Durand', 'Durand Informatique', 15),
+    ('Camille Leroy', 'Leroy Pharma', 4),
+    ('Gabriel Moreau', 'Moreau Logistique', 8),
+    ('Manon Simon', 'Simon Architecture', 0),
+    ('Arthur Laurent', 'Laurent Assurances', 6),
+    ('Inès Lefebvre', 'Lefebvre Textile', 3),
+    ('Jules Michel', 'Michel Auto', 10),
+    ('Zoé Garcia', 'Garcia Restauration', 2),
+    ('Raphaël David', 'David Énergie', 11),
+    ('Jade Bertrand', 'Bertrand Cosmétiques', 4),
+    ('Adam Roux', 'Roux Agriculture', 1),
+    ('Louise Vincent', 'Vincent Expertise Comptable', 14),
+    ('Paul Fournier', 'Fournier Distribution', 6);
