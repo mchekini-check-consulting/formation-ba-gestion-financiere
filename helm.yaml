@@ -66,3 +66,26 @@ applications:
       enabled: true
       path: /
       stripPrefix: false
+  - name: cabinets
+    type: backend
+    image: 205493924920.dkr.ecr.eu-west-3.amazonaws.com/formation-ba-gestion-financiere/cabinets
+    # Écrit par Kargo (dev automatique ; qualif/preprod/prod : promotion par clic).
+    # Garder une valeur par ligne, sans commentaire en fin de ligne : Kargo
+    # remplace tout jusqu'à la fin de la ligne.
+    tag:
+      dev: ""
+      qualif: ""
+      preprod: ""
+      prod: ""
+    containerPort: 8080
+    replicas: {dev: 1, qualif: 1, preprod: 2, prod: 2}
+    service:
+      port: 80
+    # Pas d'Ingress direct : exposé par le pod "gateway" :
+    #   https://gateway.formation-ba-gestion-financiere.<env>.check-consulting.net/cabinets/...  (préfixe retiré)
+    # Base PostgreSQL cabinets : créée et sauvegardée automatiquement.
+    database:
+      name: cabinets
+    envList:
+      - key: LOG_LEVEL
+        value: {dev: debug, qualif: info, preprod: info, prod: warn}

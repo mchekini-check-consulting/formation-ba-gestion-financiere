@@ -1,1 +1,135 @@
-/* You can add global styles to this file, and also import other style files */
+@use 'theme' as *;
+
+/* Styles communs à toutes les pages */
+body {
+  margin: 0;
+  background: #fffdf9;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Éléments communs de la marque, réutilisables par toutes les pages */
+.conteneur {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  box-sizing: border-box;
+}
+
+.beige {
+  background: $beige;
+  border-top: 1px solid $bord;
+  border-bottom: 1px solid $bord;
+}
+.sombre {
+  background: $noir;
+  color: $creme;
+}
+
+.titre {
+  margin: 0;
+  font-family: $serif;
+  font-size: 38px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  &--h1 {
+    font-size: 52px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+  }
+  &--petit {
+    font-size: 28px;
+  }
+}
+
+.surtitre {
+  font-size: 13px;
+  font-weight: 700;
+  color: $or;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  &--clair {
+    color: $or-clair;
+  }
+  &--petit {
+    font-size: 12px;
+  }
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  &__texte {
+    font-size: 17px !important;
+  }
+}
+
+.etiquette {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  &--vert {
+    color: #157347;
+    background: #e3f5ea;
+  }
+  &--or {
+    color: $or-fonce;
+    background: #f3ebdd;
+    padding: 2px 8px;
+  }
+  &--bientot {
+    align-self: flex-start;
+    font-size: 12px;
+    color: #8a4b00;
+    background: #fff1db;
+    padding: 4px 10px;
+  }
+}
+
+// Boutons
+.btn {
+  display: inline-block;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  &--grand {
+    font-size: 16px;
+    padding: 15px 26px;
+  }
+  &--contour {
+    color: $noir !important;
+    border: 1px solid $bord-fort;
+    background: $creme;
+  }
+  &--noir {
+    background: $noir;
+    color: $creme !important;
+  }
+  &--or {
+    background: $or;
+    color: $creme !important;
+    &:hover {
+      background: $or-fonce;
+    }
+  }
+  &--blanc {
+    background: $creme;
+    color: $or-fonce !important;
+    font-weight: 700;
+  }
+  &--transparent {
+    color: $creme !important;
+    border: 1px solid $or-clair;
+    font-weight: 700;
+  }
+}

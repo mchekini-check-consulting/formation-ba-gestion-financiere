@@ -1,0 +1,118 @@
+<div class="page">
+  <header class="entete">
+    <div class="conteneur">
+      <a routerLink="/" class="logo">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+          <rect width="30" height="30" rx="9" fill="#8C6B36"></rect>
+          <path
+            d="M9 15.5l4.2 4.2L21.5 11"
+            fill="none"
+            stroke="#FFFDF9"
+            stroke-width="2.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+        <span>Pointéo</span>
+      </a>
+    </div>
+  </header>
+
+  <main class="conteneur contenu">
+    <div class="intro">
+      <span class="surtitre">Comptes cabinets</span>
+      <h1 class="titre">
+        {{ enModification() === null ? 'Créer le compte de mon cabinet' : 'Modifier le cabinet' }}
+      </h1>
+    </div>
+
+    <form class="carte formulaire" (submit)="enregistrer($event)">
+      <label>
+        Nom du cabinet
+        <input
+          name="nom"
+          required
+          maxlength="200"
+          [value]="formulaire().nom"
+          (input)="saisir('nom', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        SIREN
+        <input
+          name="siren"
+          required
+          inputmode="numeric"
+          pattern="[0-9 ]{9,11}"
+          placeholder="812 345 678"
+          [value]="formulaire().siren"
+          (input)="saisir('siren', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        Email de contact
+        <input
+          name="email"
+          type="email"
+          required
+          maxlength="254"
+          [value]="formulaire().email"
+          (input)="saisir('email', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        Nombre de dossiers suivis
+        <input
+          name="nombreDossiers"
+          type="number"
+          min="0"
+          step="1"
+          [value]="formulaire().nombreDossiers"
+          (input)="saisir('nombreDossiers', $any($event.target).value)"
+        />
+      </label>
+      <div class="formulaire__boutons">
+        <button type="submit" class="btn btn--or">
+          {{ enModification() === null ? 'Créer le compte' : 'Enregistrer' }}
+        </button>
+        @if (enModification() !== null) {
+          <button type="button" class="btn btn--contour" (click)="annuler()">Annuler</button>
+        }
+      </div>
+    </form>
+
+    @if (erreur()) {
+      <p class="message message--erreur" role="alert">{{ erreur() }}</p>
+    }
+    @if (confirmation()) {
+      <p class="message message--ok" role="status">{{ confirmation() }}</p>
+    }
+
+    <section class="liste">
+      <h2 class="titre titre--petit">Cabinets inscrits</h2>
+      <ul>
+        @for (cabinet of cabinets(); track cabinet.id) {
+          <li class="carte cabinet" [class.cabinet--actif]="enModification() === cabinet.id">
+            <div class="cabinet__infos">
+              <strong>{{ cabinet.nom }}</strong>
+              <small
+                >SIREN {{ cabinet.siren }} · {{ cabinet.email }} ·
+                {{ cabinet.nombreDossiers }} dossiers</small
+              >
+            </div>
+            <div class="cabinet__actions">
+              <button type="button" class="btn btn--contour" (click)="modifier(cabinet)">
+                Modifier
+              </button>
+              <button type="button" class="btn btn--danger" (click)="supprimer(cabinet)">
+                Supprimer
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="vide">Aucun cabinet inscrit pour l'instant.</li>
+        }
+      </ul>
+    </section>
+  </main>
+</div>

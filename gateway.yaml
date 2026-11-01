@@ -17,9 +17,15 @@ gatewayConfig: |
         rule: "PathPrefix(`/backend`)"
         service: backend
         middlewares: [backend-strip, cors]
+      cabinets:
+        rule: "PathPrefix(`/cabinets`)"
+        service: cabinets
+        middlewares: [cabinets-strip, cors]
     middlewares:
       backend-strip:
         stripPrefix: {prefixes: ["/backend"]}
+      cabinets-strip:
+        stripPrefix: {prefixes: ["/cabinets"]}
       cors:
         headers:
           accessControlAllowOriginList:
@@ -31,3 +37,5 @@ gatewayConfig: |
     services:
       backend:
         loadBalancer: {servers: [{url: "http://backend:80"}]}
+      cabinets:
+        loadBalancer: {servers: [{url: "http://cabinets:80"}]}

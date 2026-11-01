@@ -1,0 +1,96 @@
+<section id="tarifs" class="beige">
+  <div class="conteneur section">
+    <div class="intro">
+      <span class="surtitre">Tarifs</span>
+      <h2 class="titre">Un prix par dossier, qui baisse quand votre cabinet grandit.</h2>
+      <p class="intro__texte">
+        Sans engagement de durée. L'espace client est inclus pour chacun de vos clients.
+      </p>
+    </div>
+    <div class="tranches">
+      @for (tranche of tranches; track tranche.numero) {
+        <div class="tranche" [class.tranche--sombre]="tranche.numero === 3">
+          <span class="surtitre surtitre--petit">Tranche {{ tranche.numero }}</span>
+          <strong>{{ tranche.libelle }}</strong>
+          <div class="prix">
+            <strong>{{ tranche.prix }} €</strong><span>HT / dossier / mois</span>
+          </div>
+        </div>
+      }
+    </div>
+    <p class="tranches__note">
+      Chaque prix ne s'applique qu'aux dossiers de sa tranche : plus le cabinet grandit, moins
+      chaque dossier coûte.
+    </p>
+    <div class="offre">
+      <div class="simulateur">
+        <span class="surtitre surtitre--clair">Simulateur</span>
+        <label>
+          Nombre de dossiers suivis
+          <span class="simulateur__saisie">
+            <input
+              type="number"
+              min="0"
+              step="1"
+              name="dossiers"
+              [value]="nombreDossiers()"
+              (input)="saisirDossiers($any($event.target).value)"
+            />
+            <span>dossiers</span>
+          </span>
+        </label>
+        @for (ligne of simulation().lignes; track $index) {
+          <div class="simulateur__ligne">
+            <span>{{ ligne.dossiers }} dossiers × {{ ligne.prix }} €</span
+            ><strong>{{ euros(ligne.montant) }}</strong>
+          </div>
+        }
+        <div class="simulateur__total">
+          <span>Total</span>
+          <span
+            ><strong>{{ euros(simulation().total) }}</strong
+            ><small> HT / mois</small></span
+          >
+        </div>
+        @if (simulation().total > 0) {
+          <small class="simulateur__moyenne"
+            >Soit {{ euros(simulation().moyenne) }} HT par dossier en moyenne.</small
+          >
+        }
+        <a
+          routerLink="/cabinets"
+          [queryParams]="{ dossiers: nombreDossiers() }"
+          class="btn btn--or btn--grand simulateur__bouton"
+          >Créer le compte de mon cabinet</a
+        >
+      </div>
+      <div class="inclus">
+        <h3>Tout est inclus</h3>
+        <ul>
+          @for (ligne of inclus; track ligne) {
+            <li>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                fill="none"
+                stroke="#8C6B36"
+                stroke-width="2.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M5 12l5 5L20 7"></path>
+              </svg>
+              <span>{{ ligne }}</span>
+            </li>
+          }
+        </ul>
+        <div class="parrainage">
+          <strong>Parrainage :</strong> 1 mois offert au cabinet qui recommande Pointéo, mise en
+          place offerte au nouveau cabinet.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,6 +1,10 @@
 {
-  "/api": {
+  "/api/cabinets": {
+    "target": "http://localhost:8081",
+    "pathRewrite": { "^/api/cabinets": "" }
+  },
+  "/api/backend": {
     "target": "http://localhost:8080",
-    "pathRewrite": { "^/api": "" }
+    "pathRewrite": { "^/api/backend": "" }
   }
 }

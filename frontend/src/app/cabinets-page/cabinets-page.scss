@@ -1,0 +1,144 @@
+@use '../../theme' as *;
+
+.page {
+  font-family: Inter, system-ui, sans-serif;
+  color: $noir;
+  background: $creme;
+  min-height: 100vh;
+}
+
+.entete {
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid $bord;
+  padding: 14px 0;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: $noir;
+  font-family: $serif;
+  font-weight: 800;
+  font-size: 21px;
+}
+
+.contenu {
+  max-width: 820px;
+  padding-top: 56px;
+  padding-bottom: 88px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.carte {
+  background: $beige;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.formulaire {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: $texte;
+  }
+  input {
+    font: inherit;
+    font-weight: 400;
+    font-size: 15px;
+    color: $noir;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid $bord-fort;
+    background: $creme;
+    &:focus {
+      outline: 2px solid $or-clair;
+      border-color: $or;
+    }
+  }
+  &__boutons {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+  }
+}
+
+button.btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: 15px;
+  border: 0;
+  cursor: pointer;
+}
+.btn--contour {
+  border: 1px solid $bord-fort !important;
+}
+.btn--danger {
+  background: $creme;
+  color: #b42318;
+  border: 1px solid #f3c4c0 !important;
+}
+
+.message {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  &--erreur {
+    color: #b42318;
+    background: #feeceb;
+  }
+  &--ok {
+    color: #157347;
+    background: #e3f5ea;
+  }
+}
+
+.liste ul {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cabinet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid transparent;
+  &--actif {
+    border-color: $or;
+  }
+  &__infos {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    small {
+      color: $gris;
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+  }
+  &__actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+.vide {
+  color: $gris;
+}

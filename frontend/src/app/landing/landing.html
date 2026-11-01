@@ -1,0 +1,303 @@
+<div class="page">
+  <!-- En-tête -->
+  <header class="entete">
+    <div class="conteneur entete__barre">
+      <a href="#" class="logo">
+        <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+          <rect width="30" height="30" rx="9" fill="#8C6B36"></rect>
+          <path
+            d="M9 15.5l4.2 4.2L21.5 11"
+            fill="none"
+            stroke="#FFFDF9"
+            stroke-width="2.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
+        </svg>
+        <span>Pointéo</span>
+      </a>
+      <nav aria-label="Navigation principale" class="nav">
+        <a href="#fonctionnalites" (click)="choisirProfil('cabinets')">Pour les cabinets</a>
+        <a href="#fonctionnalites" (click)="choisirProfil('entreprises')">Pour les entreprises</a>
+        <a href="#etapes">Fonctionnalités</a>
+        <a href="#securite">Sécurité</a>
+        <a href="#tarifs">Tarifs</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="actions">
+        <a href="#" class="btn btn--contour">Se connecter</a>
+        <a routerLink="/cabinets" class="btn btn--noir">Créer un compte</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Accroche -->
+  <section class="hero">
+    <div class="conteneur hero__contenu">
+      <div class="hero__texte">
+        <span class="pastille">Pour les cabinets d'expertise comptable</span>
+        <h1 class="titre titre--h1">De la transaction au bilan, tout se fait tout seul.</h1>
+        <p class="hero__intro">
+          De la synchronisation bancaire aux écritures, à la TVA et aux rapports financiers :
+          Pointéo relie les comptes de vos clients à leur comptabilité. Pointéo propose, vous
+          validez.
+        </p>
+        <div class="hero__boutons">
+          <a routerLink="/cabinets" class="btn btn--or btn--grand"
+            >Créer le compte de mon cabinet</a
+          >
+          <a href="#tarifs" class="btn btn--contour btn--grand">Voir les tarifs</a>
+        </div>
+        <span class="hero__client">Déjà client ? <a href="#">Se connecter</a></span>
+      </div>
+
+      <app-apercu />
+    </div>
+  </section>
+
+  <!-- Comment ça marche -->
+  <section id="etapes" class="conteneur section section--etapes">
+    <div class="intro">
+      <span class="surtitre">Comment ça marche</span>
+      <h2 class="titre">Trois étapes, plus aucune facture perdue dans les emails.</h2>
+    </div>
+    <ol class="grille">
+      @for (etape of etapes; track etape.titre; let i = $index) {
+        <li class="carte">
+          <span class="numero">{{ i + 1 }}</span>
+          <h3>{{ etape.titre }}</h3>
+          <p>{{ etape.texte }}</p>
+        </li>
+      }
+    </ol>
+  </section>
+
+  <!-- Pensé pour vous -->
+  <section id="fonctionnalites" class="conteneur section section--fonctions">
+    <div class="fonctions__tete">
+      <h2 class="titre">Pensé pour vous, et pour vos clients.</h2>
+      <div role="tablist" aria-label="Profil" class="onglets">
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="profil() === 'cabinets'"
+          (click)="choisirProfil('cabinets')"
+        >
+          Cabinets d'expertise comptable
+        </button>
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="profil() === 'entreprises'"
+          (click)="choisirProfil('entreprises')"
+        >
+          Entreprises clientes
+        </button>
+      </div>
+    </div>
+    <div class="tuiles" [class.tuiles--deux]="profil() === 'entreprises'" role="tabpanel">
+      @for (tuile of tuiles(); track tuile.titre) {
+        <div class="tuile">
+          <span class="tuile__icone">
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              fill="none"
+              stroke="#8C6B36"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M4 6.5h16M4 12h16M4 17.5h9"></path>
+            </svg>
+          </span>
+          <h3>{{ tuile.titre }}</h3>
+          @if (tuile.bientot) {
+            <span class="etiquette etiquette--bientot">Bientôt disponible</span>
+          }
+          <p>{{ tuile.texte }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Modules à venir -->
+  <section id="modules" class="conteneur section--modules">
+    <div class="modules">
+      <div class="modules__texte">
+        <span class="surtitre">Bientôt dans Pointéo</span>
+        <h2 class="titre titre--petit">Pointéo s'enrichit avec vous.</h2>
+        <p>
+          La suite de la feuille de route, déjà visible : la banque, le rapprochement et les modules
+          de chaque dossier.
+        </p>
+      </div>
+      <div class="modules__liste">
+        @for (module of modules; track module.titre) {
+          <div class="module">
+            <div class="module__tete">
+              <strong>{{ module.titre }}</strong>
+              <span class="etiquette etiquette--bientot">Bientôt disponible</span>
+            </div>
+            <span>{{ module.texte }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- Sécurité -->
+  <section id="securite" class="sombre">
+    <div class="conteneur section">
+      <div class="intro">
+        <span class="surtitre surtitre--clair">Sécurité</span>
+        <h2 class="titre">Des données financières, traitées comme telles.</h2>
+      </div>
+      <div class="grille">
+        <div class="carte carte--sombre">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="#D9BE86"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="12" cy="12" r="9"></circle>
+            <path
+              d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"
+            ></path>
+          </svg>
+          <h3>Hébergement dans l'Union européenne</h3>
+          <p>Vos données et les factures de vos clients restent en Europe.</p>
+        </div>
+        <div class="carte carte--sombre">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="#D9BE86"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="4" y="10" width="16" height="10" rx="2"></rect>
+            <path d="M8 10V7a4 4 0 018 0v3"></path>
+          </svg>
+          <h3>Fichiers chiffrés</h3>
+          <p>Chaque facture déposée est stockée chiffrée.</p>
+        </div>
+        <div class="carte carte--sombre">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="#D9BE86"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6l8-3z"></path>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+          <h3>Accès protégé et cloisonné</h3>
+          <p>Chaque cabinet ne voit que ses dossiers, chaque client que son entreprise.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tarifs -->
+  <app-section-tarifs />
+
+  <!-- FAQ -->
+  <section id="faq" class="conteneur section section--faq">
+    <div class="faq__tete">
+      <span class="surtitre">FAQ</span>
+      <h2 class="titre">Questions fréquentes</h2>
+    </div>
+    <div class="faq">
+      @for (item of faq; track item.question; let i = $index) {
+        <div class="faq__item">
+          <button
+            type="button"
+            [attr.aria-expanded]="questionOuverte() === i"
+            (click)="basculerQuestion(i)"
+          >
+            <span>{{ item.question }}</span>
+            <span aria-hidden="true" class="faq__signe">{{
+              questionOuverte() === i ? '−' : '+'
+            }}</span>
+          </button>
+          @if (questionOuverte() === i) {
+            <p>{{ item.reponse }}</p>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Appel à l'action -->
+  <section class="conteneur section--cta">
+    <div class="cta">
+      <h2 class="titre">Vos dossiers, vos clients et leurs factures, au même endroit.</h2>
+      <div class="cta__boutons">
+        <a routerLink="/cabinets" class="btn btn--blanc btn--grand">Créer un compte</a>
+        <a href="#" class="btn btn--transparent btn--grand">Se connecter</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pied de page -->
+  <footer class="beige pied">
+    <div class="conteneur pied__colonnes">
+      <div>
+        <strong>Produit</strong><a href="#etapes">Fonctionnalités</a
+        ><a href="#modules">Modules à venir</a><a href="#tarifs">Tarifs</a>
+      </div>
+      <div>
+        <strong>Cabinets</strong>
+        <a href="#fonctionnalites" (click)="choisirProfil('cabinets')">Pour les cabinets</a
+        ><a routerLink="/cabinets">Créer un compte</a><a href="#">Se connecter</a>
+      </div>
+      <div>
+        <strong>Entreprises</strong>
+        <a href="#fonctionnalites" (click)="choisirProfil('entreprises')">Pour les entreprises</a
+        ><a href="#faq">Questions fréquentes</a>
+      </div>
+      <div>
+        <strong>Légal</strong>
+        <a href="#">Mentions légales</a><a href="#">CGU</a
+        ><a href="#">Politique de confidentialité</a><a href="#">Gestion des cookies</a
+        ><a href="#securite">Sécurité</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bandeau cookies -->
+  @if (bandeauCookies()) {
+    <div class="cookies">
+      <div role="region" aria-label="Gestion des cookies" class="cookies__boite">
+        <strong>Vos préférences de cookies</strong>
+        <p>
+          Nous utilisons des cookies de mesure d'audience uniquement avec votre accord. Votre choix
+          est conservé 6 mois.
+        </p>
+        <div class="cookies__boutons">
+          <button type="button" (click)="fermerCookies()">Tout refuser</button>
+          <button type="button">Personnaliser</button>
+          <button type="button" (click)="fermerCookies()">Tout accepter</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
