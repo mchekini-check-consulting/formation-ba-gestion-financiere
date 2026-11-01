@@ -1,0 +1,346 @@
+<header class="header">
+  <div class="container header__inner">
+    <a href="#top" class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <rect width="30" height="30" rx="9" fill="#8C6B36"></rect>
+        <path d="M9 15.5l4.2 4.2L21.5 11" fill="none" stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>Pointéo</span>
+    </a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="#fonctionnalites" (click)="profile.set('cabinets')">Pour les cabinets</a>
+      <a href="#fonctionnalites" (click)="profile.set('entreprises')">Pour les entreprises</a>
+      <a href="#etapes">Fonctionnalités</a>
+      <a href="#securite">Sécurité</a>
+      <a href="#tarifs">Tarifs</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="header__actions">
+      <a routerLink="/connexion" class="btn btn--outline btn--sm">Se connecter</a>
+      <a routerLink="/creer-compte" class="btn btn--dark btn--sm">Créer un compte</a>
+    </div>
+  </div>
+</header>
+
+<!-- ACCROCHE -->
+<section id="top" class="hero">
+  <div class="container hero__inner">
+    <div class="hero__text">
+      <span class="pill">Pour les cabinets d'expertise comptable</span>
+      <h1>De la transaction au bilan, tout se fait tout seul.</h1>
+      <p class="hero__lead">
+        De la synchronisation bancaire aux écritures, à la TVA et aux rapports financiers : Pointéo
+        relie les comptes de vos clients à leur comptabilité. Pointéo propose, vous validez.
+      </p>
+      <div class="hero__ctas">
+        <a routerLink="/creer-compte" class="btn btn--gold">Créer le compte de mon cabinet</a>
+        <a href="#tarifs" class="btn btn--outline">Voir les tarifs</a>
+      </div>
+      <span class="hero__login">Déjà client ? <a routerLink="/connexion">Se connecter</a></span>
+    </div>
+
+    <div class="hero__preview" role="img" aria-label="Aperçu de l'application : un dossier client avec ses factures fournisseurs">
+      <div class="window">
+        <div class="window__bar"><span></span><span></span><span></span></div>
+        <div class="window__body">
+          <div class="window__side">
+            <span class="bar bar--60"></span>
+            <span class="bar bar--active"></span>
+            <span class="bar bar--70"></span>
+            <span class="bar bar--54"></span>
+          </div>
+          <div class="window__main">
+            <div class="folder">
+              <span class="folder__logo">BL</span>
+              <div class="folder__name">
+                <div>Boulangerie Leroy SARL</div>
+                <div>SIREN 812 345 678</div>
+              </div>
+              <span class="folder__status">Espace client actif</span>
+            </div>
+            <div class="folder-tabs">
+              <span class="folder-tabs__active">Fournisseurs · 3</span>
+              <span>Clients · 1</span>
+              <span>Modules</span>
+            </div>
+            <div class="files">
+              <div class="file">
+                <span class="file__type">PDF</span>
+                <span class="file__name">facture-moulins-bertrand-0142.pdf</span>
+                <span class="file__new">Nouvelle</span>
+              </div>
+              <div class="file">
+                <span class="file__type file__type--jpg">JPG</span>
+                <span class="file__name">ticket-carburant.jpg</span>
+                <span class="file__state">Reçue</span>
+              </div>
+              <div class="file">
+                <span class="file__type">PDF</span>
+                <span class="file__name">facture-emballages-0918.pdf</span>
+                <span class="file__state">Reçue</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMMENT ÇA MARCHE -->
+<section id="etapes" class="container section section--steps">
+  <div class="section__head">
+    <span class="eyebrow">Comment ça marche</span>
+    <h2>Trois étapes, plus aucune facture perdue dans les emails.</h2>
+  </div>
+  <ol class="steps">
+    <li class="step">
+      <span class="step__num">1</span>
+      <h3>Créez le dossier</h3>
+      <p>Saisissez le SIREN : la fiche de l'entreprise se remplit toute seule.</p>
+    </li>
+    <li class="step">
+      <span class="step__num">2</span>
+      <h3>Invitez votre client</h3>
+      <p>Il reçoit un email, choisit son mot de passe et accède à son espace.</p>
+    </li>
+    <li class="step">
+      <span class="step__num">3</span>
+      <h3>Recevez les factures</h3>
+      <p>Ses factures d'achat et de vente arrivent rangées dans son dossier.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- FONCTIONNALITÉS -->
+<section id="fonctionnalites" class="container section section--features">
+  <div class="features__head">
+    <h2>Pensé pour vous, et pour vos clients.</h2>
+    <div class="tabs" role="tablist" aria-label="Profil">
+      <button
+        type="button"
+        role="tab"
+        class="tabs__tab"
+        [class.tabs__tab--active]="profile() === 'cabinets'"
+        [attr.aria-selected]="profile() === 'cabinets'"
+        (click)="profile.set('cabinets')"
+      >
+        Cabinets d'expertise comptable
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="tabs__tab"
+        [class.tabs__tab--active]="profile() === 'entreprises'"
+        [attr.aria-selected]="profile() === 'entreprises'"
+        (click)="profile.set('entreprises')"
+      >
+        Entreprises clientes
+      </button>
+    </div>
+  </div>
+  <div class="tiles" [class.tiles--two]="profile() === 'entreprises'">
+    @for (tile of tiles[profile()]; track tile.title) {
+      <div class="tile">
+        <span class="tile__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#8C6B36" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16M4 12h16M4 17.5h9"></path></svg>
+        </span>
+        <h3>{{ tile.title }}</h3>
+        @if (tile.soon) {
+          <span class="soon">Bientôt disponible</span>
+        }
+        <p>{{ tile.text }}</p>
+      </div>
+    }
+  </div>
+</section>
+
+<!-- BIENTÔT DANS POINTÉO -->
+<section id="modules" class="container section section--upcoming">
+  <div class="upcoming">
+    <div class="upcoming__intro">
+      <span class="eyebrow">Bientôt dans Pointéo</span>
+      <h2 class="upcoming__title">Pointéo s'enrichit avec vous.</h2>
+      <p>La suite de la feuille de route, déjà visible : la banque, le rapprochement et les modules de chaque dossier.</p>
+    </div>
+    <div class="upcoming__grid">
+      @for (item of upcoming; track item.title) {
+        <div class="upcoming__card">
+          <div class="upcoming__card-head">
+            <strong>{{ item.title }}</strong>
+            <span class="soon">Bientôt disponible</span>
+          </div>
+          <span class="upcoming__text">{{ item.text }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- SÉCURITÉ -->
+<section id="securite" class="security">
+  <div class="container section section--stack">
+    <div class="section__head">
+      <span class="eyebrow eyebrow--light">Sécurité</span>
+      <h2>Des données financières, traitées comme telles.</h2>
+    </div>
+    <div class="security__grid">
+      <div class="security__card">
+        <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#D9BE86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"></path></svg>
+        <h3>Hébergement dans l'Union européenne</h3>
+        <p>Vos données et les factures de vos clients restent en Europe.</p>
+      </div>
+      <div class="security__card">
+        <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#D9BE86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 018 0v3"></path></svg>
+        <h3>Fichiers chiffrés</h3>
+        <p>Chaque facture déposée est stockée chiffrée.</p>
+      </div>
+      <div class="security__card">
+        <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#D9BE86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6l8-3z"></path><path d="M9 12l2 2 4-4"></path></svg>
+        <h3>Accès protégé et cloisonné</h3>
+        <p>Chaque cabinet ne voit que ses dossiers, chaque client que son entreprise.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TARIFS -->
+<section id="tarifs" class="pricing">
+  <div class="container section section--stack">
+    <div class="section__head">
+      <span class="eyebrow">Tarifs</span>
+      <h2>Un prix par dossier, qui baisse quand votre cabinet grandit.</h2>
+      <p class="section__lead">Sans engagement de durée. L'espace client est inclus pour chacun de vos clients.</p>
+    </div>
+    <div class="tiers">
+      @for (tier of tiers; track tier.name) {
+        <div class="tier" [class.tier--dark]="tier.highlighted">
+          <span class="tier__name">{{ tier.name }}</span>
+          <strong class="tier__range">{{ tier.range }}</strong>
+          <div class="tier__price">
+            <strong>{{ tier.price }} €</strong>
+            <span>HT / dossier / mois</span>
+          </div>
+        </div>
+      }
+    </div>
+    <p class="pricing__note">
+      Le prix de votre tranche s'applique à tous vos dossiers : plus le cabinet grandit, moins chaque dossier coûte.
+    </p>
+    <div class="pricing__bottom">
+      <div class="simulator">
+        <span class="eyebrow eyebrow--light">Simulateur</span>
+        <label class="simulator__label">
+          Nombre de dossiers suivis
+          <span class="simulator__field">
+            <input type="number" min="0" step="1" [value]="defaultDossiers" (input)="setDossiers($event)" />
+            <span>dossiers</span>
+          </span>
+        </label>
+        @if (tier(); as t) {
+          <div class="simulator__line">
+            <span>Tranche {{ t.range.toLowerCase() }}</span>
+            <strong>{{ t.price }} € / dossier</strong>
+          </div>
+          <div class="simulator__line">
+            <span>{{ euros(dossiers()) }} {{ dossiers() > 1 ? 'dossiers' : 'dossier' }} × {{ t.price }} €</span>
+            <strong>{{ euros(total()) }} €</strong>
+          </div>
+        }
+        <div class="simulator__total">
+          <span>Total</span>
+          <span><strong>{{ euros(total()) }} €</strong><small> HT / mois</small></span>
+        </div>
+        <span class="simulator__note">Le prix de la tranche s'applique à tous les dossiers du cabinet.</span>
+        <a routerLink="/creer-compte" class="btn btn--gold simulator__cta">Créer le compte de mon cabinet</a>
+      </div>
+      <div class="included">
+        <h3>Tout est inclus</h3>
+        <ul>
+          @for (item of included; track item) {
+            <li>
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#8C6B36" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg>
+              <span>{{ item }}</span>
+            </li>
+          }
+        </ul>
+        <div class="included__referral">
+          <strong>Parrainage :</strong> 1 mois offert au cabinet qui recommande Pointéo, mise en place offerte au nouveau cabinet.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="container section faq">
+  <div class="faq__head">
+    <span class="eyebrow">FAQ</span>
+    <h2>Questions fréquentes</h2>
+  </div>
+  <div class="faq__list">
+    @for (f of faqs; track f.q; let i = $index) {
+      <div class="faq__item">
+        <button type="button" class="faq__question" [attr.aria-expanded]="openFaq() === i" (click)="toggleFaq(i)">
+          <span>{{ f.q }}</span>
+          <span class="faq__sign" aria-hidden="true">{{ openFaq() === i ? '−' : '+' }}</span>
+        </button>
+        @if (openFaq() === i) {
+          <p class="faq__answer">{{ f.a }}</p>
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<!-- APPEL À L'ACTION -->
+<section class="container closing">
+  <div class="closing__box">
+    <h2>Vos dossiers, vos clients et leurs factures, au même endroit.</h2>
+    <div class="closing__actions">
+      <a routerLink="/creer-compte" class="btn btn--light">Créer un compte</a>
+      <a routerLink="/connexion" class="btn btn--on-gold">Se connecter</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__col">
+      <strong>Produit</strong>
+      <a href="#etapes">Fonctionnalités</a>
+      <a href="#modules">Modules à venir</a>
+      <a href="#tarifs">Tarifs</a>
+    </div>
+    <div class="footer__col">
+      <strong>Cabinets</strong>
+      <a href="#fonctionnalites" (click)="profile.set('cabinets')">Pour les cabinets</a>
+      <a routerLink="/creer-compte">Créer un compte</a>
+      <a routerLink="/connexion">Se connecter</a>
+    </div>
+    <div class="footer__col">
+      <strong>Entreprises</strong>
+      <a href="#fonctionnalites" (click)="profile.set('entreprises')">Pour les entreprises</a>
+      <a href="#faq">Questions fréquentes</a>
+    </div>
+    <div class="footer__col">
+      <strong>Légal</strong>
+      <a routerLink="/mentions-legales">Mentions légales</a>
+      <a routerLink="/cgu">CGU</a>
+      <a routerLink="/confidentialite">Politique de confidentialité</a>
+      <button type="button" class="footer__link" (click)="showCookies.set(true)">Gestion des cookies</button>
+      <a href="#securite">Sécurité</a>
+    </div>
+  </div>
+</footer>
+
+@if (showCookies()) {
+  <div class="cookies" role="region" aria-label="Gestion des cookies">
+    <strong>Vos préférences de cookies</strong>
+    <p>Nous utilisons des cookies de mesure d'audience uniquement avec votre accord. Votre choix est conservé 6 mois.</p>
+    <div class="cookies__actions">
+      <button type="button" (click)="chooseCookies('refused')">Tout refuser</button>
+      <button type="button" (click)="chooseCookies('accepted')">Tout accepter</button>
+    </div>
+  </div>
+}
