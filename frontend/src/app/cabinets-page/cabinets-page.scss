@@ -142,3 +142,93 @@ button.btn {
 .vide {
   color: $gris;
 }
+
+// Styles de la marque utilisés par cette page (repris de l'ancien styles.scss global)
+.conteneur {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  box-sizing: border-box;
+}
+
+.titre {
+  margin: 0;
+  font-family: $serif;
+  font-size: 38px;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  &--h1 {
+    font-size: 52px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+  }
+  &--petit {
+    font-size: 28px;
+  }
+}
+
+.surtitre {
+  font-size: 13px;
+  font-weight: 700;
+  color: $or;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  &--clair {
+    color: $or-clair;
+  }
+  &--petit {
+    font-size: 12px;
+  }
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  &__texte {
+    font-size: 17px !important;
+  }
+}
+
+// Boutons
+.btn {
+  display: inline-block;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  &--grand {
+    font-size: 16px;
+    padding: 15px 26px;
+  }
+  &--contour {
+    color: $noir !important;
+    border: 1px solid $bord-fort;
+    background: $creme;
+  }
+  &--noir {
+    background: $noir;
+    color: $creme !important;
+  }
+  &--or {
+    background: $or;
+    color: $creme !important;
+    &:hover {
+      background: $or-fonce;
+    }
+  }
+  &--blanc {
+    background: $creme;
+    color: $or-fonce !important;
+    font-weight: 700;
+  }
+  &--transparent {
+    color: $creme !important;
+    border: 1px solid $or-clair;
+    font-weight: 700;
+  }
+}

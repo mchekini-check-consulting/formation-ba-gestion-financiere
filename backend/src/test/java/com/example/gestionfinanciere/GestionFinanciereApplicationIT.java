@@ -10,6 +10,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import com.example.gestionfinanciere.client.Client;
+import com.example.gestionfinanciere.client.ClientRepository;
 import com.example.gestionfinanciere.item.Item;
 import com.example.gestionfinanciere.item.ItemRepository;
 
@@ -26,8 +28,16 @@ class GestionFinanciereApplicationIT {
 	@Autowired
 	private ItemRepository items;
 
+	@Autowired
+	private ClientRepository clients;
+
 	@Test
 	void contextLoads() {
+	}
+
+	@Test
+	void clientsDeDemonstrationCharges() {
+		assertThat(clients.findAll()).hasSize(20).extracting(Client::getNomClient).contains("Sophie Martin");
 	}
 
 	@Test

@@ -1,0 +1,46 @@
+<header class="header">
+  <div class="container header__inner">
+    <a routerLink="/" class="brand">
+      <span class="brand__logo"><span></span></span>
+      Pointéo
+    </a>
+  </div>
+</header>
+
+<main class="container page">
+  <h1>Clients</h1>
+
+  @if (loading()) {
+    <p class="state">Chargement…</p>
+  } @else if (error()) {
+    <p class="state state--error">Impossible de charger les clients. Le backend est-il démarré ?</p>
+  } @else {
+    <p class="summary">
+      {{ clients().length }} clients · {{ totalDonnees() }} données connectées
+    </p>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Entreprise</th>
+            <th class="num">Données connectées</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (client of clients(); track client.id) {
+            <tr>
+              <td>{{ client.nomClient }}</td>
+              <td class="muted">{{ client.nomEntreprise }}</td>
+              <td class="num">{{ client.nombreDonneesConnectees }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="3" class="state">Aucun client.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</main>

@@ -1,84 +1,237 @@
-@use '../../theme' as *;
+$ink: #16130f;
+$ink-2: #1a1612;
+$ink-3: #221e18;
+$ink-line: #2e2820;
+$paper: #fffdf9;
+$sand: #f6f2ea;
+$sand-2: #f3ebdd;
+$line: #e7dfd0;
+$line-2: #d9cebb;
+$line-3: #f1ebe0;
+$gold: #8c6b36;
+$gold-dark: #6e5226;
+$gold-light: #d9be86;
+$text-2: #5a5145;
+$text-3: #6e6456;
+$text-nav: #3a332a;
+$on-dark: #cfc3ad;
+$serif: 'Playfair Display', Inter, sans-serif;
 
 :host {
   display: block;
+  min-height: 100vh;
+  background: $paper;
+  color: $ink;
+  font-family: Inter, system-ui, sans-serif;
 }
 
-.page {
-  font-family: Inter, system-ui, sans-serif;
-  color: $noir;
-  background: $creme;
-  min-height: 100vh;
+a {
+  color: $gold;
+  text-decoration: none;
 
-  a {
-    color: $or;
-    &:hover {
-      color: $or-fonce;
-    }
+  &:hover {
+    color: $gold-dark;
   }
-  h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-  }
-  p {
-    margin: 0;
-    font-size: 15px;
-    line-height: 1.6;
-    color: $texte;
-  }
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h2 {
+  font-family: $serif;
+  font-size: clamp(30px, 4vw, 38px);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .section {
-  padding-top: 88px;
-  padding-bottom: 88px;
-  display: flex;
-  flex-direction: column;
-  gap: 36px;
-  &--etapes {
-    padding-bottom: 40px;
+  padding: 88px 24px;
+  scroll-margin-top: 72px;
+
+  &--stack {
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
   }
-  &--fonctions {
+
+  &--steps {
+    padding-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+
+  &--features {
     padding-top: 48px;
+    display: flex;
+    flex-direction: column;
     gap: 28px;
   }
-  &--faq {
-    flex-flow: row wrap;
-    gap: 48px;
+
+  &--upcoming {
+    padding-top: 0;
   }
-  &--modules,
-  &--cta {
-    padding-bottom: 88px;
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 640px;
+  }
+
+  &__lead {
+    font-size: 17px;
+    line-height: 1.6;
+    color: $text-2;
+  }
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  color: $gold;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  &--light {
+    color: $gold-light;
+  }
+}
+
+.soon {
+  align-self: flex-start;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a4b00;
+  background: #fff1db;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.btn {
+  display: inline-block;
+  text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 15px 26px;
+  border-radius: 10px;
+
+  &--sm {
+    font-size: 15px;
+    padding: 10px 18px;
+  }
+
+  &--gold {
+    background: $gold;
+    color: $paper;
+
+    &:hover {
+      background: $gold-dark;
+      color: $paper;
+    }
+  }
+
+  &--dark {
+    background: $ink;
+    color: $paper;
+
+    &:hover {
+      background: $ink-3;
+      color: $paper;
+    }
+  }
+
+  &--outline {
+    background: $paper;
+    color: $ink;
+    border: 1px solid $line-2;
+
+    &:hover {
+      border-color: $ink;
+      color: $ink;
+    }
+  }
+
+  &--light {
+    background: $paper;
+    color: $gold-dark;
+    font-weight: 700;
+
+    &:hover {
+      background: $sand;
+      color: $gold-dark;
+    }
+  }
+
+  &--on-gold {
+    color: $paper;
+    font-weight: 700;
+    border: 1px solid $gold-light;
+
+    &:hover {
+      background: $gold-dark;
+      color: $paper;
+    }
   }
 }
 
 // En-tête
-.entete {
+.header {
   position: sticky;
   top: 0;
   z-index: 5;
   background: rgba(255, 255, 255, 0.96);
-  border-bottom: 1px solid $bord;
-  &__barre {
-    padding-top: 14px;
-    padding-bottom: 14px;
+  border-bottom: 1px solid $line;
+
+  &__inner {
+    padding: 14px 24px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 28px;
   }
+
+  &__actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
 }
-.logo {
+
+.brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  text-decoration: none;
-  color: $noir !important;
-  font-family: $serif;
-  font-weight: 800;
-  font-size: 21px;
-  letter-spacing: -0.02em;
+  color: $ink;
+
+  &:hover {
+    color: $ink;
+  }
+
+  span {
+    font-family: $serif;
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: -0.02em;
+  }
 }
+
 .nav {
   display: flex;
   flex-wrap: wrap;
@@ -86,115 +239,337 @@
   font-size: 15px;
   font-weight: 500;
   flex: 1 1 auto;
-}
-.nav a,
-.pied a {
-  color: #3a332a;
-  text-decoration: none;
-}
-.actions {
-  display: flex;
-  gap: 10px;
+
+  a {
+    color: $text-nav;
+
+    &:hover {
+      color: $gold;
+    }
+  }
 }
 
 // Accroche
 .hero {
-  background: $beige;
-  border-bottom: 1px solid $bord;
-  &__contenu {
-    padding-top: 80px;
-    padding-bottom: 88px;
+  background: $sand;
+  border-bottom: 1px solid $line;
+
+  &__inner {
+    padding: 80px 24px 88px;
     display: flex;
     flex-wrap: wrap;
     gap: 56px;
     align-items: center;
   }
-  &__texte {
+
+  &__text {
     flex: 1 1 440px;
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 22px;
   }
-  &__intro {
-    font-size: 19px !important;
+
+  h1 {
+    font-family: $serif;
+    font-size: clamp(38px, 6vw, 52px);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  &__lead {
+    font-size: 19px;
+    line-height: 1.6;
+    color: $text-2;
     max-width: 34em;
   }
-  &__boutons {
+
+  &__ctas {
     display: flex;
     flex-wrap: wrap;
     gap: 14px;
+    align-items: center;
     margin-top: 6px;
   }
-  &__client {
+
+  &__login {
     font-size: 14px;
-    color: $gris;
+    color: $text-3;
+
     a {
       font-weight: 600;
     }
   }
+
+  &__preview {
+    flex: 1 1 520px;
+    min-width: 0;
+  }
 }
-.pastille {
+
+.pill {
   align-self: flex-start;
   font-size: 13px;
   font-weight: 600;
-  color: $or-fonce;
-  background: #f3ebdd;
+  color: $gold-dark;
+  background: $sand-2;
   padding: 6px 12px;
   border-radius: 999px;
 }
 
-// Grilles de cartes (étapes, sécurité)
-.grille {
+.window {
+  background: $paper;
+  border: 1px solid $line;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(28, 22, 15, 0.14);
+  overflow: hidden;
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    border-bottom: 1px solid $line;
+    background: #fbf8f2;
+
+    span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: $line-2;
+    }
+  }
+
+  &__body {
+    display: flex;
+  }
+
+  &__side {
+    flex-shrink: 0;
+    width: 120px;
+    background: $ink;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    @media (max-width: 560px) {
+      display: none;
+    }
+  }
+
+  &__main {
+    flex: 1 1 auto;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+  }
+}
+
+.bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #2a251e;
+
+  &--60 {
+    width: 60px;
+  }
+
+  &--70 {
+    width: 70px;
+  }
+
+  &--54 {
+    width: 54px;
+  }
+
+  &--active {
+    height: 26px;
+    border-radius: 6px;
+    background: #1f1b16;
+    margin-top: 10px;
+  }
+}
+
+.folder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+
+  &__logo {
+    flex-shrink: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: #fdead7;
+    color: #9a3412;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__name {
+    flex: 1 1 auto;
+    font-size: 12px;
+    color: $text-3;
+
+    div:first-child {
+      font-weight: 700;
+      font-size: 15px;
+      color: $ink;
+    }
+  }
+
+  &__status {
+    font-size: 11px;
+    font-weight: 600;
+    color: #157347;
+    background: #e3f5ea;
+    padding: 4px 9px;
+    border-radius: 999px;
+  }
+}
+
+.folder-tabs {
+  display: flex;
+  gap: 6px;
+  background: $sand;
+  padding: 4px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+
+  span {
+    padding: 6px 10px;
+    color: $text-3;
+  }
+
+  &__active {
+    background: $paper;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(28, 22, 15, 0.08);
+
+    .folder-tabs & {
+      color: $ink;
+    }
+  }
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+.file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid $line-3;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &__type {
+    font-size: 10px;
+    font-weight: 700;
+    color: #b42318;
+    background: #feeceb;
+    padding: 3px 5px;
+    border-radius: 4px;
+
+    &--jpg {
+      color: #2b4c7e;
+      background: #e7ecf5;
+    }
+  }
+
+  &__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__new {
+    font-size: 11px;
+    font-weight: 600;
+    color: $gold-dark;
+    background: $sand-2;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+
+  &__state {
+    color: $text-3;
+    font-size: 12px;
+  }
+}
+
+// Comment ça marche
+.steps {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 20px;
 }
-.carte {
-  border: 1px solid $bord;
+
+.step {
+  border: 1px solid $line;
   border-radius: 16px;
   padding: 26px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  &--sombre {
-    background: #1a1612;
-    border-color: #2e2820;
-    p {
-      color: $clair;
-    }
+
+  &__num {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: $ink;
+    color: $paper;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: $text-2;
   }
 }
-.numero {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: $noir;
-  color: $creme;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
-// Pensé pour vous
-.fonctions__tete {
+// Fonctionnalités
+.features__head {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
   align-items: flex-end;
   justify-content: space-between;
 }
-.onglets {
+
+.tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
-  background: $beige;
+  background: $sand;
   padding: 5px;
   border-radius: 12px;
-  button {
+
+  &__tab {
     font: inherit;
     font-size: 14px;
     font-weight: 600;
@@ -202,147 +577,454 @@
     border-radius: 9px;
     border: 0;
     background: transparent;
-    color: $gris;
+    color: $text-3;
     cursor: pointer;
-    &[aria-selected='true'] {
-      background: $creme;
-      color: $noir;
+
+    &--active {
+      background: $paper;
+      color: $ink;
       box-shadow: 0 1px 3px rgba(28, 22, 15, 0.12);
     }
   }
 }
-.tuiles {
+
+.tiles {
   display: grid;
   gap: 20px;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  &--deux {
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  &--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 760px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
-.tuile {
-  background: $beige;
+
+.tile {
+  background: $sand;
   border-radius: 16px;
   padding: 26px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  &__icone {
+
+  &__icon {
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: $creme;
-    border: 1px solid $bord;
+    background: $paper;
+    border: 1px solid $line;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
+  p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: $text-2;
+  }
 }
 
-// Modules à venir
-.modules {
-  border: 1px solid $bord;
+// Bientôt dans Pointéo
+.upcoming {
+  border: 1px solid $line;
   border-radius: 20px;
   padding: 36px;
   display: flex;
   flex-wrap: wrap;
   gap: 32px;
   align-items: center;
-  &__texte {
+
+  &__intro {
     flex: 1 1 320px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+
+    p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: $text-2;
+    }
   }
-  &__liste {
+
+  &__title {
+    font-size: 28px;
+  }
+
+  &__grid {
     flex: 2 1 480px;
+    min-width: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
     gap: 16px;
   }
-}
-.module {
-  background: $beige;
-  border-radius: 14px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: $texte;
-  &__tete {
+
+  &__card {
+    background: $sand;
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    strong {
+      font-size: 17px;
+    }
+  }
+
+  &__card-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 8px;
-    strong {
-      font-size: 17px;
-      color: $noir;
+  }
+
+  &__text {
+    font-size: 14px;
+    line-height: 1.55;
+    color: $text-2;
+  }
+}
+
+// Sécurité
+.security {
+  background: $ink;
+  color: $paper;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 20px;
+  }
+
+  &__card {
+    background: $ink-2;
+    border: 1px solid $ink-line;
+    border-radius: 16px;
+    padding: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: $on-dark;
     }
+  }
+}
+
+// Tarifs
+.pricing {
+  background: $sand;
+  border-top: 1px solid $line;
+  border-bottom: 1px solid $line;
+
+  &__note {
+    margin-top: -16px;
+    font-size: 14px;
+    color: $text-3;
+  }
+
+  &__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: stretch;
+  }
+}
+
+.tiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.tier {
+  flex: 1 1 220px;
+  background: $paper;
+  border: 1px solid $line;
+  border-radius: 18px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__name {
+    font-size: 12px;
+    font-weight: 700;
+    color: $gold;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  &__range {
+    font-size: 17px;
+  }
+
+  &__price {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+
+    strong {
+      font-family: $serif;
+      font-size: 44px;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    span {
+      font-size: 14px;
+      color: $text-3;
+    }
+  }
+
+  &--dark {
+    background: $ink;
+    color: $paper;
+    border-color: $ink;
+
+    .tier__name {
+      color: $gold-light;
+    }
+
+    .tier__price span {
+      color: $on-dark;
+    }
+  }
+}
+
+.simulator {
+  flex: 1 1 420px;
+  min-width: 0;
+  background: $ink;
+  color: $paper;
+  border-radius: 22px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  &__label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    color: $on-dark;
+  }
+
+  &__field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: $ink-3;
+    border: 1px solid $text-nav;
+    border-radius: 10px;
+    padding: 12px 14px;
+
+    &:focus-within {
+      border-color: $gold-light;
+    }
+
+    input {
+      flex: 1 1 auto;
+      min-width: 0;
+      background: none;
+      border: 0;
+      outline: none;
+      padding: 0;
+      font: inherit;
+      font-size: 18px;
+      font-weight: 700;
+      color: $paper;
+    }
+
+    span {
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+
+  &__line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 15px;
+    border-bottom: 1px solid $ink-line;
+    padding-bottom: 10px;
+
+    span {
+      color: $on-dark;
+    }
+  }
+
+  &__total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 15px;
+    color: $on-dark;
+
+    strong {
+      font-family: $serif;
+      font-size: 40px;
+      font-weight: 800;
+      color: $paper;
+    }
+
+    small {
+      font-size: 14px;
+    }
+  }
+
+  &__note {
+    font-size: 13px;
+    color: $on-dark;
+  }
+
+  &__cta {
+    margin-top: auto;
+    font-weight: 700;
+    padding-inline: 22px;
+  }
+}
+
+.included {
+  flex: 1 1 340px;
+  min-width: 0;
+  background: $paper;
+  border: 1px solid $line;
+  border-radius: 22px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__referral {
+    margin-top: auto;
+    background: $sand-2;
+    color: $gold-dark;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.5;
   }
 }
 
 // FAQ
-.faq__tete {
-  flex: 1 1 300px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
 .faq {
-  flex: 2 1 560px;
-  min-width: 0;
-  &__item {
-    border-bottom: 1px solid $bord;
-    button {
-      width: 100%;
-      text-align: left;
-      background: none;
-      border: 0;
-      padding: 22px 0;
-      font: inherit;
-      font-size: 17px;
-      font-weight: 600;
-      color: $noir;
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      cursor: pointer;
-    }
-    p {
-      padding: 0 44px 22px 0;
-      line-height: 1.65;
-    }
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+
+  &__head {
+    flex: 1 1 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
-  &__signe {
+
+  &__list {
+    flex: 2 1 560px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__item {
+    border-bottom: 1px solid $line;
+  }
+
+  &__question {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    padding: 22px 0;
+    font: inherit;
+    font-size: 17px;
+    font-weight: 600;
+    color: $ink;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    cursor: pointer;
+  }
+
+  &__sign {
+    flex-shrink: 0;
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: $beige;
+    background: $sand;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 auto;
+  }
+
+  &__answer {
+    padding: 0 44px 22px 0;
+    font-size: 15px;
+    line-height: 1.65;
+    color: $text-2;
   }
 }
 
 // Appel à l'action
-.cta {
-  background: $or;
-  color: $creme;
-  border-radius: 24px;
-  padding: 56px 48px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 28px;
-  align-items: center;
-  justify-content: space-between;
-  .titre {
-    font-size: 32px;
+.closing {
+  margin-bottom: 88px;
+  padding: 0 24px;
+
+  &__box {
+    background: $gold;
+    color: $paper;
+    border-radius: 24px;
+    padding: clamp(32px, 5vw, 56px) clamp(24px, 4vw, 48px);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  h2 {
+    font-size: clamp(26px, 3vw, 32px);
     line-height: 1.2;
     flex: 1 1 440px;
+    min-width: 0;
   }
-  &__boutons {
+
+  &__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
@@ -350,82 +1032,99 @@
 }
 
 // Pied de page
-.pied {
-  border-bottom: 0;
-  &__colonnes {
-    padding-top: 48px;
-    padding-bottom: 120px;
+.footer {
+  background: $sand;
+  border-top: 1px solid $line;
+
+  &__inner {
+    padding: 48px 24px 120px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     gap: 28px;
     font-size: 14px;
-    div {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+  }
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+
     strong {
       font-size: 13px;
-      color: $gris;
+      color: $text-3;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+    }
+
+    a {
+      color: $text-nav;
+
+      &:hover {
+        color: $gold;
+      }
+    }
+  }
+
+  &__link {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: $text-nav;
+    cursor: pointer;
+
+    &:hover {
+      color: $gold;
     }
   }
 }
 
 // Bandeau cookies
 .cookies {
-  position: sticky;
-  bottom: 0;
-  padding: 0 24px 20px;
-  pointer-events: none;
-  &__boite {
-    pointer-events: auto;
-    max-width: 560px;
-    background: $creme;
-    border: 1px solid $bord;
-    border-radius: 16px;
-    box-shadow: 0 16px 40px rgba(28, 22, 15, 0.18);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+  position: fixed;
+  left: 24px;
+  bottom: 20px;
+  z-index: 10;
+  width: min(560px, calc(100vw - 48px));
+  background: $paper;
+  border: 1px solid $line;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(28, 22, 15, 0.18);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  strong {
     font-size: 15px;
-    p {
-      font-size: 14px;
-      line-height: 1.55;
-    }
   }
-  &__boutons {
-    display: flex;
-    flex-wrap: wrap;
+
+  p {
+    font-size: 14px;
+    line-height: 1.55;
+    color: $text-2;
+  }
+
+  &__actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
+
     button {
       font: inherit;
       font-size: 14px;
       font-weight: 600;
       padding: 10px 16px;
       border-radius: 10px;
-      border: 1px solid $noir;
-      background: $creme;
-      color: $noir;
+      border: 1px solid $ink;
+      background: $paper;
+      color: $ink;
       cursor: pointer;
-    }
-  }
-}
 
-// Petits écrans
-@media (max-width: 640px) {
-  .titre {
-    font-size: 30px;
-    &--h1 {
-      font-size: 38px;
+      &:hover {
+        background: $sand;
+      }
     }
-  }
-  .tuiles--deux {
-    grid-template-columns: 1fr;
-  }
-  .cta {
-    padding: 36px 24px;
   }
 }
