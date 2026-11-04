@@ -31,6 +31,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jackson</artifactId>
 		</dependency>
+		<!-- Mots de passe stockés hachés (BCrypt) ; seulement la brique "crypto",
+		     sans activer Spring Security sur les autres routes -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
 
 		<!-- Base PostgreSQL : connexion lue dans SPRING_DATASOURCE_* (injectées par la
 		     plateforme, helm.yaml : database), schéma versionné par Flyway -->

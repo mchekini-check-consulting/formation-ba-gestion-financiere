@@ -1,0 +1,254 @@
+// Maquette « Pointéo – Connexion ».
+$encre: #16130f;
+$creme: #fffdf9;
+$or: #8c6b36;
+$or-fonce: #6e5226;
+$gris: #6e6456;
+$bordure: #d9cebb;
+$rouge: #b42318;
+
+:host {
+  display: block;
+  font-family: Inter, system-ui, sans-serif;
+  color: $encre;
+  background: $creme;
+}
+
+a {
+  color: $or;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: $or-fonce;
+  }
+}
+
+.page {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+}
+
+.aside {
+  flex: 1 1 440px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 48px;
+  background: $encre;
+  color: $creme;
+
+  &__pitch {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 420px;
+
+    h2 {
+      margin: 0;
+      font-family: 'Playfair Display', Inter, sans-serif;
+      font-size: 34px;
+      line-height: 1.15;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    ul {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 15px;
+      color: #cfc3ad;
+    }
+
+    li {
+      display: flex;
+      gap: 10px;
+
+      span {
+        color: #d9be86;
+      }
+    }
+  }
+
+  &__note {
+    font-size: 13px;
+    color: #a89c88;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: $creme;
+  font-family: 'Playfair Display', Inter, sans-serif;
+  font-weight: 800;
+  font-size: 21px;
+
+  &:hover {
+    color: $creme;
+  }
+}
+
+.main {
+  flex: 1.3 1 520px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 400px;
+
+  &__title {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    h1 {
+      margin: 0;
+      font-family: 'Playfair Display', Inter, sans-serif;
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0;
+      font-size: 15px;
+      color: $gris;
+    }
+  }
+}
+
+.alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #feeceb;
+  color: #8f1d14;
+  font-size: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #3a332a;
+  }
+
+  &__label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+
+    a {
+      font-size: 14px;
+    }
+  }
+
+  &__error {
+    font-size: 13px;
+    color: $rouge;
+  }
+
+  > input {
+    padding: 13px 14px;
+    border: 1px solid $bordure;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 15px;
+    color: $encre;
+
+    &.invalid {
+      border: 1.5px solid $rouge;
+      padding: 12.5px 13.5px;
+    }
+  }
+}
+
+.password {
+  display: flex;
+  align-items: center;
+  padding-right: 4px;
+  border: 1px solid $bordure;
+  border-radius: 10px;
+
+  &.invalid {
+    border: 1.5px solid $rouge;
+  }
+
+  input {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    font: inherit;
+    font-size: 15px;
+    color: $encre;
+  }
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+}
+
+.submit {
+  margin-top: 4px;
+  padding: 14px 20px;
+  border: 0;
+  border-radius: 10px;
+  background: $or;
+  color: $creme;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: $or-fonce;
+  }
+
+  &:disabled {
+    background: #d8c9ae;
+    cursor: wait;
+  }
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: $gris;
+  text-align: center;
+
+  &--strong {
+    font-size: 14px;
+  }
+}
