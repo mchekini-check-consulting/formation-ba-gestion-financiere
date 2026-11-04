@@ -1,0 +1,57 @@
+<div class="espace">
+  <nav aria-label="Menu principal" class="menu">
+    <div class="menu__brand">
+      <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true">
+        <rect width="30" height="30" rx="9" fill="#8C6B36"></rect>
+        <path d="M9 15.5l4.2 4.2L21.5 11" fill="none" stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>Pointéo</span>
+    </div>
+
+    <div class="menu__liens">
+      @if (collaborateur()) {
+        <a routerLink="/dossiers" routerLinkActive="actif" ariaCurrentWhenActive="page">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+          Dossiers
+        </a>
+      } @else {
+        <a routerLink="/espace-client" routerLinkActive="actif" ariaCurrentWhenActive="page">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1z"></path></svg>
+          Mon espace
+        </a>
+      }
+    </div>
+
+    <div class="menu__bas">
+      <div class="menu__utilisateur">
+        <span class="avatar">{{ initiales() }}</span>
+        <span>
+          <strong data-testid="nom-utilisateur">{{ utilisateur()?.nomAffiche }}</strong>
+          <span class="menu__role">{{ collaborateur() ? 'Collaborateur' : 'Dirigeant' }}</span>
+        </span>
+      </div>
+      <button type="button" class="menu__deconnexion" (click)="seDeconnecter()">
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 17l5-5-5-5M15 12H3"></path></svg>
+        Se déconnecter
+      </button>
+    </div>
+  </nav>
+
+  <main class="contenu">
+    <router-outlet />
+  </main>
+
+  @if (inactivite.secondesRestantes() !== null) {
+    <div class="voile">
+      <div role="dialog" aria-modal="true" aria-labelledby="titre-expiration" class="dialogue">
+        <div class="dialogue__minuteur">{{ compteARebours() }}</div>
+        <h2 id="titre-expiration">Votre session va expirer dans {{ compteARebours() }}</h2>
+        <p>Sans action de votre part, vous serez déconnecté pour protéger vos données.</p>
+        <div class="dialogue__actions">
+          <button type="button" class="bouton bouton--clair" (click)="seDeconnecter()">Se déconnecter</button>
+          <button type="button" class="bouton" (click)="inactivite.resterConnecte()">Rester connecté</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

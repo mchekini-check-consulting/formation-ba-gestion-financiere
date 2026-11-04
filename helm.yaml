@@ -34,6 +34,17 @@ applications:
     envList:
       - key: LOG_LEVEL
         value: {dev: debug, qualif: info, preprod: info, prod: warn}
+      # Adresse de l'écran, pour les liens des emails (mot de passe oublié).
+      - key: POINTEO_FRONTEND_URL
+        value:
+          dev: https://frontend.formation-ba-gestion-financiere.dev.check-consulting.net
+          qualif: https://frontend.formation-ba-gestion-financiere.qualif.check-consulting.net
+          preprod: https://frontend.formation-ba-gestion-financiere.preprod.check-consulting.net
+          prod: https://frontend.formation-ba-gestion-financiere.prod.check-consulting.net
+      # Mode test : code SMS et lien de réinitialisation affichés à l'écran, faute
+      # d'opérateur SMS et d'API email branchés. Jamais en preprod/prod.
+      - key: POINTEO_MODE_TEST
+        value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
   - name: gateway
     type: gateway
     # Pas d'image/tag : fourni par la plateforme (petit Traefik autonome),
