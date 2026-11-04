@@ -60,14 +60,14 @@ class ConnexionIT {
 	void ca1CollaborateurBonMotDePassePasseAuCodeSms() throws Exception {
 		HttpResponse<String> reponse = seConnecter("jean.dupont@cabinet-test.fr", MOT_DE_PASSE_DEMO);
 		assertThat(reponse.statusCode()).isEqualTo(200);
-		assertThat(reponse.body()).contains("\"role\":\"COLLABORATEUR\"").contains("\"etapeSuivante\":\"CODE_SMS\"");
+		assertThat(reponse.body()).contains("\"etapeSuivante\":\"CODE_SMS\"").contains("06 •• •• •• 42");
 	}
 
 	@Test
 	void dirigeantBonMotDePasse() throws Exception {
 		HttpResponse<String> reponse = seConnecter("sophie.martin@boulangerie-test.fr", MOT_DE_PASSE_DEMO);
 		assertThat(reponse.statusCode()).isEqualTo(200);
-		assertThat(reponse.body()).contains("\"role\":\"DIRIGEANT\"");
+		assertThat(reponse.body()).contains("\"etapeSuivante\":\"CODE_SMS\"").contains("06 •• •• •• 13");
 	}
 
 	@Test

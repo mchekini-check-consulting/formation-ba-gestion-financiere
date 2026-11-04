@@ -1,0 +1,70 @@
+<div class="page">
+  <aside class="aside">
+    <a routerLink="/" class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <rect width="30" height="30" rx="9" fill="#8C6B36"></rect>
+        <path d="M9 15.5l4.2 4.2L21.5 11" fill="none" stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>Pointéo</span>
+    </a>
+    <div class="aside__pitch">
+      <h2>Une seconde vérification protège vos données bancaires.</h2>
+      <p class="aside__lead">Même si votre mot de passe était découvert, personne ne pourrait se connecter sans ce code.</p>
+    </div>
+    <span></span>
+  </aside>
+
+  <main class="main">
+    <form class="form" (submit)="$event.preventDefault(); valider()" novalidate>
+      <a routerLink="/connexion" class="back">← Retour à la connexion</a>
+      <div class="form__title">
+        <h1>Vérifiez votre identité</h1>
+        <p>
+          Saisissez le code à 6 chiffres envoyé par SMS au <strong data-testid="telephone">{{ telephoneMasque() }}</strong>.
+          Il est valable 5 minutes.
+        </p>
+      </div>
+
+      @if (codeDeTest(); as code) {
+        <p class="mode-test" data-testid="code-de-test">
+          Mode test (aucun opérateur SMS branché) — code reçu : <strong>{{ code }}</strong>
+        </p>
+      }
+
+      @if (message(); as m) {
+        <div [attr.role]="m.ton === 'succes' ? 'status' : 'alert'" class="alert alert--{{ m.ton }}">{{ m.texte }}</div>
+      }
+
+      <fieldset class="code">
+        <legend>Code de vérification</legend>
+        @for (i of indices; track i) {
+          <input
+            #chiffre
+            [attr.aria-label]="'Chiffre ' + (i + 1)"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            (input)="saisir(i, $event)"
+            (keydown)="toucher(i, $event)"
+            (paste)="coller($event)"
+          />
+        }
+      </fieldset>
+
+      <button type="submit" class="submit" [disabled]="!complet() || enCours()">
+        {{ enCours() ? 'Vérification…' : 'Valider' }}
+      </button>
+
+      <div class="renvoi">
+        @if (secondesAvantRenvoi() > 0) {
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 7v5l3 2"></path>
+          </svg>
+          Renvoyer un code dans {{ secondesAvantRenvoi() }} s
+        } @else {
+          <button type="button" (click)="renvoyer()">Renvoyer un code</button>
+        }
+      </div>
+    </form>
+  </main>
+</div>

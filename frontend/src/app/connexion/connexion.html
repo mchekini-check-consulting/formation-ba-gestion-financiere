@@ -25,13 +25,19 @@
         <p>Heureux de vous revoir.</p>
       </div>
 
+      @if (info(); as message) {
+        <div [attr.role]="message.ton === 'erreur' ? 'alert' : 'status'" class="alert alert--{{ message.ton }}" data-testid="info-connexion">
+          {{ message.texte }}
+        </div>
+      }
+
       @if (erreur(); as message) {
-        <div role="alert" class="alert" data-testid="erreur-connexion">
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round">
+        <div role="alert" class="alert alert--{{ message.ton }}" data-testid="erreur-connexion">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <circle cx="12" cy="12" r="9"></circle>
             <path d="M12 8v5M12 16.5v.5"></path>
           </svg>
-          {{ message }}
+          {{ message.texte }}
         </div>
       }
 
@@ -56,7 +62,7 @@
           <label for="mot-de-passe">Mot de passe</label>
           <a routerLink="/mot-de-passe-oublie">Mot de passe oublié ?</a>
         </div>
-        <div class="password" [class.invalid]="champVide('motDePasse') || erreur()">
+        <div class="password" [class.invalid]="champVide('motDePasse') || erreur()?.ton === 'erreur'">
           <input
             id="mot-de-passe"
             [type]="motDePasseVisible() ? 'text' : 'password'"

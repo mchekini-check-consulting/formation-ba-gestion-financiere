@@ -1,0 +1,13 @@
+@use '../auth-page';
+
+.aside__lead {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #cfc3ad;
+}
+
+.form {
+  max-width: 420px;
+  gap: 22px;
+}

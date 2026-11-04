@@ -15,3 +15,13 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate   # le schéma vient uniquement des migrations Flyway
+
+pointeo:
+  # Adresse de l'écran, pour les liens envoyés par email (mot de passe oublié).
+  # Sur le cluster : POINTEO_FRONTEND_URL (helm.yaml).
+  frontend-url: http://localhost:4200
+  # Aucun opérateur SMS ni API d'email n'est encore branché. En mode test, le code SMS
+  # et le lien de réinitialisation sont renvoyés à l'écran pour pouvoir se connecter.
+  # Jamais en preprod/prod. Activé en local par ./mvnw spring-boot:run (pom.xml) et en
+  # dev/qualif par POINTEO_MODE_TEST (helm.yaml).
+  mode-test: false
