@@ -54,37 +54,41 @@ function texte(valeur: string, longueurMax: number): string | undefined {
   return valeur.trim().length > longueurMax ? MESSAGES.tropLong : undefined;
 }
 
+/** Champ obligatoire : vide -> « obligatoire », sinon le message si la valeur n'est pas valide. */
+function verifier(saisi: boolean, valide: () => boolean, message: string): string | undefined {
+  if (!saisi) {
+    return MESSAGES.obligatoire;
+  }
+  return valide() ? undefined : message;
+}
+
+function sirenValide(siren: string): boolean {
+  return /^\d{9}$/.test(siren.replace(SEPARATEURS, ''));
+}
+
+function emailValide(email: string): boolean {
+  const valeur = email.trim();
+  return valeur.length <= 254 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(valeur);
+}
+
+function motDePasseValide(motDePasse: string): boolean {
+  return motDePasse.length <= 64 && evaluerRegles(motDePasse).every((r) => r.respectee);
+}
+
+function dossiersValides(dossiers: number | null): boolean {
+  return Number.isInteger(dossiers) && (dossiers ?? 0) >= 1 && (dossiers ?? 0) <= DOSSIERS_MAX;
+}
+
 export function erreursFormulaire(f: Formulaire): Erreurs {
   const erreurs: Erreurs = {
     nomCabinet: texte(f.nomCabinet, 200),
-    siren: !f.siren.trim()
-      ? MESSAGES.obligatoire
-      : /^\d{9}$/.test(f.siren.replace(SEPARATEURS, ''))
-        ? undefined
-        : MESSAGES.siren,
+    siren: verifier(!!f.siren.trim(), () => sirenValide(f.siren), MESSAGES.siren),
     prenom: texte(f.prenom, 100),
     nom: texte(f.nom, 100),
-    email: !f.email.trim()
-      ? MESSAGES.obligatoire
-      : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim()) && f.email.trim().length <= 254
-        ? undefined
-        : MESSAGES.email,
-    mobile: !f.mobile.trim()
-      ? MESSAGES.obligatoire
-      : /^0[67]\d{8}$/.test(normaliserMobile(f.mobile))
-        ? undefined
-        : MESSAGES.mobile,
-    motDePasse: !f.motDePasse
-      ? MESSAGES.obligatoire
-      : evaluerRegles(f.motDePasse).every((r) => r.respectee) && f.motDePasse.length <= 64
-        ? undefined
-        : MESSAGES.motDePasse,
-    nombreDossiers:
-      f.nombreDossiers === null
-        ? MESSAGES.obligatoire
-        : Number.isInteger(f.nombreDossiers) && f.nombreDossiers >= 1 && f.nombreDossiers <= DOSSIERS_MAX
-          ? undefined
-          : MESSAGES.dossiers,
+    email: verifier(!!f.email.trim(), () => emailValide(f.email), MESSAGES.email),
+    mobile: verifier(!!f.mobile.trim(), () => /^0[67]\d{8}$/.test(normaliserMobile(f.mobile)), MESSAGES.mobile),
+    motDePasse: verifier(!!f.motDePasse, () => motDePasseValide(f.motDePasse), MESSAGES.motDePasse),
+    nombreDossiers: verifier(f.nombreDossiers !== null, () => dossiersValides(f.nombreDossiers), MESSAGES.dossiers),
     codeParrainage: f.codeParrainage.trim().length > 20 ? MESSAGES.parrainage : undefined,
     cguAcceptees: f.cguAcceptees ? undefined : MESSAGES.cgu,
   };
