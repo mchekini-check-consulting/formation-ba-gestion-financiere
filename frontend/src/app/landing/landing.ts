@@ -1,5 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TIERS, euros, prixMensuel, trancheDe } from '../tarifs';
 
 interface Tile {
   title: string;
@@ -12,28 +13,12 @@ interface Faq {
   a: string;
 }
 
-interface Tier {
-  name: string;
-  range: string;
-  /** Dernier dossier de la tranche. */
-  upTo: number;
-  price: number;
-  highlighted?: boolean;
-}
-
 type Profile = 'cabinets' | 'entreprises';
 type CookieChoice = 'accepted' | 'refused';
 
 const COOKIE_STORAGE_KEY = 'pointeo.cookies';
 const COOKIE_CHOICE_MONTHS = 6;
 const DEFAULT_DOSSIERS = 300;
-
-const TIERS: Tier[] = [
-  { name: 'Tranche 1', range: '1 à 50 dossiers', upTo: 50, price: 9 },
-  { name: 'Tranche 2', range: '51 à 150 dossiers', upTo: 150, price: 8 },
-  { name: 'Tranche 3', range: '151 à 300 dossiers', upTo: 300, price: 7, highlighted: true },
-  { name: 'Tranche 4', range: 'Au-delà de 300', upTo: Infinity, price: 6 },
-];
 
 @Component({
   imports: [RouterLink],
@@ -150,15 +135,12 @@ export class Landing {
   protected readonly showCookies = signal(!this.hasValidCookieChoice());
 
   /** La tranche atteinte fixe le prix de tous les dossiers du cabinet. */
-  protected readonly tier = computed(() =>
-    this.dossiers() > 0 ? TIERS.find((tier) => this.dossiers() <= tier.upTo) : undefined,
-  );
+  protected readonly tier = computed(() => trancheDe(this.dossiers()));
 
-  protected readonly total = computed(() => this.dossiers() * (this.tier()?.price ?? 0));
+  protected readonly total = computed(() => prixMensuel(this.dossiers()));
 
   protected euros(amount: number): string {
-    // L'espace fine de fr-FR est presque invisible : une espace insécable sépare les milliers.
-    return amount.toLocaleString('fr-FR').replace(/ /g, ' ');
+    return euros(amount);
   }
 
   protected toggleFaq(i: number): void {

@@ -10,7 +10,11 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+
+import com.example.gestionfinanciere.cabinet.Cabinet;
 
 @Entity
 @Table(name = "compte")
@@ -46,6 +50,15 @@ public class Compte {
 	@Column(name = "bloque_jusqu_a")
 	private Instant bloqueJusqua;
 
+	// US-36 : cabinet du collaborateur (vide pour les comptes de démonstration et les dirigeants).
+	@ManyToOne
+	@JoinColumn(name = "cabinet_id")
+	private Cabinet cabinet;
+
+	// US-36 RG3 : la personne qui crée le compte du cabinet en est administratrice.
+	@Column(name = "administrateur", nullable = false)
+	private boolean administrateur;
+
 	protected Compte() {
 	}
 
@@ -56,6 +69,15 @@ public class Compte {
 		this.actif = actif;
 		this.nomAffiche = nomAffiche;
 		this.telephone = telephone;
+	}
+
+	// US-36 RG3 : compte de la personne qui crée le cabinet, administratrice de celui-ci.
+	public static Compte administrateurDe(Cabinet cabinet, String email, String motDePasseHash, String nomAffiche,
+			String telephone) {
+		Compte compte = new Compte(email, motDePasseHash, Role.COLLABORATEUR, true, nomAffiche, telephone);
+		compte.cabinet = cabinet;
+		compte.administrateur = true;
+		return compte;
 	}
 
 	public boolean estBloque(Instant maintenant) {
@@ -90,6 +112,11 @@ public class Compte {
 
 	// US-04 RG1 : numéro masqué, ex. « 06 •• •• •• 42 ».
 	public String telephoneMasque() {
+		return masquer(telephone);
+	}
+
+	// Aussi utilisé pour le mobile d'une inscription (US-36), avant la création du compte.
+	public static String masquer(String telephone) {
 		String chiffres = telephone == null ? "" : telephone.replaceAll("\\D", "");
 		if (chiffres.length() < 4) {
 			return "•• •• •• •• ••";
@@ -131,6 +158,14 @@ public class Compte {
 
 	public Instant getBloqueJusqua() {
 		return bloqueJusqua;
+	}
+
+	public Cabinet getCabinet() {
+		return cabinet;
+	}
+
+	public boolean isAdministrateur() {
+		return administrateur;
 	}
 
 }

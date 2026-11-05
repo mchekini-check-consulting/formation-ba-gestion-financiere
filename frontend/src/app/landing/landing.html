@@ -252,7 +252,7 @@
           <span><strong>{{ euros(total()) }} €</strong><small> HT / mois</small></span>
         </div>
         <span class="simulator__note">Le prix de la tranche s'applique à tous les dossiers du cabinet.</span>
-        <a routerLink="/creer-compte" class="btn btn--gold simulator__cta">Créer le compte de mon cabinet</a>
+        <a routerLink="/creer-compte" [queryParams]="{ dossiers: dossiers() || null }" class="btn btn--gold simulator__cta">Créer le compte de mon cabinet</a>
       </div>
       <div class="included">
         <h3>Tout est inclus</h3>
