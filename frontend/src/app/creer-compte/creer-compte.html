@@ -1,0 +1,235 @@
+<div class="page">
+  <aside class="aside aside--top">
+    <a routerLink="/" class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <rect width="30" height="30" rx="9" fill="#8C6B36"></rect>
+        <path d="M9 15.5l4.2 4.2L21.5 11" fill="none" stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>Pointéo</span>
+    </a>
+    <h2 class="aside__titre">Créez le compte de votre cabinet en quelques minutes.</h2>
+    <ol class="steps" aria-label="Étapes de la création du compte">
+      <li [attr.aria-current]="etape() === 'informations' ? 'step' : null">
+        <span class="steps__num" [class.steps__num--actif]="etape() === 'informations'">1</span>
+        <span class="steps__texte">
+          <strong>Vos informations</strong>
+          <span>Votre cabinet, vous, et le nombre de dossiers prévus.</span>
+        </span>
+      </li>
+      <li [attr.aria-current]="etape() === 'code' ? 'step' : null">
+        <span class="steps__num" [class.steps__num--actif]="etape() === 'code'">2</span>
+        <span class="steps__texte">
+          <strong>Code SMS</strong>
+          <span>Pour confirmer votre numéro de mobile.</span>
+        </span>
+      </li>
+      <li [attr.aria-current]="etape() === 'pret' ? 'step' : null">
+        <span class="steps__num" [class.steps__num--actif]="etape() === 'pret'">3</span>
+        <span class="steps__texte">
+          <strong>Cabinet prêt</strong>
+          <span>Invitez votre équipe et vos clients.</span>
+        </span>
+      </li>
+    </ol>
+    <p class="aside__note">
+      Mise en place {{ miseEnPlace }} € HT, sans engagement, utilisateurs illimités.
+      <a routerLink="/" fragment="tarifs">Voir les tarifs</a>
+    </p>
+  </aside>
+
+  <main class="main">
+    @switch (etape()) {
+      @case ('informations') {
+        <form class="form" [formGroup]="form" (ngSubmit)="envoyerFormulaire()" novalidate>
+          <span class="etape">Étape 1 sur 3</span>
+          <div class="form__title">
+            <h1>Créer un compte</h1>
+            <p>Déjà client ? <a routerLink="/connexion">Se connecter</a></p>
+          </div>
+
+          @if (alerte(); as message) {
+            <div role="alert" class="alert alert--{{ message.ton }}" data-testid="alerte">{{ message.texte }}</div>
+          }
+
+          <fieldset class="groupe">
+            <legend>Votre cabinet</legend>
+            <div class="field">
+              <label for="nom-cabinet">Nom du cabinet</label>
+              <input id="nom-cabinet" formControlName="nomCabinet" autocomplete="organization" placeholder="Cabinet Martin & Associés"
+                [class.invalid]="erreur('nomCabinet')" [attr.aria-invalid]="!!erreur('nomCabinet')" />
+              @if (erreur('nomCabinet'); as e) { <span class="field__error">{{ e }}</span> }
+            </div>
+            <div class="field">
+              <label for="siren">SIREN</label>
+              <input id="siren" formControlName="siren" inputmode="numeric" placeholder="123 456 789"
+                [class.invalid]="erreur('siren')" [attr.aria-invalid]="!!erreur('siren')" />
+              @if (erreur('siren'); as e) { <span class="field__error">{{ e }}</span> }
+            </div>
+          </fieldset>
+
+          <fieldset class="groupe">
+            <legend>Vous</legend>
+            <div class="ligne">
+              <div class="field">
+                <label for="prenom">Prénom</label>
+                <input id="prenom" formControlName="prenom" autocomplete="given-name"
+                  [class.invalid]="erreur('prenom')" [attr.aria-invalid]="!!erreur('prenom')" />
+                @if (erreur('prenom'); as e) { <span class="field__error">{{ e }}</span> }
+              </div>
+              <div class="field">
+                <label for="nom">Nom</label>
+                <input id="nom" formControlName="nom" autocomplete="family-name"
+                  [class.invalid]="erreur('nom')" [attr.aria-invalid]="!!erreur('nom')" />
+                @if (erreur('nom'); as e) { <span class="field__error">{{ e }}</span> }
+              </div>
+            </div>
+            <div class="field">
+              <label for="email">Email professionnel</label>
+              <input id="email" type="email" formControlName="email" autocomplete="email" placeholder="vous@cabinet.fr"
+                [class.invalid]="erreur('email')" [attr.aria-invalid]="!!erreur('email')" />
+              @if (erreur('email'); as e) { <span class="field__error">{{ e }}</span> }
+            </div>
+            <div class="field">
+              <label for="mobile">Mobile</label>
+              <input id="mobile" type="tel" formControlName="mobile" autocomplete="tel" placeholder="06 12 34 56 78"
+                [class.invalid]="erreur('mobile')" [attr.aria-invalid]="!!erreur('mobile')" />
+              <span class="field__aide">Un code de confirmation vous sera envoyé par SMS.</span>
+              @if (erreur('mobile'); as e) { <span class="field__error">{{ e }}</span> }
+            </div>
+            <div class="field">
+              <label for="mot-de-passe">Mot de passe</label>
+              <div class="password" [class.invalid]="erreur('motDePasse')">
+                <input id="mot-de-passe" [type]="motDePasseVisible() ? 'text' : 'password'" formControlName="motDePasse"
+                  autocomplete="new-password" maxlength="64" [attr.aria-invalid]="!!erreur('motDePasse')" />
+                <button type="button" class="password__toggle"
+                  [attr.aria-label]="motDePasseVisible() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+                  (click)="basculerMotDePasse()">
+                  <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#6E6456" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+              <ul class="rules" aria-label="Règles du mot de passe">
+                @for (regle of regles(); track regle.libelle) {
+                  <li [class.ok]="regle.respectee" [class.ko]="!regle.respectee">
+                    {{ regle.respectee ? '✓' : '✗' }} {{ regle.libelle }}
+                  </li>
+                }
+              </ul>
+              @if (erreur('motDePasse'); as e) { <span class="field__error">{{ e }}</span> }
+            </div>
+          </fieldset>
+
+          <fieldset class="groupe">
+            <legend>Votre abonnement</legend>
+            <div class="field">
+              <label for="nombre-dossiers">Nombre de dossiers prévus</label>
+              <input id="nombre-dossiers" type="number" min="1" step="1" formControlName="nombreDossiers" placeholder="120"
+                [class.invalid]="erreur('nombreDossiers')" [attr.aria-invalid]="!!erreur('nombreDossiers')" />
+              @if (erreur('nombreDossiers'); as e) { <span class="field__error">{{ e }}</span> }
+            </div>
+            @if (tranche(); as t) {
+              <div class="tarif" data-testid="tarif" aria-live="polite">
+                <span>Tranche {{ t.range.toLowerCase() }} · {{ t.price }} € HT / dossier</span>
+                <strong>{{ euros(prix()) }} € HT par mois</strong>
+              </div>
+            }
+            <div class="field">
+              <label for="code-parrainage">Code de parrainage <span class="facultatif">(facultatif)</span></label>
+              <input id="code-parrainage" formControlName="codeParrainage" placeholder="TEST-4821" maxlength="20"
+                [class.invalid]="erreur('codeParrainage')" />
+              <span class="field__aide">Le parrainage sera bientôt actif : votre code est conservé.</span>
+              @if (erreur('codeParrainage'); as e) { <span class="field__error">{{ e }}</span> }
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label class="cgu">
+              <input type="checkbox" formControlName="cguAcceptees" [attr.aria-invalid]="!!erreur('cguAcceptees')" />
+              <span>J'accepte les <a routerLink="/cgu" target="_blank">conditions générales d'utilisation</a></span>
+            </label>
+            @if (erreur('cguAcceptees'); as e) { <span class="field__error">{{ e }}</span> }
+          </div>
+
+          <button type="submit" class="submit" [disabled]="enCours()">
+            {{ enCours() ? 'Envoi…' : 'Recevoir le code SMS' }}
+          </button>
+        </form>
+      }
+
+      @case ('code') {
+        <form class="form" (submit)="$event.preventDefault(); validerCode()" novalidate>
+          <button type="button" class="back" (click)="revenirAuFormulaire()">← Modifier mes informations</button>
+          <span class="etape">Étape 2 sur 3</span>
+          <div class="form__title">
+            <h1>Confirmez votre mobile</h1>
+            <p>
+              Saisissez le code à 6 chiffres envoyé par SMS au <strong data-testid="telephone">{{ telephoneMasque() }}</strong>.
+              Il est valable 5 minutes.
+            </p>
+          </div>
+
+          @if (codeDeTest(); as c) {
+            <p class="mode-test" data-testid="code-de-test">
+              Mode test (aucun opérateur SMS branché) — code reçu : <strong>{{ c }}</strong>
+            </p>
+          }
+
+          @if (alerte(); as m) {
+            <div [attr.role]="m.ton === 'succes' ? 'status' : 'alert'" class="alert alert--{{ m.ton }}" data-testid="alerte">{{ m.texte }}</div>
+          }
+
+          <div class="field">
+            <label for="code">Code reçu par SMS</label>
+            <input id="code" class="code-unique" [formControl]="code" inputmode="numeric" autocomplete="one-time-code"
+              maxlength="6" placeholder="••••••" />
+          </div>
+
+          <button type="submit" class="submit" [disabled]="!codeComplet() || enCours()">
+            {{ enCours() ? 'Création du cabinet…' : 'Valider et créer mon cabinet' }}
+          </button>
+
+          <div class="renvoi">
+            @if (secondesAvantRenvoi() > 0) {
+              Renvoyer un code dans {{ secondesAvantRenvoi() }} s
+            } @else {
+              <button type="button" (click)="renvoyerCode()">Renvoyer un code</button>
+            }
+          </div>
+        </form>
+      }
+
+      @case ('pret') {
+        @if (cabinet(); as c) {
+          <section class="form pret" aria-labelledby="titre-pret">
+            <span class="etape">Étape 3 sur 3</span>
+            <div class="pret__badge" aria-hidden="true">✓</div>
+            <div class="form__title">
+              <h1 id="titre-pret">{{ c.nomCabinet }} est prêt</h1>
+              <p>Bienvenue {{ c.nomAffiche }}. Vous êtes administrateur du compte du cabinet.</p>
+            </div>
+            <ul class="actions">
+              <li class="action">
+                <strong>Inviter votre équipe</strong>
+                <span>Chaque collaborateur avec son rôle.</span>
+                <span class="soon">Bientôt disponible</span>
+              </li>
+              <li class="action">
+                <strong>Créer votre premier dossier</strong>
+                <span>À partir du SIREN de votre client.</span>
+                <a routerLink="/dossiers">Ouvrir mes dossiers</a>
+              </li>
+              <li class="action">
+                <strong>Inviter le dirigeant</strong>
+                <span>Pour qu'il dépose ses factures dans son espace.</span>
+                <span class="soon">Bientôt disponible</span>
+              </li>
+            </ul>
+            <a routerLink="/dossiers" class="submit submit--lien">Accéder à mon cabinet</a>
+          </section>
+        }
+      }
+    }
+  </main>
+</div>

@@ -9,15 +9,15 @@ public record ResultatRenvoi(Statut statut, long secondesRestantes, String telep
 		DEMANDE_INVALIDE
 	}
 
-	static ResultatRenvoi renvoye(String telephoneMasque, String codeDeTest) {
+	public static ResultatRenvoi renvoye(String telephoneMasque, String codeDeTest) {
 		return new ResultatRenvoi(Statut.RENVOYE, 0, telephoneMasque, codeDeTest);
 	}
 
-	static ResultatRenvoi tropTot(long secondesRestantes) {
+	public static ResultatRenvoi tropTot(long secondesRestantes) {
 		return new ResultatRenvoi(Statut.TROP_TOT, secondesRestantes, null, null);
 	}
 
-	static ResultatRenvoi demandeInvalide() {
+	public static ResultatRenvoi demandeInvalide() {
 		return new ResultatRenvoi(Statut.DEMANDE_INVALIDE, 0, null, null);
 	}
 

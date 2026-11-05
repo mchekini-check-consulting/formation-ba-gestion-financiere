@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { Clients } from './clients/clients';
 import { CodeVerification } from './code-verification/code-verification';
+import { CreerCompte } from './creer-compte/creer-compte';
 import { Connexion } from './connexion/connexion';
 import { Espace } from './espace/espace';
 import { Dossier, Dossiers, EspaceClient } from './espace/pages';
@@ -20,6 +21,8 @@ export const routes: Routes = [
   { path: 'verification-code', component: CodeVerification },
   { path: 'mot-de-passe-oublie', component: MotDePasseOublie },
   { path: 'reinitialiser-mot-de-passe', component: NouveauMotDePasse },
+  // US-36 : création du compte d'un cabinet (informations, code SMS, cabinet prêt).
+  { path: 'creer-compte', component: CreerCompte },
   // Pages connectées (US-07) : session vérifiée par le backend à chaque page ouverte.
   {
     path: '',
@@ -31,7 +34,6 @@ export const routes: Routes = [
       { path: 'espace-client', component: EspaceClient, data: { role: 'DIRIGEANT' } },
     ],
   },
-  { path: 'creer-compte', component: PageAVenir },
   { path: 'mentions-legales', component: PageAVenir },
   { path: 'cgu', component: PageAVenir },
   { path: 'confidentialite', component: PageAVenir },
