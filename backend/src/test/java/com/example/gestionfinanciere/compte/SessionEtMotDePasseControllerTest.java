@@ -35,7 +35,7 @@ class SessionEtMotDePasseControllerTest {
 		when(sessions.consulter("jeton")).thenReturn(ResultatSession.active(jean));
 		ResponseEntity<Object> reponse = session.consulter("Bearer jeton");
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
-		assertEquals(new SessionActive("Jean Dupont", Role.COLLABORATEUR), reponse.getBody());
+		assertEquals(new SessionActive("Jean Dupont", Role.COLLABORATEUR, false), reponse.getBody());
 	}
 
 	@Test

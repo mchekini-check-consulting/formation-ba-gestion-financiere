@@ -55,9 +55,11 @@ public class Compte {
 	@JoinColumn(name = "cabinet_id")
 	private Cabinet cabinet;
 
-	// US-36 RG3 : la personne qui crée le compte du cabinet en est administratrice.
-	@Column(name = "administrateur", nullable = false)
-	private boolean administrateur;
+	// US-19 RG2 : rôle dans le cabinet (vide sans cabinet). US-36 RG3 : la personne qui crée
+	// le compte du cabinet en est administratrice.
+	@Enumerated(EnumType.STRING)
+	@Column(name = "role_cabinet")
+	private RoleCabinet roleCabinet;
 
 	protected Compte() {
 	}
@@ -76,7 +78,20 @@ public class Compte {
 			String telephone) {
 		Compte compte = new Compte(email, motDePasseHash, Role.COLLABORATEUR, true, nomAffiche, telephone);
 		compte.cabinet = cabinet;
-		compte.administrateur = true;
+		compte.roleCabinet = RoleCabinet.ADMINISTRATEUR;
+		return compte;
+	}
+
+	/**
+	 * US-19 : collaborateur invité dans un cabinet. Son compte reste inactif (« Invitée ») tant
+	 * qu'il ne l'a pas activé depuis le lien reçu par email (US-08), où il choisira son mot de
+	 * passe : en attendant, l'empreinte reçue ne correspond à aucun mot de passe connu.
+	 */
+	public static Compte invite(Cabinet cabinet, String email, String empreinteInutilisable, String nomAffiche,
+			RoleCabinet roleCabinet) {
+		Compte compte = new Compte(email, empreinteInutilisable, Role.COLLABORATEUR, false, nomAffiche, "");
+		compte.cabinet = cabinet;
+		compte.roleCabinet = roleCabinet;
 		return compte;
 	}
 
@@ -164,8 +179,12 @@ public class Compte {
 		return cabinet;
 	}
 
+	public RoleCabinet getRoleCabinet() {
+		return roleCabinet;
+	}
+
 	public boolean isAdministrateur() {
-		return administrateur;
+		return roleCabinet == RoleCabinet.ADMINISTRATEUR;
 	}
 
 }

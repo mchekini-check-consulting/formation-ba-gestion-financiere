@@ -45,6 +45,23 @@ describe('Espace connecté (US-07)', () => {
     fixture.destroy();
   });
 
+  it('US-19 : menu « Équipe » pour les administrateurs du cabinet seulement', async () => {
+    connecter('COLLABORATEUR', 'Jean Dupont');
+    const fixture = TestBed.createComponent(Espace);
+    await fixture.whenStable();
+    const menu = () => (fixture.nativeElement as HTMLElement).querySelector('.menu__liens')?.textContent;
+    expect(menu()).not.toContain('Équipe');
+    TestBed.inject(SessionService).ouvrir({
+      jeton: 'j',
+      role: 'COLLABORATEUR',
+      nomAffiche: 'Claire Martin',
+      administrateur: true,
+    });
+    await fixture.whenStable();
+    expect(menu()).toContain('Équipe');
+    fixture.destroy();
+  });
+
   it('dirigeant : menu « Mon espace »', async () => {
     connecter('DIRIGEANT', 'Sophie Martin');
     const fixture = TestBed.createComponent(Espace);

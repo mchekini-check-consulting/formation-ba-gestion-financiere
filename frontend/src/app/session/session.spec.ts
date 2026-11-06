@@ -91,9 +91,12 @@ describe('Session (US-07)', () => {
   });
 
   describe('sessionGuard', () => {
-    const lancer = (role?: string) =>
+    const lancer = (role?: string, administrateur?: boolean) =>
       TestBed.runInInjectionContext(() =>
-        sessionGuard({ data: role ? { role } : {} } as unknown as ActivatedRouteSnapshot, {} as RouterStateSnapshot),
+        sessionGuard(
+          { data: { ...(role ? { role } : {}), ...(administrateur ? { administrateur } : {}) } } as unknown as ActivatedRouteSnapshot,
+          {} as RouterStateSnapshot,
+        ),
       );
     const resultat = async (sortie: ReturnType<typeof lancer>) =>
       isObservable(sortie) ? firstValueFrom(sortie as Observable<boolean | UrlTree>) : sortie;
@@ -115,6 +118,21 @@ describe('Session (US-07)', () => {
       const sortie = resultat(lancer('DIRIGEANT'));
       http.expectOne('/api/auth/session').flush({ nomAffiche: 'Jean Dupont', role: 'COLLABORATEUR' });
       expect(url(await sortie)).toBe('/dossiers');
+    });
+
+    it('US-19 RG1 : page « Équipe » réservée aux administrateurs du cabinet', async () => {
+      session.ouvrir(JEAN);
+      const refusee = resultat(lancer('COLLABORATEUR', true));
+      http
+        .expectOne('/api/auth/session')
+        .flush({ nomAffiche: 'Jean Dupont', role: 'COLLABORATEUR', administrateur: false });
+      expect(url(await refusee)).toBe('/dossiers');
+
+      const ouverte = resultat(lancer('COLLABORATEUR', true));
+      http
+        .expectOne('/api/auth/session')
+        .flush({ nomAffiche: 'Claire Martin', role: 'COLLABORATEUR', administrateur: true });
+      expect(await ouverte).toBe(true);
     });
 
     it('CA2 : session expirée -> connexion avec « Votre session a expiré »', async () => {

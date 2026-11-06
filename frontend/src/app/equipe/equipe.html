@@ -1,0 +1,80 @@
+<h1>Équipe du cabinet</h1>
+<p class="sous-titre">Invitez vos collaborateurs : chacun reçoit un email pour activer son compte.</p>
+
+<section class="carte" aria-labelledby="titre-invitation">
+  <h2 id="titre-invitation">Inviter un collaborateur</h2>
+  <form [formGroup]="formulaire" (ngSubmit)="inviter()" novalidate>
+    <div class="champs">
+      <div class="champ">
+        <label for="prenom">Prénom</label>
+        <input id="prenom" formControlName="prenom" autocomplete="off" [attr.aria-invalid]="!!erreurs().prenom" />
+        @if (erreurs().prenom; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+      <div class="champ">
+        <label for="nom">Nom</label>
+        <input id="nom" formControlName="nom" autocomplete="off" [attr.aria-invalid]="!!erreurs().nom" />
+        @if (erreurs().nom; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+      <div class="champ">
+        <label for="email">Email professionnel</label>
+        <input id="email" type="email" formControlName="email" autocomplete="off" [attr.aria-invalid]="!!erreurs().email" />
+        @if (erreurs().email; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+      <div class="champ">
+        <label for="role">Rôle</label>
+        <select id="role" formControlName="role" [attr.aria-invalid]="!!erreurs().role">
+          <option value="">Choisir…</option>
+          @for (r of roles; track r.valeur) {
+            <option [value]="r.valeur">{{ r.libelle }}</option>
+          }
+        </select>
+        @if (erreurs().role; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+    </div>
+
+    @if (alerte(); as a) {
+      <p class="alerte" role="alert">{{ a }}</p>
+    }
+    @if (succes(); as s) {
+      <p class="succes" role="status">
+        {{ s }}
+        @if (lienDeTest(); as lien) {
+          <a class="lien-test" [href]="lien">Mode test : lien d'invitation</a>
+        }
+      </p>
+    }
+
+    <button type="submit" class="bouton" [disabled]="enCours()">
+      {{ enCours() ? 'Envoi…' : "Envoyer l'invitation" }}
+    </button>
+  </form>
+</section>
+
+<section class="carte" aria-labelledby="titre-membres">
+  <h2 id="titre-membres">Collaborateurs</h2>
+  @if (chargement()) {
+    <p class="muted">Chargement…</p>
+  } @else {
+    <table>
+      <thead>
+        <tr><th scope="col">Nom</th><th scope="col">Email</th><th scope="col">Rôle</th><th scope="col">Statut</th></tr>
+      </thead>
+      <tbody>
+        @for (m of membres(); track m.email) {
+          <tr>
+            <td>{{ m.nomAffiche }}</td>
+            <td>{{ m.email }}</td>
+            <td>{{ libelleRole(m.role) }}</td>
+            <td>
+              <span class="statut" [class.statut--invite]="m.statut === 'INVITE'">
+                {{ m.statut === 'INVITE' ? 'Invitée' : 'Actif' }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>
+
+<a routerLink="/dossiers" class="retour">← Mes dossiers</a>
