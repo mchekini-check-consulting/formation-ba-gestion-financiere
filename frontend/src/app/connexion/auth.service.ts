@@ -20,6 +20,8 @@ export interface SessionOuverte {
   jeton: string;
   role: Role;
   nomAffiche: string;
+  /** US-19 : administrateur du cabinet (menu « Équipe »). */
+  administrateur?: boolean;
 }
 
 export interface CodeRenvoye {
@@ -30,6 +32,7 @@ export interface CodeRenvoye {
 export interface SessionActive {
   nomAffiche: string;
   role: Role;
+  administrateur?: boolean;
 }
 
 export interface DemandeEnvoyee {

@@ -71,7 +71,7 @@ class ConnexionControllerTest {
 		when(sessions.ouvrir(jean)).thenReturn("jeton-session");
 		ResponseEntity<Object> reponse = controller.validerCode(new CodeRequest("defi", "482917"));
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
-		assertEquals(new SessionOuverte("jeton-session", Role.COLLABORATEUR, "Jean Dupont"), reponse.getBody());
+		assertEquals(new SessionOuverte("jeton-session", Role.COLLABORATEUR, "Jean Dupont", false), reponse.getBody());
 	}
 
 	@Test

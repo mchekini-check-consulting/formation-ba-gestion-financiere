@@ -16,11 +16,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth")
 public class SessionController {
 
-	static final String MESSAGE_SESSION_EXPIREE = "Votre session a expiré";
-	static final String MESSAGE_NON_CONNECTE = "Vous n'êtes pas connecté";
+	public static final String MESSAGE_SESSION_EXPIREE = "Votre session a expiré";
+	public static final String MESSAGE_NON_CONNECTE = "Vous n'êtes pas connecté";
 	private static final String PREFIXE = "Bearer ";
 
-	public record SessionActive(String nomAffiche, Role role) {
+	// administrateur : US-19 RG1, l'écran Équipe n'est proposé qu'aux administrateurs du cabinet.
+	public record SessionActive(String nomAffiche, Role role, boolean administrateur) {
 	}
 
 	// code : SESSION_EXPIREE ou NON_CONNECTE, pour choisir le message de l'écran de connexion.
@@ -39,7 +40,8 @@ public class SessionController {
 		ResultatSession resultat = sessions.consulter(jeton(autorisation));
 		return switch (resultat.statut()) {
 			case ACTIVE -> ResponseEntity.ok(
-					new SessionActive(resultat.compte().getNomAffiche(), resultat.compte().getRole()));
+					new SessionActive(resultat.compte().getNomAffiche(), resultat.compte().getRole(),
+								resultat.compte().isAdministrateur()));
 			case EXPIREE -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(new ErreurSession(MESSAGE_SESSION_EXPIREE, "SESSION_EXPIREE"));
 			case NON_CONNECTE -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -54,7 +56,7 @@ public class SessionController {
 		return ResponseEntity.noContent().build();
 	}
 
-	static String jeton(String autorisation) {
+	public static String jeton(String autorisation) {
 		if (autorisation == null || !autorisation.startsWith(PREFIXE)) {
 			return null;
 		}

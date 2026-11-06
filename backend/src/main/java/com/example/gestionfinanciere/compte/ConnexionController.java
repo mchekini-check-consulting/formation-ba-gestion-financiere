@@ -31,7 +31,7 @@ public class ConnexionController {
 	public record RenvoiRequest(String defi) {
 	}
 
-	public record SessionOuverte(String jeton, Role role, String nomAffiche) {
+	public record SessionOuverte(String jeton, Role role, String nomAffiche, boolean administrateur) {
 	}
 
 	// retourConnexion : l'écran doit revenir à la connexion (US-04 RG3).
@@ -106,7 +106,8 @@ public class ConnexionController {
 
 	private ResponseEntity<Object> ouvrirSession(Compte compte) {
 		String jeton = sessions.ouvrir(compte);
-		return ResponseEntity.ok(new SessionOuverte(jeton, compte.getRole(), compte.getNomAffiche()));
+		return ResponseEntity.ok(
+				new SessionOuverte(jeton, compte.getRole(), compte.getNomAffiche(), compte.isAdministrateur()));
 	}
 
 	private static ResponseEntity<Object> demandeInvalide() {

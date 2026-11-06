@@ -26,7 +26,7 @@ export class SessionService {
   }
 
   ouvrir(session: SessionOuverte): void {
-    const utilisateur = { nomAffiche: session.nomAffiche, role: session.role };
+    const utilisateur = { nomAffiche: session.nomAffiche, role: session.role, administrateur: session.administrateur };
     this.ecrire({ jeton: session.jeton, utilisateur });
   }
 

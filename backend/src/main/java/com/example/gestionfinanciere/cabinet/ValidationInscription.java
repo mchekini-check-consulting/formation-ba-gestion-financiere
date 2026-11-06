@@ -43,7 +43,7 @@ public final class ValidationInscription {
 		texte(erreurs, "nom", demande.nom(), 100);
 		if (estVide(demande.email())) {
 			erreurs.put("email", OBLIGATOIRE);
-		} else if (email(demande.email()).length() > 254 || !EMAIL.matcher(email(demande.email())).matches()) {
+		} else if (!emailValide(email(demande.email()))) {
 			erreurs.put("email", EMAIL_INVALIDE);
 		}
 		if (estVide(demande.mobile())) {
@@ -85,7 +85,7 @@ public final class ValidationInscription {
 	}
 
 	// US-03 RG1 : l'email est l'identifiant, les majuscules ne comptent pas.
-	static String email(String saisie) {
+	public static String email(String saisie) {
 		return saisie.trim().toLowerCase(Locale.ROOT);
 	}
 
@@ -109,7 +109,12 @@ public final class ValidationInscription {
 		}
 	}
 
-	static boolean estVide(String valeur) {
+	// Format de l'email, déjà remis en forme par email(...).
+	public static boolean emailValide(String email) {
+		return email.length() <= 254 && EMAIL.matcher(email).matches();
+	}
+
+	public static boolean estVide(String valeur) {
 		return valeur == null || valeur.isBlank();
 	}
 

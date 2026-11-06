@@ -1,0 +1,163 @@
+// US-19 Équipe du cabinet : mêmes couleurs que l'espace connecté.
+$encre: #16130f;
+$creme: #fffdf9;
+$or: #8c6b36;
+$bord: #e7dfd0;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 960px;
+}
+
+h1 {
+  margin: 0;
+  font-family: 'Playfair Display', Inter, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 17px;
+}
+
+.sous-titre {
+  margin: -12px 0 0;
+  font-size: 14px;
+  color: #6e6456;
+}
+
+.carte {
+  padding: 22px;
+  border: 1px solid $bord;
+  border-radius: 16px;
+  background: $creme;
+  overflow-x: auto;
+}
+
+.champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+
+  label {
+    font-weight: 600;
+  }
+
+  input,
+  select {
+    padding: 11px 12px;
+    border: 1px solid #d9cebb;
+    border-radius: 10px;
+    background: #fff;
+    font: inherit;
+    color: $encre;
+
+    &[aria-invalid='true'] {
+      border-color: #b3261e;
+    }
+  }
+}
+
+.erreur {
+  font-size: 13px;
+  color: #b3261e;
+}
+
+.alerte,
+.succes {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.alerte {
+  background: #fdecea;
+  color: #8c1d18;
+}
+
+.succes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #e8f3ea;
+  color: #1e5b2c;
+}
+
+.lien-test {
+  color: $or;
+  font-weight: 600;
+}
+
+.bouton {
+  margin-top: 16px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 10px;
+  background: $or;
+  color: $creme;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  border-top: 1px solid #f1ebe0;
+  text-align: left;
+}
+
+th {
+  border-top: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6e6456;
+}
+
+.statut {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e8f3ea;
+  color: #1e5b2c;
+  font-size: 12px;
+  font-weight: 600;
+
+  &--invite {
+    background: #fff1db;
+    color: #8a4b00;
+  }
+}
+
+.muted {
+  color: #6e6456;
+}
+
+.retour {
+  color: $or;
+  font-weight: 600;
+  text-decoration: none;
+}

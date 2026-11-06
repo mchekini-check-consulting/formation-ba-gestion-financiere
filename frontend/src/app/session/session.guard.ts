@@ -22,9 +22,11 @@ export const sessionGuard: CanActivateChildFn = (route) => {
     map((utilisateur) => {
       session.mettreAJour(utilisateur);
       const roleAttendu = route.data['role'] as string | undefined;
-      return roleAttendu && roleAttendu !== utilisateur.role
-        ? router.createUrlTree([accueil(utilisateur.role)])
-        : true;
+      // US-19 RG1 : pages réservées aux administrateurs du cabinet (« Équipe »).
+      const refuse =
+        (roleAttendu && roleAttendu !== utilisateur.role) ||
+        (route.data['administrateur'] === true && !utilisateur.administrateur);
+      return refuse ? router.createUrlTree([accueil(utilisateur.role)]) : true;
     }),
     catchError((erreur: HttpErrorResponse) => {
       session.fermer();

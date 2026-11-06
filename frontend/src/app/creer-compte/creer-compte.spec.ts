@@ -173,7 +173,12 @@ describe('Créer un compte (US-36)', () => {
     expect(page.querySelector('.steps__num--actif')?.textContent).toBe('3');
     expect(page.querySelectorAll('.action').length).toBe(3);
     expect(TestBed.inject(SessionService).jeton()).toBe('jeton');
-    expect(TestBed.inject(SessionService).utilisateur()).toEqual({ nomAffiche: 'Claire Martin', role: 'COLLABORATEUR' });
+    expect(TestBed.inject(SessionService).utilisateur()).toEqual({
+      nomAffiche: 'Claire Martin',
+      role: 'COLLABORATEUR',
+      administrateur: true,
+    });
+    expect(page.querySelector('.action a[href="/equipe"]')?.textContent).toBe('Inviter mes collaborateurs');
   });
 
   it('CA2 : SIREN déjà utilisé -> message affiché, sous le SIREN aussi', async () => {

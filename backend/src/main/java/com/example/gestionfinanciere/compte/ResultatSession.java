@@ -9,15 +9,15 @@ public record ResultatSession(Statut statut, Compte compte) {
 		NON_CONNECTE
 	}
 
-	static ResultatSession active(Compte compte) {
+	public static ResultatSession active(Compte compte) {
 		return new ResultatSession(Statut.ACTIVE, compte);
 	}
 
-	static ResultatSession expiree() {
+	public static ResultatSession expiree() {
 		return new ResultatSession(Statut.EXPIREE, null);
 	}
 
-	static ResultatSession nonConnecte() {
+	public static ResultatSession nonConnecte() {
 		return new ResultatSession(Statut.NON_CONNECTE, null);
 	}
 

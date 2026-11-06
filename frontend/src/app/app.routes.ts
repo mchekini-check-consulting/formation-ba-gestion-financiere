@@ -3,6 +3,7 @@ import { Clients } from './clients/clients';
 import { CodeVerification } from './code-verification/code-verification';
 import { CreerCompte } from './creer-compte/creer-compte';
 import { Connexion } from './connexion/connexion';
+import { Equipe } from './equipe/equipe';
 import { Espace } from './espace/espace';
 import { Dossier, Dossiers, EspaceClient } from './espace/pages';
 import { ItemsPage } from './items-page/items-page';
@@ -32,8 +33,12 @@ export const routes: Routes = [
       { path: 'dossiers', component: Dossiers, data: { role: 'COLLABORATEUR' } },
       { path: 'dossiers/:id', component: Dossier, data: { role: 'COLLABORATEUR' } },
       { path: 'espace-client', component: EspaceClient, data: { role: 'DIRIGEANT' } },
+      // US-19 : équipe du cabinet, réservée à ses administrateurs (RG1).
+      { path: 'equipe', component: Equipe, data: { role: 'COLLABORATEUR', administrateur: true } },
     ],
   },
+  // Lien de l'email d'invitation (US-19) : activation du compte avec l'US-08.
+  { path: 'activer-compte', component: PageAVenir },
   { path: 'mentions-legales', component: PageAVenir },
   { path: 'cgu', component: PageAVenir },
   { path: 'confidentialite', component: PageAVenir },

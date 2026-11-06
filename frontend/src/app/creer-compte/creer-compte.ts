@@ -147,7 +147,12 @@ export class CreerCompte implements OnDestroy {
         this.enCours.set(false);
         clearInterval(this.minuteur);
         // L'administrateur est connecté : il arrive sur ses dossiers sans se reconnecter.
-        this.session.ouvrir({ jeton: cabinet.jeton, role: cabinet.role, nomAffiche: cabinet.nomAffiche });
+        this.session.ouvrir({
+          jeton: cabinet.jeton,
+          role: cabinet.role,
+          nomAffiche: cabinet.nomAffiche,
+          administrateur: true,
+        });
         this.cabinet.set(cabinet);
         this.alerte.set(null);
         this.etape.set('pret');
