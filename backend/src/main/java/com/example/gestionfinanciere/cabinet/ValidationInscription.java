@@ -36,7 +36,7 @@ public final class ValidationInscription {
 		texte(erreurs, "nomCabinet", demande.nomCabinet(), 200);
 		if (estVide(demande.siren())) {
 			erreurs.put("siren", OBLIGATOIRE);
-		} else if (!SIREN.matcher(siren(demande.siren())).matches()) {
+		} else if (!sirenValide(siren(demande.siren()))) {
 			erreurs.put("siren", SIREN_INVALIDE);
 		}
 		texte(erreurs, "prenom", demande.prenom(), 100);
@@ -79,9 +79,14 @@ public final class ValidationInscription {
 				demande.nombreDossiers(), parrainage);
 	}
 
-	// « 123 456 789 » -> « 123456789 ».
-	static String siren(String saisie) {
+	// « 123 456 789 » -> « 123456789 ». Aussi utilisé pour le SIREN d'un dossier client (US-10).
+	public static String siren(String saisie) {
 		return SEPARATEURS.matcher(saisie).replaceAll("");
+	}
+
+	// 9 chiffres, SIREN déjà remis en forme par siren(...).
+	public static boolean sirenValide(String siren) {
+		return SIREN.matcher(siren).matches();
 	}
 
 	// US-03 RG1 : l'email est l'identifiant, les majuscules ne comptent pas.
