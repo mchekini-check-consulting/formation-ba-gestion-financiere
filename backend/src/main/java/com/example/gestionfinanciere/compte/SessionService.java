@@ -19,6 +19,7 @@ import com.example.gestionfinanciere.logging.Loggable;
 public class SessionService {
 
 	static final Duration INACTIVITE_MAX = Duration.ofMinutes(30);
+	private static final String SESSION_FERMEE = "session.fermee";
 
 	private final SessionRepository sessions;
 	private final Clock horloge;
@@ -48,7 +49,7 @@ public class SessionService {
 		Instant maintenant = horloge.instant();
 		if (!maintenant.isBefore(session.getDerniereActivite().plus(INACTIVITE_MAX))) {
 			session.fermer(); // RG2 : 30 minutes sans activité
-			EvenementMetier.de("session.fermee", "expiree").avec(session.getCompte().identifiantsPourLogs()).info();
+			EvenementMetier.de(SESSION_FERMEE, "expiree").avec(session.getCompte().identifiantsPourLogs()).info();
 			return ResultatSession.expiree();
 		}
 		session.enregistrerActivite(maintenant);
@@ -62,7 +63,7 @@ public class SessionService {
 	public void fermer(String jeton) {
 		Optional<SessionUtilisateur> session = trouver(jeton);
 		session.ifPresent(SessionUtilisateur::fermer);
-		EvenementMetier evenement = EvenementMetier.de("session.fermee",
+		EvenementMetier evenement = EvenementMetier.de(SESSION_FERMEE,
 				session.isPresent() ? "deconnexion" : "session_inconnue");
 		session.ifPresent(s -> evenement.avec(s.getCompte().identifiantsPourLogs()));
 		evenement.journaliser(session.isPresent());
@@ -73,7 +74,7 @@ public class SessionService {
 	public void fermerToutes(Compte compte) {
 		List<SessionUtilisateur> ouvertes = sessions.findByCompteAndFermeeFalse(compte);
 		ouvertes.forEach(SessionUtilisateur::fermer);
-		EvenementMetier.de("session.fermee", "mot_de_passe_change").avec(compte.identifiantsPourLogs())
+		EvenementMetier.de(SESSION_FERMEE, "mot_de_passe_change").avec(compte.identifiantsPourLogs())
 				.avec("sessionsFermees", ouvertes.size()).info();
 	}
 
