@@ -1,7 +1,7 @@
-import { Component, computed, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { map } from 'rxjs';
+import { DossierClient, DossierService, formaterSiren } from '../dossiers/dossier.service';
 import { SessionService } from '../session/session.service';
 
 /**
@@ -12,6 +12,8 @@ export const DOSSIERS_EXEMPLE = [
   { id: 1, nom: 'Boulangerie Leroy SARL', siren: '812 345 678', initiales: 'BL' },
   { id: 2, nom: 'Garage Morel SAS', siren: '798 654 321', initiales: 'GM' },
 ];
+
+const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réessayez.';
 
 const STYLES = `
   h1 { margin: 0; font-family: 'Playfair Display', Inter, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
@@ -25,6 +27,12 @@ const STYLES = `
   .muted { font-size: 13px; color: #6e6456; }
   .note { margin-top: 16px; font-size: 13px; color: #6e6456; }
   a.retour { color: #8c6b36; font-weight: 600; text-decoration: none; }
+  .entete { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .bouton { padding: 12px 20px; border-radius: 10px; background: #8c6b36; color: #fffdf9; font-weight: 600; text-decoration: none; }
+  .alerte { padding: 12px 14px; border-radius: 10px; background: #fdecea; color: #8c1d18; font-size: 14px; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 10px 24px; margin: 0; padding: 18px; }
+  dt { color: #6e6456; font-size: 14px; }
+  dd { margin: 0; font-weight: 600; }
 `;
 
 @Component({
@@ -32,14 +40,19 @@ const STYLES = `
   selector: 'app-dossiers',
   styles: STYLES,
   template: `
-    <h1>Dossiers clients</h1>
-    <p class="sous-titre">{{ nom() }}</p>
+    <div class="entete">
+      <div>
+        <h1>Dossiers clients</h1>
+        <p class="sous-titre">{{ nom() }}</p>
+      </div>
+      <a routerLink="/dossiers/nouveau" class="bouton">Créer un dossier</a>
+    </div>
     <section class="carte">
       @for (dossier of dossiers; track dossier.id) {
-        <a class="ligne" [routerLink]="['/dossiers', dossier.id]">
+        <div class="ligne">
           <span class="pastille">{{ dossier.initiales }}</span>
           <span><strong>{{ dossier.nom }}</strong><span class="muted">SIREN {{ dossier.siren }}</span></span>
-        </a>
+        </div>
       }
     </section>
     <p class="note">Dossiers d'exemple : la liste réelle arrive avec l'US « Liste des dossiers ».</p>
@@ -57,13 +70,46 @@ export class Dossiers {
   styles: STYLES,
   template: `
     <a routerLink="/dossiers" class="retour">← Dossiers</a>
-    <h1>{{ dossier()?.nom ?? 'Dossier introuvable' }}</h1>
-    <p class="sous-titre">Le détail du dossier arrive avec une prochaine US.</p>
+    @if (dossier(); as d) {
+      <h1>{{ d.raisonSociale }}</h1>
+      <p class="sous-titre">Dossier client</p>
+      <section class="carte">
+        <dl>
+          <dt>Raison sociale</dt><dd>{{ d.raisonSociale }}</dd>
+          <dt>SIREN</dt><dd>{{ siren(d) }}</dd>
+        </dl>
+      </section>
+      <p class="note">Les factures du client arriveront ici avec une prochaine US.</p>
+    } @else if (erreur(); as e) {
+      <h1>Dossier introuvable</h1>
+      <p class="alerte" role="alert">{{ e }}</p>
+    } @else {
+      <p class="muted">Chargement…</p>
+    }
   `,
 })
-export class Dossier {
-  private readonly id = toSignal(inject(ActivatedRoute).paramMap.pipe(map((p) => Number(p.get('id')))));
-  protected readonly dossier = computed(() => DOSSIERS_EXEMPLE.find((d) => d.id === this.id()));
+export class Dossier implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly dossiers = inject(DossierService);
+  protected readonly dossier = signal<DossierClient | null>(null);
+  protected readonly erreur = signal<string | null>(null);
+
+  /** US-10 RG3 : le dossier qui vient d'être créé s'ouvre ici. */
+  ngOnInit(): void {
+    this.route.paramMap.subscribe((parametres) => {
+      this.dossier.set(null);
+      this.erreur.set(null);
+      this.dossiers.consulter(Number(parametres.get('id'))).subscribe({
+        next: (dossier) => this.dossier.set(dossier),
+        error: (err: HttpErrorResponse) =>
+          this.erreur.set(err.status === 404 ? "Ce dossier n'existe pas dans votre cabinet." : MESSAGE_INDISPONIBLE),
+      });
+    });
+  }
+
+  protected siren(dossier: DossierClient): string {
+    return formaterSiren(dossier.siren);
+  }
 }
 
 @Component({

@@ -1,0 +1,45 @@
+<a routerLink="/dossiers" class="retour">← Dossiers</a>
+<h1>Créer un dossier</h1>
+<p class="sous-titre">Le dossier recevra les factures de votre client.</p>
+
+<section class="carte" aria-labelledby="titre-client">
+  <h2 id="titre-client">Nouveau client</h2>
+  <form [formGroup]="formulaire" (ngSubmit)="creer()" novalidate>
+    <div class="champs">
+      <div class="champ">
+        <label for="raisonSociale">Raison sociale</label>
+        <input
+          id="raisonSociale"
+          formControlName="raisonSociale"
+          autocomplete="organization"
+          placeholder="Fleurs Martin EURL"
+          [attr.aria-invalid]="!!erreurs().raisonSociale"
+        />
+        @if (erreurs().raisonSociale; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+      <div class="champ">
+        <label for="siren">SIREN</label>
+        <input
+          id="siren"
+          formControlName="siren"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="9 chiffres"
+          [attr.aria-invalid]="!!erreurs().siren"
+        />
+        @if (erreurs().siren; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+    </div>
+
+    @if (alerte(); as a) {
+      <p class="alerte" role="alert">{{ a }}</p>
+    }
+
+    <div class="actions">
+      <a routerLink="/dossiers" class="bouton bouton--clair">Annuler</a>
+      <button type="submit" class="bouton" [disabled]="enCours()">
+        {{ enCours() ? 'Création…' : 'Créer' }}
+      </button>
+    </div>
+  </form>
+</section>
