@@ -37,6 +37,36 @@ export async function taperCode(page: Page, code: string): Promise<void> {
   }
 }
 
+/**
+ * Crée un nouveau cabinet (US-36) dont Claire est l'administratrice, connectée.
+ * Renvoie le SIREN du cabinet (unique : chaque test a ses propres dossiers).
+ */
+export async function nouveauCabinet(page: Page, nomCabinet = 'Cabinet Test'): Promise<string> {
+  const siren = String(100_000_000 + Math.floor(Math.random() * 900_000_000));
+  await page.goto('/creer-compte');
+  await page.getByLabel('Nom du cabinet').fill(nomCabinet);
+  await page.getByLabel('SIREN').fill(siren);
+  await page.getByLabel('Prénom').fill('Claire');
+  await page.getByLabel('Nom', { exact: true }).fill('Martin');
+  await page.getByLabel('Email professionnel').fill(`claire.martin+${siren}@cabinet-test.fr`);
+  await page.getByLabel('Mot de passe', { exact: true }).fill('Pointeo2026!!');
+  await page.getByLabel('Nombre de dossiers prévus').fill('120');
+  await page.getByLabel(/J'accepte les/).check();
+  await page.getByRole('button', { name: 'Recevoir le code par email' }).click();
+  await page.getByLabel('Code reçu par email').fill(await codeRecu(page));
+  await page.getByRole('button', { name: 'Valider et créer mon cabinet' }).click();
+  await expect(page.getByRole('heading', { name: `${nomCabinet} est prêt` })).toBeVisible();
+  return siren;
+}
+
+/** US-10 : remplit et envoie le formulaire « Créer un dossier ». */
+export async function creerDossier(page: Page, raisonSociale: string, siren: string): Promise<void> {
+  await page.goto('/dossiers/nouveau');
+  await page.getByLabel('Raison sociale').fill(raisonSociale);
+  await page.getByLabel('SIREN').fill(siren);
+  await page.getByRole('button', { name: 'Créer', exact: true }).click();
+}
+
 /** Connexion complète : email + mot de passe, puis code reçu par email. */
 export async function seConnecter(page: Page, email: string, motDePasse = MOT_DE_PASSE): Promise<void> {
   await page.goto('/connexion');

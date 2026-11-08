@@ -40,7 +40,16 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
 				.with("status", String.valueOf(response.getStatus()))
 				.with("durationMs", String.valueOf(durationMs));
 		try {
-			log.info("http request handled");
+			// 4xx (demande refusée : non connecté, accès interdit, introuvable, invalide) : warn ;
+			// 5xx (panne) : error.
+			int status = response.getStatus();
+			if (status >= 500) {
+				log.error("http request handled");
+			} else if (status >= 400) {
+				log.warn("http request handled");
+			} else {
+				log.info("http request handled");
+			}
 		} finally {
 			ctx.close();
 		}

@@ -48,6 +48,19 @@ class JsonLogLayoutTest {
 	}
 
 	@Test
+	void inclutLesChampsMetierDeLaLigne() throws Exception {
+		appender.start();
+		logger.addAppender(appender);
+
+		logger.atInfo().addKeyValue("dossier", 42L).log("dossier créé");
+
+		Map<String, Object> json = mapper.readValue(layout.doLayout(appender.list.get(0)), new TypeReference<>() {
+		});
+
+		assertEquals(42, json.get("dossier"));
+	}
+
+	@Test
 	void inclutLErreurQuandUneExceptionEstJournalisee() throws Exception {
 		appender.start();
 		logger.addAppender(appender);

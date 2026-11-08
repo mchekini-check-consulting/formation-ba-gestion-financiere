@@ -4,6 +4,8 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,8 @@ import com.example.gestionfinanciere.logging.Loggable;
 @Service
 @Loggable
 public class DossierService {
+
+	private static final Logger log = LoggerFactory.getLogger(DossierService.class);
 
 	private final DossierRepository dossiers;
 	private final Clock horloge;
@@ -37,14 +41,15 @@ public class DossierService {
 		Long cabinetId = collaborateur.getCabinet().getId();
 		String siren = ValidationInscription.siren(demande.siren());
 		if (dossiers.existsByCabinetIdAndSiren(cabinetId, siren)) {
-			return ResultatCreationDossier.sirenDejaUtilise();
+			return doublon();
 		}
 		try {
 			Dossier dossier = dossiers.save(new Dossier(collaborateur.getCabinet(), demande.raisonSociale().trim(),
 					siren, collaborateur, horloge.instant()));
+			log.atInfo().addKeyValue("dossier", dossier.getId()).log("dossier créé");
 			return ResultatCreationDossier.cree(VueDossier.de(dossier));
 		} catch (DataIntegrityViolationException e) {
-			return ResultatCreationDossier.sirenDejaUtilise();
+			return doublon();
 		}
 	}
 
@@ -52,7 +57,20 @@ public class DossierService {
 	// autre cabinet.
 	@Transactional(readOnly = true)
 	public Optional<VueDossier> consulter(Compte collaborateur, Long id) {
-		return dossiers.findByIdAndCabinetId(id, collaborateur.getCabinet().getId()).map(VueDossier::de);
+		Optional<VueDossier> dossier = dossiers.findByIdAndCabinetId(id, collaborateur.getCabinet().getId())
+				.map(VueDossier::de);
+		if (dossier.isPresent()) {
+			log.atInfo().addKeyValue("dossier", id).log("dossier ouvert");
+		} else {
+			log.atWarn().addKeyValue("dossier", id).log("accès refusé : dossier introuvable ou d'un autre cabinet");
+		}
+		return dossier;
+	}
+
+	// CA2 : refus métier (pas un refus d'accès) : info.
+	private static ResultatCreationDossier doublon() {
+		log.info("création de dossier refusée : SIREN déjà suivi par le cabinet");
+		return ResultatCreationDossier.sirenDejaUtilise();
 	}
 
 }
