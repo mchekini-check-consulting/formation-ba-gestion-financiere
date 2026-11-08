@@ -60,6 +60,11 @@ public class Compte {
 	@Column(name = "role_cabinet")
 	private RoleCabinet roleCabinet;
 
+	// Espace client (US-09, US-14) : dossier du dirigeant (vide pour les collaborateurs).
+	// Simple numéro : le paquet dossier dépend déjà de compte.
+	@Column(name = "dossier_id")
+	private Long dossierId;
+
 	protected Compte() {
 	}
 
@@ -89,6 +94,17 @@ public class Compte {
 		Compte compte = new Compte(email, empreinteInutilisable, Role.COLLABORATEUR, false, nomAffiche);
 		compte.cabinet = cabinet;
 		compte.roleCabinet = roleCabinet;
+		return compte;
+	}
+
+	/**
+	 * Dirigeant invité dans l'espace client de son dossier (US-14) : compte inactif (« Invité »)
+	 * jusqu'à son activation depuis le lien reçu par email (US-08).
+	 */
+	public static Compte dirigeantInvite(Long dossierId, String email, String empreinteInutilisable,
+			String nomAffiche) {
+		Compte compte = new Compte(email, empreinteInutilisable, Role.DIRIGEANT, false, nomAffiche);
+		compte.dossierId = dossierId;
 		return compte;
 	}
 
@@ -174,6 +190,10 @@ public class Compte {
 
 	public RoleCabinet getRoleCabinet() {
 		return roleCabinet;
+	}
+
+	public Long getDossierId() {
+		return dossierId;
 	}
 
 	public boolean isAdministrateur() {

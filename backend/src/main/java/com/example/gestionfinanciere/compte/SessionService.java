@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.gestionfinanciere.logging.ContexteUtilisateur;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 
@@ -51,7 +52,9 @@ public class SessionService {
 			return ResultatSession.expiree();
 		}
 		session.enregistrerActivite(maintenant);
-		return ResultatSession.active(session.getCompte());
+		Compte compte = session.getCompte();
+		ContexteUtilisateur.definir(compte.getId(), compte.getCabinet() == null ? null : compte.getCabinet().getId());
+		return ResultatSession.active(compte);
 	}
 
 	// RG1 : « Se déconnecter » ferme la session.

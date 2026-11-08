@@ -1,9 +1,14 @@
 package com.example.gestionfinanciere.dossier;
 
 import java.time.Clock;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +23,11 @@ import com.example.gestionfinanciere.logging.Loggable;
 @Service
 @Loggable
 public class DossierService {
+
+	private static final Logger log = LoggerFactory.getLogger(DossierService.class);
+	private static final Pattern CHIFFRES = Pattern.compile("^\\d+$");
+	// Champ métier des logs : numéro du dossier.
+	private static final String CHAMP_DOSSIER = "dossier";
 
 	private final DossierRepository dossiers;
 	private final Clock horloge;
@@ -49,14 +59,15 @@ public class DossierService {
 		Long cabinetId = collaborateur.getCabinet().getId();
 		String siren = ValidationInscription.siren(demande.siren());
 		if (dossiers.existsByCabinetIdAndSiren(cabinetId, siren)) {
-			return ResultatCreationDossier.sirenDejaUtilise();
+			return doublon();
 		}
 		try {
 			Dossier dossier = dossiers.save(new Dossier(collaborateur.getCabinet(), demande.raisonSociale().trim(),
 					siren, collaborateur, horloge.instant()));
+			log.atInfo().addKeyValue(CHAMP_DOSSIER, dossier.getId()).log("dossier créé");
 			return ResultatCreationDossier.cree(VueDossier.de(dossier));
 		} catch (DataIntegrityViolationException e) {
-			return ResultatCreationDossier.sirenDejaUtilise();
+			return doublon();
 		}
 	}
 
@@ -68,7 +79,47 @@ public class DossierService {
 				.map(VueDossier::de);
 		EvenementMetier.de("dossier.consultation", dossier.isPresent() ? "trouve" : "introuvable")
 				.avec(collaborateur.identifiantsPourLogs()).avec("dossierId", id).journaliser(dossier.isPresent());
+		if (dossier.isPresent()) {
+			log.atInfo().addKeyValue(CHAMP_DOSSIER, id).log("dossier ouvert");
+		} else {
+			log.atWarn().addKeyValue(CHAMP_DOSSIER, id).log("accès refusé : dossier introuvable ou d'un autre cabinet");
+		}
 		return dossier;
+	}
+
+	/**
+	 * US-09 Liste des dossiers du cabinet du collaborateur (RG3 : jamais ceux d'un autre cabinet),
+	 * filtrée par raison sociale ou SIREN si {@code recherche} est rempli (RG2).
+	 * US-20 : le filtre « dossiers du comptable » s'ajoutera ici, selon son rôle dans le cabinet.
+	 */
+	@Transactional(readOnly = true)
+	public List<LigneDossier> lister(Compte collaborateur, String recherche) {
+		boolean filtre = !ValidationInscription.estVide(recherche);
+		String motif = "%";
+		String motifSiren = "-";
+		if (filtre) {
+			String texte = recherche.trim().toLowerCase(Locale.ROOT);
+			motif = "%" + echapper(texte) + "%";
+			String chiffres = ValidationInscription.siren(texte);
+			if (CHIFFRES.matcher(chiffres).matches()) {
+				motifSiren = "%" + chiffres + "%";
+			}
+		}
+		List<LigneDossier> lignes = dossiers.lister(collaborateur.getCabinet().getId(), motif, motifSiren);
+		log.atInfo().addKeyValue("nombre", lignes.size()).addKeyValue("recherche", filtre)
+				.log("liste des dossiers consultée");
+		return lignes;
+	}
+
+	// Un « % » ou « _ » saisi est cherché tel quel, pas comme joker.
+	private static String echapper(String texte) {
+		return texte.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+	}
+
+	// CA2 : refus métier (pas un refus d'accès) : info.
+	private static ResultatCreationDossier doublon() {
+		log.info("création de dossier refusée : SIREN déjà suivi par le cabinet");
+		return ResultatCreationDossier.sirenDejaUtilise();
 	}
 
 }

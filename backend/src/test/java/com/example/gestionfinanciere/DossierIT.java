@@ -26,6 +26,11 @@ import com.example.gestionfinanciere.cabinet.CabinetRepository;
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.SessionService;
+import com.example.gestionfinanciere.dossier.Dossier;
+import com.example.gestionfinanciere.dossier.DossierRepository;
+import com.example.gestionfinanciere.facture.Facture;
+import com.example.gestionfinanciere.facture.FactureRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 
 // US-10 Créer un dossier client (PTO-17) : vrai serveur HTTP, migrations Flyway (dont V10) et
 // PostgreSQL 16 jetable. Chaque test crée son propre cabinet.
@@ -50,6 +55,12 @@ class DossierIT {
 
 	@Autowired
 	private SessionService sessions;
+
+	@Autowired
+	private DossierRepository dossiersEnBase;
+
+	@Autowired
+	private FactureRepository factures;
 
 	private final HttpClient http = HttpClient.newHttpClient();
 
@@ -88,6 +99,8 @@ class DossierIT {
 		HttpResponse<String> creation = creer(jeton, "Fleurs Martin EURL", "812 345 679");
 		assertThat(creation.statusCode()).isEqualTo(201);
 		assertThat(creation.body()).contains("\"raisonSociale\":\"Fleurs Martin EURL\"", "\"siren\":\"812345679\"");
+		// Logs : identifiant de la requête, à retrouver dans Grafana.
+		assertThat(creation.headers().firstValue("X-Request-Id")).isPresent();
 
 		Matcher id = ID.matcher(creation.body());
 		assertThat(id.find()).isTrue();
@@ -110,6 +123,64 @@ class DossierIT {
 
 		// RG2 : deux cabinets différents peuvent suivre la même entreprise.
 		assertThat(creer(jeanConnecte(), "Boulangerie Leroy SARL", "812345678").statusCode()).isEqualTo(201);
+	}
+
+	// US-09 RG1 et RG3 : dossiers du cabinet seulement, triés, avec factures et état de l'espace client.
+	@Test
+	void us09ListeDesDossiersDuCabinet() throws Exception {
+		String jeton = jeanConnecte();
+		Long boulangerie = idDe(creer(jeton, "Boulangerie Leroy SARL", "812345678"));
+		Long garage = idDe(creer(jeton, "Garage Morel SAS", "798654321"));
+		Long fleurs = idDe(creer(jeton, "Fleurs Martin EURL", "812345679"));
+		// Un autre cabinet a ses propres dossiers, invisibles pour Jean.
+		creer(jeanConnecte(), "Autre Cabinet Client", "111222333");
+
+		// Boulangerie : 2 factures, dirigeante active ; Garage : dirigeant invité ; Fleurs : rien.
+		Dossier dossierBoulangerie = dossiersEnBase.findById(boulangerie).orElseThrow();
+		Compte jean = dossierBoulangerie.getCreePar();
+		factures.save(new Facture(dossierBoulangerie, Facture.Sens.ACHAT, "a.pdf", "application/pdf", Instant.now(),
+				jean));
+		factures.save(new Facture(dossierBoulangerie, Facture.Sens.VENTE, "v.pdf", "application/pdf", Instant.now(),
+				jean));
+		Compte sophie = Compte.dirigeantInvite(boulangerie, "sophie+" + boulangerie + "@test.fr", "x", "Sophie");
+		ReflectionTestUtils.setField(sophie, "actif", true);
+		comptes.save(sophie);
+		comptes.save(Compte.dirigeantInvite(garage, "paul+" + garage + "@test.fr", "x", "Paul"));
+
+		HttpResponse<String> liste = appel("GET", "/dossiers", null, jeton);
+		assertThat(liste.statusCode()).isEqualTo(200);
+		assertThat(liste.body()).isEqualTo("""
+				[{"id":%d,"raisonSociale":"Boulangerie Leroy SARL","siren":"812345678","nombreFactures":2,\
+				"etatEspaceClient":"ACTIF"},\
+				{"id":%d,"raisonSociale":"Fleurs Martin EURL","siren":"812345679","nombreFactures":0,\
+				"etatEspaceClient":"NON_INVITE"},\
+				{"id":%d,"raisonSociale":"Garage Morel SAS","siren":"798654321","nombreFactures":0,\
+				"etatEspaceClient":"INVITE"}]""".formatted(boulangerie, fleurs, garage));
+	}
+
+	// US-09 RG2 : recherche par raison sociale ou par SIREN ; CA vide.
+	@Test
+	void us09RechercheEtListeVide() throws Exception {
+		String jeton = jeanConnecte();
+		assertThat(appel("GET", "/dossiers", null, jeton).body()).isEqualTo("[]");
+
+		creer(jeton, "Boulangerie Leroy SARL", "812345678");
+		creer(jeton, "Garage Morel SAS", "798654321");
+
+		assertThat(appel("GET", "/dossiers?recherche=leroy", null, jeton).body())
+				.contains("Boulangerie Leroy SARL").doesNotContain("Garage");
+		assertThat(appel("GET", "/dossiers?recherche=798%20654", null, jeton).body())
+				.contains("Garage Morel SAS").doesNotContain("Boulangerie");
+		assertThat(appel("GET", "/dossiers?recherche=inconnu", null, jeton).body()).isEqualTo("[]");
+
+		// RG3 : sans connexion, aucune liste.
+		assertThat(appel("GET", "/dossiers", null, null).statusCode()).isEqualTo(401);
+	}
+
+	private static Long idDe(HttpResponse<String> reponse) {
+		Matcher id = ID.matcher(reponse.body());
+		assertThat(id.find()).isTrue();
+		return Long.valueOf(id.group(1));
 	}
 
 	@Test

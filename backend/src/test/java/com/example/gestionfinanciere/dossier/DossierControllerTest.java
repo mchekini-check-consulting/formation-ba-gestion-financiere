@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -102,6 +103,30 @@ class DossierControllerTest {
 		assertEquals(new ErreurResponse(DossierController.MESSAGE_RESERVE), reponse.getBody());
 		verify(dossiers, never()).creer(any(), any());
 		verify(dossiers, never()).consulter(any(), any());
+	}
+
+	// US-09 : liste des dossiers du cabinet, avec la recherche transmise au service.
+	@Test
+	void us09ListeDesDossiers() {
+		connecte(jean);
+		List<LigneDossier> lignes = List.of(
+				new LigneDossier(42L, "Fleurs Martin EURL", "812345679", 3, EtatEspaceClient.INVITE));
+		when(dossiers.lister(jean, "fleurs")).thenReturn(lignes);
+
+		ResponseEntity<Object> reponse = controller.lister(AUTORISATION, "fleurs");
+		assertEquals(HttpStatus.OK, reponse.getStatusCode());
+		assertEquals(lignes, reponse.getBody());
+	}
+
+	// US-09 RG3 : sans session ou sans cabinet, aucune liste.
+	@Test
+	void us09ListeRefuseeSansSessionOuSansCabinet() {
+		when(sessions.consulter(null)).thenReturn(ResultatSession.nonConnecte());
+		assertEquals(HttpStatus.UNAUTHORIZED, controller.lister(null, null).getStatusCode());
+
+		connecte(new Compte("sophie@test.fr", "x", Role.DIRIGEANT, true, "Sophie Martin"));
+		assertEquals(HttpStatus.FORBIDDEN, controller.lister(AUTORISATION, null).getStatusCode());
+		verify(dossiers, never()).lister(any(), any());
 	}
 
 	@Test

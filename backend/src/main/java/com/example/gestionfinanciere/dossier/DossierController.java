@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.gestionfinanciere.compte.Compte;
@@ -24,6 +25,7 @@ import com.example.gestionfinanciere.logging.EvenementMetier;
 
 // US-10 Dossiers clients, exposés par le gateway sous /backend/dossiers/... ; avec l'en-tête
 // "Authorization: Bearer <jeton>" de la session (US-07), réservés aux collaborateurs d'un cabinet :
+//   GET  /dossiers       liste des dossiers du cabinet (US-09), ?recherche=raison sociale ou SIREN
 //   POST /dossiers       créer un dossier (raison sociale, SIREN)
 //   GET  /dossiers/{id}  ouvrir un dossier du cabinet
 @RestController
@@ -44,6 +46,19 @@ public class DossierController {
 	public DossierController(DossierService dossiers, SessionService sessions) {
 		this.dossiers = dossiers;
 		this.sessions = sessions;
+	}
+
+	// US-09 : dossiers du cabinet, filtrés par raison sociale ou SIREN (?recherche=...).
+	@GetMapping
+	public ResponseEntity<Object> lister(
+			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String autorisation,
+			@RequestParam(value = "recherche", required = false) String recherche) {
+		ResultatSession session = sessions.consulter(SessionController.jeton(autorisation));
+		ResponseEntity<Object> refus = refus(session);
+		if (refus != null) {
+			return refus;
+		}
+		return ResponseEntity.ok(dossiers.lister(session.compte(), recherche));
 	}
 
 	@PostMapping
