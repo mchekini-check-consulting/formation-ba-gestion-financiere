@@ -43,6 +43,10 @@ public class Invitation {
 	@Column(name = "utilisee_le")
 	private Instant utiliseeLe;
 
+	// US-14 RG2 : « Renvoyer l'invitation » annule le lien précédent.
+	@Column(name = "annulee_le")
+	private Instant annuleeLe;
+
 	protected Invitation() {
 	}
 
@@ -80,6 +84,10 @@ public class Invitation {
 
 	public Instant getUtiliseeLe() {
 		return utiliseeLe;
+	}
+
+	public Instant getAnnuleeLe() {
+		return annuleeLe;
 	}
 
 }

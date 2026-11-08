@@ -6,7 +6,8 @@ import { CreerDossier } from './dossiers/creer-dossier';
 import { Connexion } from './connexion/connexion';
 import { Equipe } from './equipe/equipe';
 import { Espace } from './espace/espace';
-import { Dossier, Dossiers, EspaceClient } from './espace/pages';
+import { ListeDossiers } from './dossiers/liste-dossiers';
+import { Dossier, EspaceClient } from './espace/pages';
 import { ItemsPage } from './items-page/items-page';
 import { Landing } from './landing/landing';
 import { PageAVenir } from './landing/page-a-venir';
@@ -31,7 +32,8 @@ export const routes: Routes = [
     component: Espace,
     canActivateChild: [sessionGuard],
     children: [
-      { path: 'dossiers', component: Dossiers, data: { role: 'COLLABORATEUR' } },
+      // US-09 : liste des dossiers du cabinet.
+      { path: 'dossiers', component: ListeDossiers, data: { role: 'COLLABORATEUR' } },
       // US-10 : créer un dossier client, qui s'ouvre ensuite (RG3).
       { path: 'dossiers/nouveau', component: CreerDossier, data: { role: 'COLLABORATEUR' } },
       { path: 'dossiers/:id', component: Dossier, data: { role: 'COLLABORATEUR' } },

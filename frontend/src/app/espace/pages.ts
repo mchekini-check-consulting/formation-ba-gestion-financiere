@@ -5,14 +5,9 @@ import { DossierClient, DossierService, formaterSiren } from '../dossiers/dossie
 import { SessionService } from '../session/session.service';
 
 /**
- * Pages d'arrivée après la connexion (US-03 RG3). Leur contenu réel viendra avec les US
- * « Dossiers » et « Espace client » : dossiers d'exemple de la maquette, pour l'instant.
+ * Pages d'arrivée après la connexion (US-03 RG3) : un dossier client (US-10/US-11) et l'espace
+ * client du dirigeant. La liste des dossiers est dans dossiers/liste-dossiers.ts (US-09).
  */
-export const DOSSIERS_EXEMPLE = [
-  { id: 1, nom: 'Boulangerie Leroy SARL', siren: '812 345 678', initiales: 'BL' },
-  { id: 2, nom: 'Garage Morel SAS', siren: '798 654 321', initiales: 'GM' },
-];
-
 const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réessayez.';
 
 const STYLES = `
@@ -34,35 +29,6 @@ const STYLES = `
   dt { color: #6e6456; font-size: 14px; }
   dd { margin: 0; font-weight: 600; }
 `;
-
-@Component({
-  imports: [RouterLink],
-  selector: 'app-dossiers',
-  styles: STYLES,
-  template: `
-    <div class="entete">
-      <div>
-        <h1>Dossiers clients</h1>
-        <p class="sous-titre">{{ nom() }}</p>
-      </div>
-      <a routerLink="/dossiers/nouveau" class="bouton">Créer un dossier</a>
-    </div>
-    <section class="carte">
-      @for (dossier of dossiers; track dossier.id) {
-        <div class="ligne">
-          <span class="pastille">{{ dossier.initiales }}</span>
-          <span><strong>{{ dossier.nom }}</strong><span class="muted">SIREN {{ dossier.siren }}</span></span>
-        </div>
-      }
-    </section>
-    <p class="note">Dossiers d'exemple : la liste réelle arrive avec l'US « Liste des dossiers ».</p>
-  `,
-})
-export class Dossiers {
-  protected readonly dossiers = DOSSIERS_EXEMPLE;
-  private readonly session = inject(SessionService);
-  protected readonly nom = computed(() => this.session.utilisateur()?.nomAffiche ?? '');
-}
 
 @Component({
   imports: [RouterLink],

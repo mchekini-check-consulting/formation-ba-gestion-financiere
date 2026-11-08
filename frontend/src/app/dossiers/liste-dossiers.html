@@ -1,0 +1,68 @@
+<div class="entete">
+  <div>
+    <h1>Dossiers clients</h1>
+    <p class="sous-titre">{{ nom() }}</p>
+  </div>
+  <a routerLink="/dossiers/nouveau" class="bouton">Créer un dossier</a>
+</div>
+
+@if (erreur(); as e) {
+  <p class="alerte" role="alert">{{ e }}</p>
+} @else if (lignes(); as liste) {
+  @if (liste.length === 0 && !recherche().trim()) {
+    <!-- CA vide -->
+    <section class="carte vide">
+      <p>Aucun dossier pour le moment</p>
+      <a routerLink="/dossiers/nouveau" class="bouton">Créer un dossier</a>
+    </section>
+  } @else {
+    <div class="champ-recherche">
+      <label for="recherche">Rechercher un dossier</label>
+      <input
+        id="recherche"
+        type="search"
+        autocomplete="off"
+        placeholder="Raison sociale ou SIREN"
+        [value]="recherche()"
+        (input)="chercher($any($event.target).value)"
+      />
+    </div>
+
+    <section class="carte">
+      @if (liste.length === 0) {
+        <p class="muted aucun">Aucun dossier ne correspond à votre recherche</p>
+      } @else {
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Raison sociale</th>
+              <th scope="col">SIREN</th>
+              <th scope="col">Factures</th>
+              <th scope="col">Espace client</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ligne of liste; track ligne.id) {
+              <tr>
+                <td><a class="nom" [routerLink]="['/dossiers', ligne.id]">{{ ligne.raisonSociale }}</a></td>
+                <td>{{ siren(ligne) }}</td>
+                <td>{{ factures(ligne.nombreFactures) }}</td>
+                <td>
+                  <span
+                    class="etat"
+                    [class.etat--invite]="ligne.etatEspaceClient === 'INVITE'"
+                    [class.etat--actif]="ligne.etatEspaceClient === 'ACTIF'"
+                  >
+                    {{ libelleEtat(ligne.etatEspaceClient) }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+} @else {
+  <p class="muted">Chargement…</p>
+}
