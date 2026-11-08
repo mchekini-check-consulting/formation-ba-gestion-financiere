@@ -6,7 +6,7 @@ import { of } from 'rxjs';
 import { InactiviteService } from '../session/inactivite.service';
 import { SessionService } from '../session/session.service';
 import { Espace } from './espace';
-import { Dossier, Dossiers, EspaceClient } from './pages';
+import { Dossier, EspaceClient } from './pages';
 
 describe('Espace connecté (US-07)', () => {
   let http: HttpTestingController;
@@ -15,7 +15,7 @@ describe('Espace connecté (US-07)', () => {
   beforeEach(async () => {
     sessionStorage.clear();
     await TestBed.configureTestingModule({
-      imports: [Espace, Dossiers, Dossier, EspaceClient],
+      imports: [Espace, Dossier, EspaceClient],
       providers: [
         provideRouter([]),
         provideHttpClient(),
@@ -101,15 +101,7 @@ describe('Espace connecté (US-07)', () => {
     expect(navigate).toHaveBeenCalledWith(['/connexion'], { queryParams: { raison: 'deconnexion' } });
   });
 
-  it('pages : dossiers d’exemple avec « Créer un dossier », espace client', async () => {
-    connecter('COLLABORATEUR', 'Jean Dupont');
-    const dossiers = TestBed.createComponent(Dossiers);
-    await dossiers.whenStable();
-    const liste = dossiers.nativeElement as HTMLElement;
-    expect(liste.querySelectorAll('.ligne').length).toBe(2);
-    expect(liste.textContent).toContain('Boulangerie Leroy SARL');
-    expect(liste.querySelector('a.bouton')?.getAttribute('href')).toBe('/dossiers/nouveau');
-
+  it('page espace client du dirigeant', async () => {
     connecter('DIRIGEANT', 'Sophie Martin');
     const client = TestBed.createComponent(EspaceClient);
     await client.whenStable();
