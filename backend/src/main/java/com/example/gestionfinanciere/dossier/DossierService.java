@@ -25,6 +25,8 @@ public class DossierService {
 
 	private static final Logger log = LoggerFactory.getLogger(DossierService.class);
 	private static final Pattern CHIFFRES = Pattern.compile("^\\d+$");
+	// Champ métier des logs : numéro du dossier.
+	private static final String CHAMP_DOSSIER = "dossier";
 
 	private final DossierRepository dossiers;
 	private final Clock horloge;
@@ -50,7 +52,7 @@ public class DossierService {
 		try {
 			Dossier dossier = dossiers.save(new Dossier(collaborateur.getCabinet(), demande.raisonSociale().trim(),
 					siren, collaborateur, horloge.instant()));
-			log.atInfo().addKeyValue("dossier", dossier.getId()).log("dossier créé");
+			log.atInfo().addKeyValue(CHAMP_DOSSIER, dossier.getId()).log("dossier créé");
 			return ResultatCreationDossier.cree(VueDossier.de(dossier));
 		} catch (DataIntegrityViolationException e) {
 			return doublon();
@@ -64,9 +66,9 @@ public class DossierService {
 		Optional<VueDossier> dossier = dossiers.findByIdAndCabinetId(id, collaborateur.getCabinet().getId())
 				.map(VueDossier::de);
 		if (dossier.isPresent()) {
-			log.atInfo().addKeyValue("dossier", id).log("dossier ouvert");
+			log.atInfo().addKeyValue(CHAMP_DOSSIER, id).log("dossier ouvert");
 		} else {
-			log.atWarn().addKeyValue("dossier", id).log("accès refusé : dossier introuvable ou d'un autre cabinet");
+			log.atWarn().addKeyValue(CHAMP_DOSSIER, id).log("accès refusé : dossier introuvable ou d'un autre cabinet");
 		}
 		return dossier;
 	}
