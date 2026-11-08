@@ -101,21 +101,49 @@ describe('Espace connecté (US-07)', () => {
     expect(navigate).toHaveBeenCalledWith(['/connexion'], { queryParams: { raison: 'deconnexion' } });
   });
 
-  it('pages : dossiers d’exemple, détail d’un dossier, espace client', async () => {
+  it('pages : dossiers d’exemple avec « Créer un dossier », espace client', async () => {
     connecter('COLLABORATEUR', 'Jean Dupont');
     const dossiers = TestBed.createComponent(Dossiers);
     await dossiers.whenStable();
     const liste = dossiers.nativeElement as HTMLElement;
-    expect(liste.querySelectorAll('a.ligne').length).toBe(2);
+    expect(liste.querySelectorAll('.ligne').length).toBe(2);
     expect(liste.textContent).toContain('Boulangerie Leroy SARL');
-
-    const dossier = TestBed.createComponent(Dossier);
-    await dossier.whenStable();
-    expect((dossier.nativeElement as HTMLElement).querySelector('h1')?.textContent).toBe('Garage Morel SAS');
+    expect(liste.querySelector('a.bouton')?.getAttribute('href')).toBe('/dossiers/nouveau');
 
     connecter('DIRIGEANT', 'Sophie Martin');
     const client = TestBed.createComponent(EspaceClient);
     await client.whenStable();
     expect((client.nativeElement as HTMLElement).querySelector('h1')?.textContent).toBe('Bonjour Sophie Martin');
+  });
+
+  it('US-10 RG3 : la page du dossier affiche le dossier lu dans le backend', async () => {
+    connecter('COLLABORATEUR', 'Jean Dupont');
+    const dossier = TestBed.createComponent(Dossier);
+    await dossier.whenStable();
+    const page = dossier.nativeElement as HTMLElement;
+    expect(page.textContent).toContain('Chargement…');
+    http.expectOne('/api/dossiers/2').flush({ id: 2, raisonSociale: 'Fleurs Martin EURL', siren: '812345679', creeLe: '2026-11-08T09:00:00Z' });
+    await dossier.whenStable();
+    expect(page.querySelector('h1')?.textContent).toBe('Fleurs Martin EURL');
+    expect(page.textContent).toContain('812 345 679');
+  });
+
+  it('US-10 : dossier absent ou service indisponible', async () => {
+    connecter('COLLABORATEUR', 'Jean Dupont');
+    const absent = TestBed.createComponent(Dossier);
+    await absent.whenStable();
+    http.expectOne('/api/dossiers/2').flush({ message: 'Dossier introuvable' }, { status: 404, statusText: 'Not Found' });
+    await absent.whenStable();
+    const page = absent.nativeElement as HTMLElement;
+    expect(page.querySelector('h1')?.textContent).toBe('Dossier introuvable');
+    expect(page.querySelector('[role=alert]')?.textContent).toContain("Ce dossier n'existe pas dans votre cabinet.");
+
+    const panne = TestBed.createComponent(Dossier);
+    await panne.whenStable();
+    http.expectOne('/api/dossiers/2').flush(null, { status: 503, statusText: 'Unavailable' });
+    await panne.whenStable();
+    expect((panne.nativeElement as HTMLElement).querySelector('[role=alert]')?.textContent).toContain(
+      'momentanément indisponible',
+    );
   });
 });

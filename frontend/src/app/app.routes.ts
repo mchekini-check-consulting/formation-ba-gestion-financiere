@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { Clients } from './clients/clients';
 import { CodeVerification } from './code-verification/code-verification';
 import { CreerCompte } from './creer-compte/creer-compte';
+import { CreerDossier } from './dossiers/creer-dossier';
 import { Connexion } from './connexion/connexion';
 import { Equipe } from './equipe/equipe';
 import { Espace } from './espace/espace';
@@ -31,6 +32,8 @@ export const routes: Routes = [
     canActivateChild: [sessionGuard],
     children: [
       { path: 'dossiers', component: Dossiers, data: { role: 'COLLABORATEUR' } },
+      // US-10 : créer un dossier client, qui s'ouvre ensuite (RG3).
+      { path: 'dossiers/nouveau', component: CreerDossier, data: { role: 'COLLABORATEUR' } },
       { path: 'dossiers/:id', component: Dossier, data: { role: 'COLLABORATEUR' } },
       { path: 'espace-client', component: EspaceClient, data: { role: 'DIRIGEANT' } },
       // US-19 : équipe du cabinet, réservée à ses administrateurs (RG1).
