@@ -14,14 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.gestionfinanciere.cabinet.ResultatCodeInscription.Statut;
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
-import com.example.gestionfinanciere.compte.DefiSms;
+import com.example.gestionfinanciere.compte.DefiCode;
 import com.example.gestionfinanciere.compte.Jetons;
 import com.example.gestionfinanciere.compte.ResultatRenvoi;
 import com.example.gestionfinanciere.logging.Loggable;
-import com.example.gestionfinanciere.notification.EnvoiSms;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
 
-// US-36 Créer le compte de son cabinet, en 3 étapes (RG3) : informations, code SMS de
-// confirmation du mobile, puis « Cabinet prêt ». Le code suit les règles de la US-04 :
+// US-36 Créer le compte de son cabinet, en 3 étapes (RG3) : informations, code reçu par email
+// pour confirmer l'email, puis « Cabinet prêt ». Le code suit les règles de la US-04 :
 // 6 chiffres, 5 minutes, 3 essais, nouveau code possible après 60 secondes.
 @Service
 @Loggable
@@ -30,28 +30,29 @@ public class InscriptionService {
 	static final Duration VALIDITE_CODE = Duration.ofMinutes(5);
 	static final Duration DELAI_AVANT_RENVOI = Duration.ofSeconds(60);
 	static final int CODES_FAUX_MAX = 3;
+	static final String SUJET = "Confirmez votre email Pointéo";
 
 	private final InscriptionRepository inscriptions;
 	private final CabinetRepository cabinets;
 	private final CompteRepository comptes;
 	private final PasswordEncoder encodeur;
 	private final Clock horloge;
-	private final EnvoiSms sms;
+	private final EnvoiEmail envoiEmail;
 	private final boolean modeTest;
 
 	public InscriptionService(InscriptionRepository inscriptions, CabinetRepository cabinets,
-			CompteRepository comptes, PasswordEncoder encodeur, Clock horloge, EnvoiSms sms,
+			CompteRepository comptes, PasswordEncoder encodeur, Clock horloge, EnvoiEmail envoiEmail,
 			@Value("${pointeo.mode-test:false}") boolean modeTest) {
 		this.inscriptions = inscriptions;
 		this.cabinets = cabinets;
 		this.comptes = comptes;
 		this.encodeur = encodeur;
 		this.horloge = horloge;
-		this.sms = sms;
+		this.envoiEmail = envoiEmail;
 		this.modeTest = modeTest;
 	}
 
-	// Étape 1 : vérifie le formulaire (RG2) puis envoie le code SMS au mobile saisi.
+	// Étape 1 : vérifie le formulaire (RG2) puis envoie le code à l'email saisi.
 	@Transactional
 	public ResultatInscription demarrer(DemandeInscription demande) {
 		Map<String, String> erreurs = ValidationInscription.erreurs(demande);
@@ -70,8 +71,8 @@ public class InscriptionService {
 		Instant maintenant = horloge.instant();
 		inscriptions.save(new Inscription(formulaire, encodeur.encode(formulaire.motDePasse()), maintenant,
 				Jetons.empreinte(defi), encodeur.encode(code), maintenant, maintenant.plus(VALIDITE_CODE)));
-		envoyer(formulaire.telephone(), code);
-		return ResultatInscription.codeEnvoye(new DefiSms(defi, Compte.masquer(formulaire.telephone()),
+		envoyer(formulaire.email(), code);
+		return ResultatInscription.codeEnvoye(new DefiCode(defi, Compte.masquerEmail(formulaire.email()),
 				codeDeTest(code)));
 	}
 
@@ -106,7 +107,7 @@ public class InscriptionService {
 				inscription.getNombreDossiersPrevus(), inscription.getCodeParrainageSaisi(),
 				inscription.getCguAccepteesLe(), maintenant));
 		Compte administrateur = comptes.save(Compte.administrateurDe(cabinet, inscription.getEmail(),
-				inscription.getMotDePasseHash(), inscription.nomAffiche(), inscription.getTelephone()));
+				inscription.getMotDePasseHash(), inscription.nomAffiche()));
 		return ResultatCodeInscription.cabinetCree(administrateur);
 	}
 
@@ -126,8 +127,8 @@ public class InscriptionService {
 		}
 		String code = Jetons.codeSixChiffres();
 		inscription.remplacerCode(encodeur.encode(code), maintenant, maintenant.plus(VALIDITE_CODE));
-		envoyer(inscription.getTelephone(), code);
-		return ResultatRenvoi.renvoye(Compte.masquer(inscription.getTelephone()), codeDeTest(code));
+		envoyer(inscription.getEmail(), code);
+		return ResultatRenvoi.renvoye(codeDeTest(code));
 	}
 
 	private Optional<Inscription> trouver(String defi) {
@@ -137,8 +138,9 @@ public class InscriptionService {
 		return inscriptions.findByEmpreinteDefi(Jetons.empreinte(defi)).filter(i -> !i.isTerminee());
 	}
 
-	private void envoyer(String telephone, String code) {
-		sms.envoyer(telephone, "Pointéo : votre code de confirmation est " + code + ". Il est valable 5 minutes.");
+	private void envoyer(String email, String code) {
+		envoiEmail.envoyer(email, SUJET, "Bonjour,\n\nVotre code de confirmation Pointéo est " + code
+				+ ". Il est valable 5 minutes.\n\nSi vous n'avez pas demandé à créer un compte, ignorez cet email.\n");
 	}
 
 	private String codeDeTest(String code) {

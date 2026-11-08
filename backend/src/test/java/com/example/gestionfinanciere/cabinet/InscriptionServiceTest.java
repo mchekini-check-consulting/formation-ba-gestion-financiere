@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,7 +35,8 @@ import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.compte.Jetons;
 import com.example.gestionfinanciere.compte.ResultatRenvoi;
 import com.example.gestionfinanciere.compte.Role;
-import com.example.gestionfinanciere.notification.EnvoiSms;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
+import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
 class InscriptionServiceTest {
 
@@ -43,10 +46,11 @@ class InscriptionServiceTest {
 	private final InscriptionRepository inscriptions = mock(InscriptionRepository.class);
 	private final CabinetRepository cabinets = mock(CabinetRepository.class);
 	private final CompteRepository comptes = mock(CompteRepository.class);
-	private final EnvoiSms sms = mock(EnvoiSms.class);
+	// Le service d'envoi d'emails est remplacé par un bouchon (mock).
+	private final EnvoiEmail email = mock(EnvoiEmail.class);
 	private final HorlogeReglable horloge = new HorlogeReglable(DEPART);
 	private final InscriptionService service = new InscriptionService(inscriptions, cabinets, comptes, encodeur,
-			horloge, sms, true);
+			horloge, email, true);
 
 	// Inscription enregistrée par demarrer(), retrouvée ensuite par son défi.
 	private final AtomicReference<Inscription> enregistree = new AtomicReference<>();
@@ -73,13 +77,13 @@ class InscriptionServiceTest {
 	}
 
 	@Test
-	void etape1EnvoieLeCodeSmsAuMobileSaisi() {
+	void etape1EnvoieLeCodeALEmailSaisi() {
 		ResultatInscription resultat = demarrer();
 		assertEquals(ResultatInscription.Statut.CODE_ENVOYE, resultat.statut());
-		assertEquals("06 •• •• •• 78", resultat.defi().telephoneMasque());
+		assertEquals("c•••••@cabinet-test.fr", resultat.defi().emailMasque());
 		String code = resultat.defi().codeDeTest();
 		assertTrue(code.matches("\\d{6}"));
-		verify(sms).envoyer(eq("0612345678"), contains(code));
+		verify(email).envoyer(eq("claire.martin@cabinet-test.fr"), eq(InscriptionService.SUJET), contains(code));
 
 		Inscription i = enregistree.get();
 		assertEquals("claire.martin@cabinet-test.fr", i.getEmail());
@@ -95,20 +99,26 @@ class InscriptionServiceTest {
 	}
 
 	@Test
+	void emailImpossibleRemonteLErreur() {
+		doThrow(new EnvoiImpossibleException("api", null)).when(email).envoyer(anyString(), anyString(), anyString());
+		assertThrows(EnvoiImpossibleException.class, this::demarrer);
+	}
+
+	@Test
 	void horsModeTestLeCodeNEstPasRenvoye() {
 		InscriptionService production = new InscriptionService(inscriptions, cabinets, comptes, encodeur, horloge,
-				sms, false);
+				email, false);
 		assertNull(production.demarrer(ValidationInscriptionTest.claire()).defi().codeDeTest());
 	}
 
 	@Test
 	void formulaireInvalideRienNEstEnvoye() {
 		ResultatInscription resultat = service.demarrer(
-				new DemandeInscription("Cabinet Test", "123", "Claire", "Martin", "claire@test.fr", "0612345678",
+				new DemandeInscription("Cabinet Test", "123", "Claire", "Martin", "claire@test.fr",
 						"Pointeo2026!!", 120, null, false));
 		assertEquals(ResultatInscription.Statut.INVALIDE, resultat.statut());
 		assertEquals(2, resultat.erreurs().size());
-		verify(sms, never()).envoyer(anyString(), anyString());
+		verify(email, never()).envoyer(anyString(), anyString(), anyString());
 		verify(inscriptions, never()).save(any());
 	}
 
@@ -116,14 +126,14 @@ class InscriptionServiceTest {
 	void ca2SirenDejaUtiliseRefuse() {
 		when(cabinets.existsBySiren("123456789")).thenReturn(true);
 		assertEquals(ResultatInscription.Statut.SIREN_DEJA_UTILISE, demarrer().statut());
-		verify(sms, never()).envoyer(anyString(), anyString());
+		verify(email, never()).envoyer(anyString(), anyString(), anyString());
 	}
 
 	@Test
 	void emailDejaUtiliseRefuse() {
 		when(comptes.findByEmail("claire.martin@cabinet-test.fr")).thenReturn(Optional.of(mock(Compte.class)));
 		assertEquals(ResultatInscription.Statut.EMAIL_DEJA_UTILISE, demarrer().statut());
-		verify(sms, never()).envoyer(anyString(), anyString());
+		verify(email, never()).envoyer(anyString(), anyString(), anyString());
 	}
 
 	@Test
@@ -136,7 +146,6 @@ class InscriptionServiceTest {
 		Compte claire = resultat.compte();
 		assertEquals("claire.martin@cabinet-test.fr", claire.getEmail());
 		assertEquals("Claire Martin", claire.getNomAffiche());
-		assertEquals("0612345678", claire.getTelephone());
 		assertEquals(Role.COLLABORATEUR, claire.getRole());
 		assertTrue(claire.isAdministrateur());
 		assertTrue(claire.isActif());
@@ -220,7 +229,6 @@ class InscriptionServiceTest {
 		horloge.avancer(Duration.ofSeconds(60));
 		ResultatRenvoi resultat = service.renvoyer(etape1.defi().defi());
 		assertEquals(ResultatRenvoi.Statut.RENVOYE, resultat.statut());
-		assertEquals("06 •• •• •• 78", resultat.telephoneMasque());
 		assertEquals(DEPART.plus(Duration.ofMinutes(6)), enregistree.get().getExpireLe());
 		assertTrue(encodeur.matches(resultat.codeDeTest(), enregistree.get().getEmpreinteCode()));
 		if (!ancien.equals(resultat.codeDeTest())) {

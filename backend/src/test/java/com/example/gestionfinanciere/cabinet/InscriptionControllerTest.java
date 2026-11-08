@@ -20,7 +20,7 @@ import com.example.gestionfinanciere.cabinet.InscriptionController.RenvoiRequest
 import com.example.gestionfinanciere.cabinet.InscriptionController.RenvoiTropTot;
 import com.example.gestionfinanciere.cabinet.ResultatCodeInscription.Statut;
 import com.example.gestionfinanciere.compte.Compte;
-import com.example.gestionfinanciere.compte.DefiSms;
+import com.example.gestionfinanciere.compte.DefiCode;
 import com.example.gestionfinanciere.compte.ErreurResponse;
 import com.example.gestionfinanciere.compte.ResultatRenvoi;
 import com.example.gestionfinanciere.compte.Role;
@@ -41,7 +41,7 @@ class InscriptionControllerTest {
 
 	@Test
 	void etape1CodeEnvoye() {
-		DefiSms defi = new DefiSms("defi", "06 •• •• •• 78", "482917");
+		DefiCode defi = new DefiCode("defi", "c•••••@cabinet-test.fr", "482917");
 		when(inscription.demarrer(demande)).thenReturn(ResultatInscription.codeEnvoye(defi));
 		ResponseEntity<Object> reponse = controller.demarrer(demande);
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
@@ -77,18 +77,17 @@ class InscriptionControllerTest {
 	}
 
 	@Test
-	void etape1SmsImpossible() {
-		when(inscription.demarrer(demande)).thenThrow(new EnvoiImpossibleException("opérateur", null));
+	void etape1EmailImpossible() {
+		when(inscription.demarrer(demande)).thenThrow(new EnvoiImpossibleException("api", null));
 		ResponseEntity<Object> reponse = controller.demarrer(demande);
 		assertEquals(HttpStatus.SERVICE_UNAVAILABLE, reponse.getStatusCode());
-		assertEquals(new ErreurResponse(InscriptionController.MESSAGE_SMS_IMPOSSIBLE), reponse.getBody());
+		assertEquals(new ErreurResponse("L’email n’a pas pu être envoyé. Réessayez."), reponse.getBody());
 	}
 
 	@Test
 	void ca1BonCodeConnecteLAdministratrice() {
 		Cabinet cabinet = new Cabinet("Cabinet Test", "123456789", 120, null, Instant.EPOCH, Instant.EPOCH);
-		Compte claire = Compte.administrateurDe(cabinet, "claire.martin@cabinet-test.fr", "x", "Claire Martin",
-				"0612345678");
+		Compte claire = Compte.administrateurDe(cabinet, "claire.martin@cabinet-test.fr", "x", "Claire Martin");
 		when(sessions.ouvrir(claire)).thenReturn("jeton-session");
 		ResponseEntity<Object> reponse = code(ResultatCodeInscription.cabinetCree(claire));
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
@@ -126,10 +125,10 @@ class InscriptionControllerTest {
 
 	@Test
 	void renvoiDuCode() {
-		when(inscription.renvoyer("defi")).thenReturn(ResultatRenvoi.renvoye("06 •• •• •• 78", "111222"));
+		when(inscription.renvoyer("defi")).thenReturn(ResultatRenvoi.renvoye("111222"));
 		ResponseEntity<Object> reponse = controller.renvoyerCode(new RenvoiRequest("defi"));
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
-		assertEquals(new CodeRenvoye("06 •• •• •• 78", "111222"), reponse.getBody());
+		assertEquals(new CodeRenvoye("111222"), reponse.getBody());
 	}
 
 	@Test
@@ -142,7 +141,7 @@ class InscriptionControllerTest {
 		when(inscription.renvoyer("inconnu")).thenReturn(ResultatRenvoi.demandeInvalide());
 		assertEquals(HttpStatus.UNAUTHORIZED, controller.renvoyerCode(new RenvoiRequest("inconnu")).getStatusCode());
 
-		when(inscription.renvoyer("ko")).thenThrow(new EnvoiImpossibleException("opérateur", null));
+		when(inscription.renvoyer("ko")).thenThrow(new EnvoiImpossibleException("api", null));
 		assertEquals(HttpStatus.SERVICE_UNAVAILABLE, controller.renvoyerCode(new RenvoiRequest("ko")).getStatusCode());
 	}
 

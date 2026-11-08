@@ -17,12 +17,12 @@ export const routes: Routes = [
   { path: '', component: Landing, pathMatch: 'full' },
   { path: 'clients', component: Clients },
   { path: 'items', component: ItemsPage },
-  // Authentification (EP-02) : US-03 connexion, US-04 code SMS, US-06 mot de passe oublié.
+  // Authentification (EP-02) : US-03 connexion, US-04 code reçu par email, US-06 mot de passe oublié.
   { path: 'connexion', component: Connexion },
   { path: 'verification-code', component: CodeVerification },
   { path: 'mot-de-passe-oublie', component: MotDePasseOublie },
   { path: 'reinitialiser-mot-de-passe', component: NouveauMotDePasse },
-  // US-36 : création du compte d'un cabinet (informations, code SMS, cabinet prêt).
+  // US-36 : création du compte d'un cabinet (informations, code email, cabinet prêt).
   { path: 'creer-compte', component: CreerCompte },
   // Pages connectées (US-07) : session vérifiée par le backend à chaque page ouverte.
   {

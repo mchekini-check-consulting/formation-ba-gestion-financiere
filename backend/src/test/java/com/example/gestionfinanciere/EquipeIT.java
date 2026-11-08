@@ -56,7 +56,7 @@ class EquipeIT {
 		Cabinet cabinet = cabinets.save(new Cabinet("Cabinet Test", String.valueOf(100_000_000
 				+ Math.abs(id.hashCode() % 900_000_000)), 120, null, Instant.now(), Instant.now()));
 		Compte claire = comptes.save(Compte.administrateurDe(cabinet, "claire+" + id + "@cabinet-test.fr", "x",
-				"Claire Martin", "0612345678"));
+				"Claire Martin"));
 		return sessions.ouvrir(claire);
 	}
 

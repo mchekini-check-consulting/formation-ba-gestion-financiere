@@ -11,12 +11,11 @@ async function claireAdministratrice(page: Page): Promise<string> {
   await page.getByLabel('Prénom').fill('Claire');
   await page.getByLabel('Nom', { exact: true }).fill('Martin');
   await page.getByLabel('Email professionnel').fill(`claire.martin+${siren}@cabinet-test.fr`);
-  await page.getByLabel('Mobile').fill('06 12 34 56 78');
   await page.getByLabel('Mot de passe', { exact: true }).fill('Pointeo2026!!');
   await page.getByLabel('Nombre de dossiers prévus').fill('120');
   await page.getByLabel(/J'accepte les/).check();
-  await page.getByRole('button', { name: 'Recevoir le code SMS' }).click();
-  await page.getByLabel('Code reçu par SMS').fill(await codeRecu(page));
+  await page.getByRole('button', { name: 'Recevoir le code par email' }).click();
+  await page.getByLabel('Code reçu par email').fill(await codeRecu(page));
   await page.getByRole('button', { name: 'Valider et créer mon cabinet' }).click();
   await expect(page.getByRole('heading', { name: 'Cabinet Test est prêt' })).toBeVisible();
   return siren;

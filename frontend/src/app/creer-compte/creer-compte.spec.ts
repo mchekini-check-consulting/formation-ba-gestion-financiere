@@ -1,9 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { SessionService } from '../session/session.service';
-import { CreerCompte, MESSAGE_INDISPONIBLE } from './creer-compte';
+import { CreerCompte, MESSAGE_INDISPONIBLE, TITRE_CONFIRMATION } from './creer-compte';
 import { Formulaire } from './validation';
 
 /** CA1 : formulaire de Claire Martin pour Cabinet Test. */
@@ -13,7 +14,6 @@ const claire = (): Formulaire => ({
   prenom: 'Claire',
   nom: 'Martin',
   email: 'claire.martin@cabinet-test.fr',
-  mobile: '06 12 34 56 78',
   motDePasse: 'Pointeo2026!!',
   nombreDossiers: 120,
   codeParrainage: '',
@@ -68,7 +68,6 @@ describe('Créer un compte (US-36)', () => {
       await saisir('#prenom', f.prenom);
       await saisir('#nom', f.nom);
       await saisir('#email', f.email);
-      await saisir('#mobile', f.mobile);
       await saisir('#mot-de-passe', f.motDePasse);
       await saisir('#nombre-dossiers', String(f.nombreDossiers));
       page.querySelector<HTMLInputElement>('input[type=checkbox]')!.click();
@@ -87,7 +86,7 @@ describe('Créer un compte (US-36)', () => {
     };
     /** Arrivée sur l'étape 2 avec le code de test 482917. */
     const etape2 = async () => {
-      (await etape1()).flush({ defi: 'defi', telephoneMasque: '06 •• •• •• 78', codeDeTest: '482917' });
+      (await etape1()).flush({ defi: 'defi', emailMasque: 'c•••••@cabinet-test.fr', codeDeTest: '482917' });
       await stable();
     };
     return { fixture, page, saisir, remplir, envoyer, texte, etape1, etape2, stable };
@@ -97,12 +96,16 @@ describe('Créer un compte (US-36)', () => {
     await configurer();
     const { page, texte } = await ouvrir();
     expect(texte('h1')).toBe('Créer un compte');
-    for (const id of ['nom-cabinet', 'siren', 'prenom', 'nom', 'email', 'mobile', 'mot-de-passe', 'nombre-dossiers', 'code-parrainage']) {
+    for (const id of ['nom-cabinet', 'siren', 'prenom', 'nom', 'email', 'mot-de-passe', 'nombre-dossiers', 'code-parrainage']) {
       expect(page.querySelector(`label[for=${id}]`), id).not.toBeNull();
     }
     expect(texte('.cgu')).toContain("J'accepte les conditions générales d'utilisation");
     expect(page.querySelector('[data-testid=tarif]')).toBeNull();
     expect(page.querySelector('.steps__num--actif')?.textContent).toBe('1');
+    // Plus de champ mobile : le code part par email.
+    expect(page.querySelector('#mobile')).toBeNull();
+    expect(texte('.steps li:nth-child(2) strong')).toBe('Code email');
+    expect(texte('button[type=submit]')).toBe('Recevoir le code par email');
   });
 
   it('RG2 : le nombre de dossiers affiche la tranche et le prix mensuel', async () => {
@@ -126,7 +129,7 @@ describe('Créer un compte (US-36)', () => {
     await configurer();
     const { page, envoyer, texte } = await ouvrir();
     await envoyer();
-    expect(page.querySelectorAll('.field__error').length).toBe(9);
+    expect(page.querySelectorAll('.field__error').length).toBe(8);
     expect(texte('.cgu + .field__error')).toBe('Vous devez accepter les CGU pour créer votre compte');
     http.expectNone('/api/inscription');
   });
@@ -141,17 +144,28 @@ describe('Créer un compte (US-36)', () => {
     expect(page.querySelector<HTMLInputElement>('#mot-de-passe')!.type).toBe('text');
   });
 
-  it('CA1 étapes 1 et 2 : le formulaire envoie le code SMS, puis passe au code', async () => {
+  it('CA1 étapes 1 et 2 : le formulaire envoie le code par email, puis passe au code', async () => {
     await configurer();
     const { page, etape1, stable, texte } = await ouvrir();
     const requete = await etape1();
     expect(requete.request.method).toBe('POST');
     expect(requete.request.body).toEqual(claire());
-    requete.flush({ defi: 'defi', telephoneMasque: '06 •• •• •• 78', codeDeTest: '482917' });
+    requete.flush({ defi: 'defi', emailMasque: 'c•••••@cabinet-test.fr', codeDeTest: '482917' });
     await stable();
 
-    expect(texte('h1')).toBe('Confirmez votre mobile');
-    expect(texte('[data-testid=telephone]')).toBe('06 •• •• •• 78');
+    expect(texte('h1')).toBe('Confirmez votre email');
+    expect(texte('.form__title p')).toBe(
+      'Saisissez le code à 6 chiffres envoyé à claire.martin@cabinet-test.fr. Il est valable 5 minutes.',
+    );
+    expect(texte('.aside__titre')).toBe('Encore une étape : confirmez votre email.');
+    expect(texte('.aside__lead')).toBe(
+      'Un code vous sera envoyé par email à chaque connexion. Il protège l’accès aux dossiers et aux données ' +
+        'bancaires de vos clients.',
+    );
+    expect(texte('button.back')).toBe('← Modifier l’email');
+    expect(texte('label[for=code]')).toBe('Code reçu par email');
+    expect(TestBed.inject(Title).getTitle()).toBe(TITRE_CONFIRMATION);
+    expect(TITRE_CONFIRMATION).toBe('Pointéo – Confirmer l’email');
     expect(texte('[data-testid=code-de-test] strong')).toBe('482917');
     expect(page.querySelector('.steps__num--actif')?.textContent).toBe('2');
     expect(texte('.renvoi')).toBe('Renvoyer un code dans 60 s');
@@ -169,6 +183,8 @@ describe('Créer un compte (US-36)', () => {
     await stable();
 
     expect(texte('h1')).toBe('Cabinet Test est prêt');
+    expect(texte('[data-testid=bandeau]')).toBe('Compte créé et email confirmé');
+    expect(TestBed.inject(Title).getTitle()).not.toBe(TITRE_CONFIRMATION);
     expect(texte('.form__title p')).toContain('Bienvenue Claire Martin');
     expect(page.querySelector('.steps__num--actif')?.textContent).toBe('3');
     expect(page.querySelectorAll('.action').length).toBe(3);
@@ -245,7 +261,7 @@ describe('Créer un compte (US-36)', () => {
     expect(page.querySelector<HTMLInputElement>('#siren')!.value).toBe('123 456 789');
   });
 
-  it('« Modifier mes informations » revient à l’étape 1', async () => {
+  it('« Modifier l’email » revient à l’étape 1', async () => {
     await configurer();
     const { page, etape2, stable, texte } = await ouvrir();
     await etape2();
@@ -263,7 +279,7 @@ describe('Créer un compte (US-36)', () => {
     vi.advanceTimersByTime(60_000);
     await stable();
     page.querySelector<HTMLButtonElement>('.renvoi button')!.click();
-    http.expectOne('/api/inscription/code/renvoyer').flush({ telephoneMasque: '06 •• •• •• 78', codeDeTest: '555666' });
+    http.expectOne('/api/inscription/code/renvoyer').flush({ codeDeTest: '555666' });
     await stable();
     expect(texte('[data-testid=code-de-test] strong')).toBe('555666');
     expect(texte('[data-testid=alerte]')).toBe('Un nouveau code vous a été envoyé.');
@@ -278,7 +294,7 @@ describe('Créer un compte (US-36)', () => {
     expect(texte('.renvoi')).toBe('Renvoyer un code dans 12 s');
   });
 
-  it('renvoi refusé : demande expirée -> formulaire ; SMS impossible -> message', async () => {
+  it('renvoi refusé : demande expirée -> formulaire ; email impossible -> message', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     await configurer();
     const { page, etape2, stable, texte } = await ouvrir();
@@ -288,9 +304,9 @@ describe('Créer un compte (US-36)', () => {
     page.querySelector<HTMLButtonElement>('.renvoi button')!.click();
     http
       .expectOne('/api/inscription/code/renvoyer')
-      .flush({ message: "Le SMS n'a pas pu être envoyé." }, { status: 503, statusText: 'Unavailable' });
+      .flush({ message: 'L’email n’a pas pu être envoyé. Réessayez.' }, { status: 503, statusText: 'Unavailable' });
     await stable();
-    expect(texte('[data-testid=alerte]')).toBe("Le SMS n'a pas pu être envoyé.");
+    expect(texte('[data-testid=alerte]')).toBe('L’email n’a pas pu être envoyé. Réessayez.');
 
     page.querySelector<HTMLButtonElement>('.renvoi button')!.click();
     http

@@ -49,7 +49,7 @@ class EquipeServiceTest {
 
 	private final Cabinet cabinetTest = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
 	private final Compte claire = Compte.administrateurDe(cabinetTest, "claire.martin@cabinet-test.fr", "x",
-			"Claire Martin", "0612345678");
+			"Claire Martin");
 
 	// CA1 : Claire invite Lucie Moreau comme Comptable.
 	static DemandeInvitation lucie() {
@@ -150,7 +150,7 @@ class EquipeServiceTest {
 		Compte lucie = Compte.invite(cabinetTest, "l@test.fr", "x", "Lucie Moreau", RoleCabinet.ASSOCIE);
 		Invitation invitation = new Invitation(lucie, claire, "empreinte", MAINTENANT, MAINTENANT.plusSeconds(1));
 		assertNull(invitation.getId());
-		assertEquals("", lucie.getTelephone()); // US-08 RG2 : aucun mobile demandé
+		assertFalse(lucie.isActif()); // US-08 : activé plus tard depuis le lien reçu par email
 		assertEquals(RoleCabinet.ASSOCIE, lucie.getRoleCabinet());
 		assertEquals(RoleCabinet.ADMINISTRATEUR, claire.getRoleCabinet());
 	}

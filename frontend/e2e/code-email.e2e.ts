@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { JEAN, MOT_DE_PASSE, SOPHIE, codeRecu, remettreAZero, saisirIdentifiants, taperCode } from './outils';
 
-// US-04 Valider la connexion par un code reçu par SMS (PTO-5).
-test.describe('US-04 Code SMS', () => {
+// US-04 Valider la connexion par un code reçu par email (PTO-5).
+test.describe('US-04 Code reçu par email', () => {
   test.beforeAll(async ({ request }) => {
     await remettreAZero(request, JEAN);
     await remettreAZero(request, SOPHIE);
@@ -15,7 +15,8 @@ test.describe('US-04 Code SMS', () => {
   });
 
   test('CA1 — bon code dans les 5 minutes -> liste des dossiers', async ({ page }) => {
-    await expect(page.getByTestId('telephone')).toHaveText('06 •• •• •• 42');
+    await expect(page.getByTestId('email')).toHaveText('j•••••@cabinet-test.fr');
+    await expect(page.getByText('Pensez à regarder vos courriers indésirables.')).toBeVisible();
     await taperCode(page, await codeRecu(page));
     await page.getByRole('button', { name: 'Valider' }).click();
 

@@ -17,8 +17,8 @@ import com.example.gestionfinanciere.compte.SessionService;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
 // US-36 Créer le compte de son cabinet, exposé par le gateway sous /backend/inscription/... :
-//   POST /inscription                 formulaire « Vos informations » -> envoi du code SMS
-//   POST /inscription/code            code SMS -> cabinet créé, administrateur connecté
+//   POST /inscription                 formulaire « Vos informations » -> envoi du code par email
+//   POST /inscription/code            code reçu par email -> cabinet créé, administrateur connecté
 //   POST /inscription/code/renvoyer   nouveau code après 60 s
 @RestController
 @RequestMapping("/inscription")
@@ -29,11 +29,10 @@ public class InscriptionController {
 			+ "Demandez à son administrateur de vous inviter.";
 	static final String MESSAGE_EMAIL_DEJA_UTILISE = "Un compte existe déjà avec cet email. "
 			+ "Connectez-vous ou utilisez une autre adresse.";
-	static final String MESSAGE_SMS_IMPOSSIBLE = "Le SMS n'a pas pu être envoyé. Vérifiez le numéro de mobile "
-			+ "et réessayez.";
+	static final String MESSAGE_EMAIL_IMPOSSIBLE = "L’email n’a pas pu être envoyé. Réessayez.";
 	static final String MESSAGE_DEMANDE_INVALIDE = "Votre demande n'est plus valable. Recommencez la création "
 			+ "du compte.";
-	static final String MESSAGE_TROP_DE_CODES = "Trop de codes incorrects. Vérifiez votre numéro de mobile "
+	static final String MESSAGE_TROP_DE_CODES = "Trop de codes incorrects. Vérifiez votre email "
 			+ "et recommencez.";
 	static final String MESSAGE_CODE_EXPIRE = "Ce code a expiré. Demandez un nouveau code.";
 
@@ -55,7 +54,7 @@ public class InscriptionController {
 	public record ErreurCode(String message, int tentativesRestantes, boolean retourFormulaire) {
 	}
 
-	public record CodeRenvoye(String telephoneMasque, String codeDeTest) {
+	public record CodeRenvoye(String codeDeTest) {
 	}
 
 	public record RenvoiTropTot(String message, long secondesRestantes) {
@@ -81,7 +80,7 @@ public class InscriptionController {
 				case EMAIL_DEJA_UTILISE -> conflit("email", MESSAGE_EMAIL_DEJA_UTILISE);
 			};
 		} catch (EnvoiImpossibleException e) {
-			return erreur(HttpStatus.SERVICE_UNAVAILABLE, MESSAGE_SMS_IMPOSSIBLE);
+			return erreur(HttpStatus.SERVICE_UNAVAILABLE, MESSAGE_EMAIL_IMPOSSIBLE);
 		}
 	}
 
@@ -107,14 +106,14 @@ public class InscriptionController {
 		try {
 			ResultatRenvoi resultat = inscription.renvoyer(demande.defi());
 			return switch (resultat.statut()) {
-				case RENVOYE -> ResponseEntity.ok(new CodeRenvoye(resultat.telephoneMasque(), resultat.codeDeTest()));
+				case RENVOYE -> ResponseEntity.ok(new CodeRenvoye(resultat.codeDeTest()));
 				case TROP_TOT -> ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
 						.body(new RenvoiTropTot("Vous pourrez demander un nouveau code dans "
 								+ resultat.secondesRestantes() + " s.", resultat.secondesRestantes()));
 				case DEMANDE_INVALIDE -> retourFormulaire(HttpStatus.UNAUTHORIZED, MESSAGE_DEMANDE_INVALIDE);
 			};
 		} catch (EnvoiImpossibleException e) {
-			return erreur(HttpStatus.SERVICE_UNAVAILABLE, MESSAGE_SMS_IMPOSSIBLE);
+			return erreur(HttpStatus.SERVICE_UNAVAILABLE, MESSAGE_EMAIL_IMPOSSIBLE);
 		}
 	}
 

@@ -20,14 +20,14 @@
       <div class="form__title">
         <h1>Vérifiez votre identité</h1>
         <p>
-          Saisissez le code à 6 chiffres envoyé par SMS au <strong data-testid="telephone">{{ telephoneMasque() }}</strong>.
-          Il est valable 5 minutes.
+          Saisissez le code à 6 chiffres envoyé par email à <strong data-testid="email">{{ emailMasque() }}</strong>.
+          Il est valable 5 minutes. Pensez à regarder vos courriers indésirables.
         </p>
       </div>
 
       @if (codeDeTest(); as code) {
         <p class="mode-test" data-testid="code-de-test">
-          Mode test (aucun opérateur SMS branché) — code reçu : <strong>{{ code }}</strong>
+          Mode test (aucune API d'envoi d'emails branchée) — code reçu : <strong>{{ code }}</strong>
         </p>
       }
 

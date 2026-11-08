@@ -1,6 +1,6 @@
 package com.example.gestionfinanciere.notification;
 
-// L'opérateur (SMS ou email) a renvoyé une erreur.
+// L'API d'envoi d'emails a renvoyé une erreur.
 public class EnvoiImpossibleException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;

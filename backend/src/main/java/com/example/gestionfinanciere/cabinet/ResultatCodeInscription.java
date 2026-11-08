@@ -2,7 +2,7 @@ package com.example.gestionfinanciere.cabinet;
 
 import com.example.gestionfinanciere.compte.Compte;
 
-// Issue de l'étape 2 « Code SMS » (US-36) : cabinet créé avec son administrateur, ou refus.
+// Issue de l'étape 2 « Code email » (US-36) : cabinet créé avec son administrateur, ou refus.
 public record ResultatCodeInscription(Statut statut, int tentativesRestantes, Compte compte) {
 
 	public enum Statut {

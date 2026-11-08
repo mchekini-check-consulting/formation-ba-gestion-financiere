@@ -49,7 +49,7 @@ export class Connexion {
 
   constructor() {
     const raison = inject(ActivatedRoute).snapshot.queryParamMap.get('raison');
-    // Message transmis par l'écran du code SMS (US-04 RG3 : trop de codes faux).
+    // Message transmis par l'écran du code reçu par email (US-04 RG3 : trop de codes faux).
     const messageTransmis = (history.state as { message?: string } | null)?.message;
     if (messageTransmis) {
       this.info.set({ ton: 'erreur', texte: messageTransmis });
@@ -78,9 +78,9 @@ export class Connexion {
     this.auth.seConnecter(email, motDePasse).subscribe({
       next: (reponse) => {
         this.enCours.set(false);
-        // US-03 CA1 : l'écran du code SMS s'affiche (US-04).
+        // US-03 CA1 : l'écran du code reçu par email s'affiche (US-04).
         void this.router.navigate(['/verification-code'], {
-          state: { defi: reponse.defi, telephoneMasque: reponse.telephoneMasque, codeDeTest: reponse.codeDeTest },
+          state: { defi: reponse.defi, emailMasque: reponse.emailMasque, codeDeTest: reponse.codeDeTest },
         });
       },
       error: (err: HttpErrorResponse) => {
@@ -101,7 +101,7 @@ export class Connexion {
         return { ton: 'erreur', texte: MESSAGE_IDENTIFIANTS_INCORRECTS };
       case 423: // US-05 CA1 : compte bloqué 15 minutes
         return { ton: 'avertissement', texte: texteServeur ?? 'Compte bloqué 15 minutes' };
-      case 503: // US-04 : le SMS n'a pas pu être envoyé
+      case 503: // US-04 : « L’email n’a pas pu être envoyé. Réessayez. » (message du serveur)
         return { ton: 'erreur', texte: texteServeur ?? MESSAGE_SERVICE_INDISPONIBLE };
       default:
         return { ton: 'erreur', texte: MESSAGE_SERVICE_INDISPONIBLE };

@@ -5,11 +5,11 @@ import { apiBase } from '../api';
 import { CodeRenvoye, Role } from '../connexion/auth.service';
 import { Formulaire } from './validation';
 
-/** Étape 1 réussie : le code SMS est parti vers le mobile saisi. */
+/** Étape 1 réussie : le code est parti vers l'email saisi. */
 export interface CodeEnvoye {
   defi: string;
-  telephoneMasque: string;
-  /** Mode test uniquement (aucun opérateur SMS branché). */
+  emailMasque: string;
+  /** Mode test uniquement (aucune API d'envoi d'emails branchée). */
   codeDeTest: string | null;
 }
 

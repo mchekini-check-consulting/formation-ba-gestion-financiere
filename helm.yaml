@@ -41,8 +41,8 @@ applications:
           qualif: https://frontend.formation-ba-gestion-financiere.qualif.check-consulting.net
           preprod: https://frontend.formation-ba-gestion-financiere.preprod.check-consulting.net
           prod: https://frontend.formation-ba-gestion-financiere.prod.check-consulting.net
-      # Mode test : code SMS et lien de réinitialisation affichés à l'écran, faute
-      # d'opérateur SMS et d'API email branchés. Jamais en preprod/prod.
+      # Mode test : code reçu par email et liens des emails affichés à l'écran, faute
+      # d'API d'envoi d'emails branchée. Jamais en preprod/prod.
       - key: POINTEO_MODE_TEST
         value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
   - name: gateway

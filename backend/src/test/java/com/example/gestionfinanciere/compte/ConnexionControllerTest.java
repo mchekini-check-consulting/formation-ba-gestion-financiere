@@ -19,24 +19,24 @@ import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 class ConnexionControllerTest {
 
 	private final ConnexionService connexion = mock(ConnexionService.class);
-	private final CodeSmsService codes = mock(CodeSmsService.class);
+	private final CodeConnexionService codes = mock(CodeConnexionService.class);
 	private final SessionService sessions = mock(SessionService.class);
 	private final ConnexionController controller = new ConnexionController(connexion, codes, sessions);
 	private final Compte jean = new Compte("jean.dupont@cabinet-test.fr", "x", Role.COLLABORATEUR, true,
-			"Jean Dupont", "0612345642");
-	private final DefiSms defi = new DefiSms("defi", "06 •• •• •• 42", "482917");
+			"Jean Dupont");
+	private final DefiCode defi = new DefiCode("defi", "j•••••@cabinet-test.fr", "482917");
 
 	private ResponseEntity<Object> connexion(String motDePasse) {
 		return controller.seConnecter(new ConnexionRequest("jean.dupont@cabinet-test.fr", motDePasse));
 	}
 
 	@Test
-	void us03Ca1ConnexionReussieEnvoieLeCodeSms() {
+	void us03Ca1ConnexionReussieEnvoieLeCodeParEmail() {
 		when(connexion.authentifier("jean.dupont@cabinet-test.fr", "bon")).thenReturn(ResultatConnexion.reussie(jean));
 		when(codes.demarrer(jean)).thenReturn(defi);
 		ResponseEntity<Object> reponse = connexion("bon");
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
-		assertEquals(new ConnexionResponse("CODE_SMS", "defi", "06 •• •• •• 42", "482917"), reponse.getBody());
+		assertEquals(new ConnexionResponse("CODE_EMAIL", "defi", "j•••••@cabinet-test.fr", "482917"), reponse.getBody());
 	}
 
 	@Test
@@ -57,12 +57,12 @@ class ConnexionControllerTest {
 	}
 
 	@Test
-	void us04SmsImpossibleRenvoie503() {
+	void us04EmailImpossibleRenvoie503() {
 		when(connexion.authentifier("jean.dupont@cabinet-test.fr", "bon")).thenReturn(ResultatConnexion.reussie(jean));
-		when(codes.demarrer(jean)).thenThrow(new EnvoiImpossibleException("opérateur", null));
+		when(codes.demarrer(jean)).thenThrow(new EnvoiImpossibleException("api", null));
 		ResponseEntity<Object> reponse = connexion("bon");
 		assertEquals(HttpStatus.SERVICE_UNAVAILABLE, reponse.getStatusCode());
-		assertEquals(new ErreurResponse("Le SMS n'a pas pu être envoyé. Réessayez."), reponse.getBody());
+		assertEquals(new ErreurResponse("L’email n’a pas pu être envoyé. Réessayez."), reponse.getBody());
 	}
 
 	@Test
@@ -109,10 +109,10 @@ class ConnexionControllerTest {
 
 	@Test
 	void us04Rg2Renvoi() {
-		when(codes.renvoyer("defi")).thenReturn(ResultatRenvoi.renvoye("06 •• •• •• 42", "123456"));
+		when(codes.renvoyer("defi")).thenReturn(ResultatRenvoi.renvoye("123456"));
 		ResponseEntity<Object> reponse = controller.renvoyerCode(new RenvoiRequest("defi"));
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
-		assertEquals(new CodeRenvoye("06 •• •• •• 42", "123456"), reponse.getBody());
+		assertEquals(new CodeRenvoye("123456"), reponse.getBody());
 	}
 
 	@Test
@@ -124,10 +124,10 @@ class ConnexionControllerTest {
 	}
 
 	@Test
-	void us04RenvoiDemandeInvalideOuSmsImpossible() {
+	void us04RenvoiDemandeInvalideOuEmailImpossible() {
 		when(codes.renvoyer("inconnu")).thenReturn(ResultatRenvoi.demandeInvalide());
 		assertEquals(HttpStatus.UNAUTHORIZED, controller.renvoyerCode(new RenvoiRequest("inconnu")).getStatusCode());
-		when(codes.renvoyer("defi")).thenThrow(new EnvoiImpossibleException("opérateur", null));
+		when(codes.renvoyer("defi")).thenThrow(new EnvoiImpossibleException("api", null));
 		assertEquals(HttpStatus.SERVICE_UNAVAILABLE,
 				controller.renvoyerCode(new RenvoiRequest("defi")).getStatusCode());
 	}

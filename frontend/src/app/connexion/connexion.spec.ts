@@ -59,17 +59,17 @@ describe('Connexion (US-03, US-05)', () => {
     expect(page.querySelector('[role=alert]')).toBeNull();
   });
 
-  it("US-03 CA1 : bons identifiants -> ouvre l'écran du code SMS avec le défi", async () => {
+  it("US-03 CA1 : bons identifiants -> ouvre l'écran du code reçu par email avec le défi", async () => {
     await configurer();
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     const { seConnecter } = await ouvrir();
     const requete = await seConnecter();
     expect(requete.request.method).toBe('POST');
     expect(requete.request.body).toEqual({ email: 'jean.dupont@cabinet-test.fr', motDePasse: 'Pointeo2026!' });
-    requete.flush({ etapeSuivante: 'CODE_SMS', defi: 'd', telephoneMasque: '06 •• •• •• 42', codeDeTest: null });
+    requete.flush({ etapeSuivante: 'CODE_EMAIL', defi: 'd', emailMasque: 'j•••••@cabinet-test.fr', codeDeTest: null });
 
     expect(navigate).toHaveBeenCalledWith(['/verification-code'], {
-      state: { defi: 'd', telephoneMasque: '06 •• •• •• 42', codeDeTest: null },
+      state: { defi: 'd', emailMasque: 'j•••••@cabinet-test.fr', codeDeTest: null },
     });
   });
 
@@ -101,15 +101,15 @@ describe('Connexion (US-03, US-05)', () => {
     expect(alerte.classList).toContain('alert--avertissement');
   });
 
-  it("US-04 : SMS impossible -> message du serveur", async () => {
+  it("US-04 : email impossible -> message du serveur", async () => {
     await configurer();
     const { fixture, page, seConnecter } = await ouvrir();
     (await seConnecter()).flush(
-      { message: "Le SMS n'a pas pu être envoyé. Réessayez." },
+      { message: 'L’email n’a pas pu être envoyé. Réessayez.' },
       { status: 503, statusText: 'Unavailable' },
     );
     await fixture.whenStable();
-    expect(page.querySelector('[role=alert]')?.textContent).toContain("Le SMS n'a pas pu être envoyé");
+    expect(page.querySelector('[role=alert]')?.textContent).toContain('L’email n’a pas pu être envoyé. Réessayez.');
   });
 
   it('backend injoignable -> message de service indisponible', async () => {

@@ -10,7 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 public class AuthConfig {
 
-	// Mots de passe et codes SMS : empreinte BCrypt uniquement.
+	// Mots de passe et codes reçus par email : empreinte BCrypt uniquement.
 	@Bean
 	public PasswordEncoder encodeurMotDePasse() {
 		return new BCryptPasswordEncoder();

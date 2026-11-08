@@ -1,6 +1,11 @@
 package com.example.gestionfinanciere;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
 import java.net.URI;
@@ -22,6 +27,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -30,10 +36,13 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.compte.Role;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
+import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
-// US-04 code SMS, US-05 blocage, US-06 mot de passe oublié, US-07 session : vrai serveur HTTP,
+// US-04 code reçu par email, US-05 blocage, US-06 mot de passe oublié, US-07 session : vrai serveur HTTP,
 // migrations Flyway et PostgreSQL 16 jetable. L'horloge est avancée à la main (15 min, 5 min, 1 h,
-// 30 min) ; le mode test renvoie le code SMS et le lien, faute d'opérateur SMS et d'API email.
+// 30 min) ; le mode test renvoie le code et le lien. Le service d'envoi d'emails est remplacé
+// par un bouchon (mock), qui permet aussi de simuler un envoi impossible.
 // Chaque test crée son propre compte : aucun test ne dépend d'un autre.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "pointeo.mode-test=true")
 @Testcontainers
@@ -57,6 +66,9 @@ class AuthentificationIT {
 
 	}
 
+	@MockitoBean
+	private EnvoiEmail envoiEmail;
+
 	@Value("${local.server.port}")
 	private int port;
 
@@ -75,7 +87,7 @@ class AuthentificationIT {
 
 	private String nouveauCompte(Role role) {
 		String email = "it-" + UUID.randomUUID() + "@cabinet-test.fr";
-		comptes.save(new Compte(email, encodeur.encode(MOT_DE_PASSE), role, true, "Compte de test", "0611223344"));
+		comptes.save(new Compte(email, encodeur.encode(MOT_DE_PASSE), role, true, "Compte de test"));
 		return email;
 	}
 
@@ -114,7 +126,7 @@ class AuthentificationIT {
 		return m.group(1);
 	}
 
-	// Connexion complète (mot de passe + code SMS) : renvoie le jeton de session.
+	// Connexion complète (mot de passe + code reçu par email) : renvoie le jeton de session.
 	private String seConnecter(String email, String motDePasse) throws IOException, InterruptedException {
 		HttpResponse<String> etape1 = connexion(email, motDePasse);
 		assertThat(etape1.statusCode()).isEqualTo(200);
@@ -127,12 +139,14 @@ class AuthentificationIT {
 		return "000000".equals(code) ? "111111" : "000000";
 	}
 
-	// --- US-04 Code SMS -----------------------------------------------------------------
+	// --- US-04 Code reçu par email ------------------------------------------------------
 
 	@Test
 	void us04Ca1BonCodeOuvreLaSessionDuCollaborateur() throws Exception {
 		HttpResponse<String> etape1 = connexion("jean.dupont@cabinet-test.fr", MOT_DE_PASSE);
-		assertThat(champ(etape1, "telephoneMasque")).isEqualTo("06 •• •• •• 42");
+		assertThat(champ(etape1, "emailMasque")).isEqualTo("j•••••@cabinet-test.fr");
+		verify(envoiEmail).envoyer(eq("jean.dupont@cabinet-test.fr"), anyString(),
+				contains(champ(etape1, "codeDeTest")));
 		HttpResponse<String> etape2 = code(champ(etape1, "defi"), champ(etape1, "codeDeTest"));
 		assertThat(etape2.statusCode()).isEqualTo(200);
 		assertThat(etape2.body()).contains("\"role\":\"COLLABORATEUR\"").contains("\"nomAffiche\":\"Jean Dupont\"");
@@ -140,6 +154,16 @@ class AuthentificationIT {
 		HttpResponse<String> moi = session(champ(etape2, "jeton"));
 		assertThat(moi.statusCode()).isEqualTo(200);
 		assertThat(moi.body()).contains("Jean Dupont");
+	}
+
+	@Test
+	void us04EmailImpossibleAfficheLeMessage() throws Exception {
+		String email = nouveauCompte(Role.COLLABORATEUR);
+		doThrow(new EnvoiImpossibleException("api", null)).when(envoiEmail).envoyer(eq(email), anyString(),
+				anyString());
+		HttpResponse<String> reponse = connexion(email, MOT_DE_PASSE);
+		assertThat(reponse.statusCode()).isEqualTo(503);
+		assertThat(champ(reponse, "message")).isEqualTo("L’email n’a pas pu être envoyé. Réessayez.");
 	}
 
 	@Test

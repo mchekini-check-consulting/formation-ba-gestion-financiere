@@ -276,7 +276,7 @@ a {
   }
 }
 
-// Mode test : code SMS ou lien affiché faute d'opérateur SMS / d'API email.
+// Mode test : code ou lien affiché faute d'API d'envoi d'emails branchée.
 .mode-test {
   padding: 10px 14px;
   border: 1px dashed $or;

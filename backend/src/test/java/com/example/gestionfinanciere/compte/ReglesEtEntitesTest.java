@@ -14,14 +14,13 @@ import org.junit.jupiter.api.Test;
 
 import com.example.gestionfinanciere.notification.EnvoiEmailJournal;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
-import com.example.gestionfinanciere.notification.EnvoiSmsJournal;
 
 class ReglesEtEntitesTest {
 
 	private static final Instant T0 = Instant.parse("2026-11-04T09:00:00Z");
 
 	private final Compte jean = new Compte("jean.dupont@cabinet-test.fr", "empreinte", Role.COLLABORATEUR, true,
-			"Jean Dupont", "06 12 34 56 42");
+			"Jean Dupont");
 
 	@Test
 	void reglesDuMotDePasse() {
@@ -50,10 +49,12 @@ class ReglesEtEntitesTest {
 		assertEquals(Role.COLLABORATEUR, jean.getRole());
 		assertTrue(jean.isActif());
 		assertEquals("Jean Dupont", jean.getNomAffiche());
-		assertEquals("06 12 34 56 42", jean.getTelephone());
-		assertEquals("06 •• •• •• 42", jean.telephoneMasque());
-		assertEquals("•• •• •• •• ••",
-				new Compte("a@b.fr", "e", Role.DIRIGEANT, true, "A", "").telephoneMasque());
+		assertEquals("j•••••@cabinet-test.fr", jean.emailMasque());
+		assertEquals("a•••••@b.fr", Compte.masquerEmail("a@b.fr"));
+		assertEquals("•••••", Compte.masquerEmail("sans-arobase"));
+		assertEquals("•••••", Compte.masquerEmail("@domaine.fr"));
+		assertEquals("•••••",
+				Compte.masquerEmail(null));
 	}
 
 	@Test
@@ -69,8 +70,8 @@ class ReglesEtEntitesTest {
 	}
 
 	@Test
-	void codeSms() {
-		CodeSms code = new CodeSms(jean, "defi", "code", T0, T0.plusSeconds(300));
+	void codeConnexion() {
+		CodeConnexion code = new CodeConnexion(jean, "defi", "code", T0, T0.plusSeconds(300));
 		assertNull(code.getId());
 		assertEquals(jean, code.getCompte());
 		assertEquals("defi", code.getEmpreinteDefi());
@@ -108,8 +109,7 @@ class ReglesEtEntitesTest {
 	@Test
 	void envoisJournalisesSansErreur() {
 		new EnvoiEmailJournal().envoyer("jean@test.fr", "sujet", "corps");
-		new EnvoiSmsJournal().envoyer("0612345642", "message");
-		assertEquals("opérateur", new EnvoiImpossibleException("opérateur", null).getMessage());
+		assertEquals("api", new EnvoiImpossibleException("api", null).getMessage());
 	}
 
 	@Test
