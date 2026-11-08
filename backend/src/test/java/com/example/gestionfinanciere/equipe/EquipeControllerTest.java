@@ -36,7 +36,7 @@ class EquipeControllerTest {
 	private final EquipeController controller = new EquipeController(equipe, sessions);
 
 	private final Cabinet cabinet = new Cabinet("Cabinet Test", "123456789", 120, null, Instant.EPOCH, Instant.EPOCH);
-	private final Compte claire = Compte.administrateurDe(cabinet, "claire@test.fr", "x", "Claire Martin", "06");
+	private final Compte claire = Compte.administrateurDe(cabinet, "claire@test.fr", "x", "Claire Martin");
 	private final DemandeInvitation demande = EquipeServiceTest.lucie();
 	private final Membre lucie = new Membre(2L, "Lucie Moreau", "lucie.moreau@cabinet-test.fr",
 			RoleCabinet.COMPTABLE, Membre.Statut.INVITE);
@@ -105,7 +105,7 @@ class EquipeControllerTest {
 		assertEquals(new ErreurResponse(EquipeController.MESSAGE_RESERVE), inviter().getBody());
 
 		// Compte sans cabinet (comptes de démonstration, dirigeants clients).
-		connecte(new Compte("jean@test.fr", "x", Role.COLLABORATEUR, true, "Jean Dupont", "06"));
+		connecte(new Compte("jean@test.fr", "x", Role.COLLABORATEUR, true, "Jean Dupont"));
 		assertEquals(HttpStatus.FORBIDDEN, inviter().getStatusCode());
 		verify(equipe, never()).inviter(any(), any());
 	}

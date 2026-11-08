@@ -9,7 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-// US-36 RG3 : inscription en attente du code SMS qui confirme le mobile. Le cabinet et son
+// US-36 RG3 : inscription en attente du code reçu par email qui confirme l'email. Le cabinet et son
 // compte ne sont créés qu'avec le bon code. Seules les empreintes des secrets sont stockées.
 @Entity
 @Table(name = "inscription")
@@ -33,9 +33,6 @@ public class Inscription {
 
 	@Column(name = "email", nullable = false)
 	private String email;
-
-	@Column(name = "telephone", nullable = false)
-	private String telephone;
 
 	@Column(name = "mot_de_passe_hash", nullable = false)
 	private String motDePasseHash;
@@ -77,7 +74,6 @@ public class Inscription {
 		this.prenom = formulaire.prenom();
 		this.nom = formulaire.nom();
 		this.email = formulaire.email();
-		this.telephone = formulaire.telephone();
 		this.nombreDossiersPrevus = formulaire.nombreDossiers();
 		this.codeParrainageSaisi = formulaire.codeParrainage();
 		this.motDePasseHash = motDePasseHash;
@@ -133,10 +129,6 @@ public class Inscription {
 
 	public String getEmail() {
 		return email;
-	}
-
-	public String getTelephone() {
-		return telephone;
 	}
 
 	public String getMotDePasseHash() {

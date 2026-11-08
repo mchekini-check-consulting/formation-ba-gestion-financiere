@@ -8,7 +8,7 @@ import { SessionService, accueil } from '../session/session.service';
 /** Transmis par l'écran de connexion après le bon mot de passe. */
 interface EtatCode {
   defi: string;
-  telephoneMasque: string;
+  emailMasque: string;
   codeDeTest: string | null;
 }
 
@@ -20,8 +20,9 @@ interface ErreurCode {
 
 export const DELAI_RENVOI_S = 60;
 const NB_CHIFFRES = 6;
+export const MESSAGE_EMAIL_IMPOSSIBLE = 'L’email n’a pas pu être envoyé. Réessayez.';
 
-/** US-04 Valider la connexion par un code reçu par SMS (maquette « Code de vérification »). */
+/** US-04 Valider la connexion par un code reçu par email (maquette « Code de vérification »). */
 @Component({
   imports: [RouterLink],
   selector: 'app-code-verification',
@@ -38,7 +39,7 @@ export class CodeVerification implements OnDestroy {
   protected readonly indices = Array.from({ length: NB_CHIFFRES }, (_, i) => i);
   protected readonly chiffres = signal<string[]>(Array(NB_CHIFFRES).fill(''));
   protected readonly complet = computed(() => this.chiffres().every((c) => /^\d$/.test(c)));
-  protected readonly telephoneMasque = signal('');
+  protected readonly emailMasque = signal('');
   protected readonly codeDeTest = signal<string | null>(null);
   protected readonly message = signal<Message | null>(null);
   protected readonly enCours = signal(false);
@@ -53,7 +54,7 @@ export class CodeVerification implements OnDestroy {
       void this.router.navigate(['/connexion']);
       return;
     }
-    this.telephoneMasque.set(etat.telephoneMasque ?? '');
+    this.emailMasque.set(etat.emailMasque ?? '');
     this.codeDeTest.set(etat.codeDeTest ?? null);
     this.demarrerMinuteur(DELAI_RENVOI_S);
   }
@@ -122,7 +123,6 @@ export class CodeVerification implements OnDestroy {
     }
     this.auth.renvoyerCode(this.defi).subscribe({
       next: (renvoi) => {
-        this.telephoneMasque.set(renvoi.telephoneMasque);
         this.codeDeTest.set(renvoi.codeDeTest);
         this.message.set({ ton: 'succes', texte: 'Un nouveau code vous a été envoyé.' });
         this.remplir('');
@@ -135,7 +135,7 @@ export class CodeVerification implements OnDestroy {
         } else if (err.status === 429) {
           this.demarrerMinuteur(corps.secondesRestantes ?? DELAI_RENVOI_S);
         } else {
-          this.message.set({ ton: 'erreur', texte: corps.message ?? "Le SMS n'a pas pu être envoyé. Réessayez." });
+          this.message.set({ ton: 'erreur', texte: corps.message ?? MESSAGE_EMAIL_IMPOSSIBLE });
         }
       },
     });

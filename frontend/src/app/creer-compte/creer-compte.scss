@@ -190,3 +190,12 @@ $bordure: #d9cebb;
   font-size: 12px;
   font-weight: 600;
 }
+
+// Étape 2 « Code email » : texte sous le titre du panneau (même style que l'écran du code de connexion).
+.aside__lead {
+  max-width: 400px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #cfc3ad;
+}

@@ -11,51 +11,52 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.gestionfinanciere.logging.Loggable;
-import com.example.gestionfinanciere.notification.EnvoiSms;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
 
-// US-04 Valider la connexion par un code reçu par SMS.
+// US-04 Valider la connexion par un code reçu par email.
 @Service
 @Loggable
-public class CodeSmsService {
+public class CodeConnexionService {
 
 	static final Duration VALIDITE_CODE = Duration.ofMinutes(5);
 	static final Duration DELAI_AVANT_RENVOI = Duration.ofSeconds(60);
 	static final int CODES_FAUX_MAX = 3;
+	static final String SUJET = "Votre code de connexion Pointéo";
 
-	private final CodeSmsRepository codes;
+	private final CodeConnexionRepository codes;
 	private final PasswordEncoder encodeur;
 	private final Clock horloge;
-	private final EnvoiSms sms;
+	private final EnvoiEmail email;
 	private final boolean modeTest;
 
-	public CodeSmsService(CodeSmsRepository codes, PasswordEncoder encodeur, Clock horloge, EnvoiSms sms,
-			@Value("${pointeo.mode-test:false}") boolean modeTest) {
+	public CodeConnexionService(CodeConnexionRepository codes, PasswordEncoder encodeur, Clock horloge,
+			EnvoiEmail email, @Value("${pointeo.mode-test:false}") boolean modeTest) {
 		this.codes = codes;
 		this.encodeur = encodeur;
 		this.horloge = horloge;
-		this.sms = sms;
+		this.email = email;
 		this.modeTest = modeTest;
 	}
 
-	// Après le bon mot de passe : crée un code (RG1 : 6 chiffres, 5 minutes) et l'envoie.
+	// Après le bon mot de passe : crée un code (RG1 : 6 chiffres, 5 minutes) et l'envoie par email.
 	@Transactional
-	public DefiSms demarrer(Compte compte) {
+	public DefiCode demarrer(Compte compte) {
 		String defi = Jetons.nouveau();
 		String code = Jetons.codeSixChiffres();
 		Instant maintenant = horloge.instant();
-		codes.save(new CodeSms(compte, Jetons.empreinte(defi), encodeur.encode(code), maintenant,
+		codes.save(new CodeConnexion(compte, Jetons.empreinte(defi), encodeur.encode(code), maintenant,
 				maintenant.plus(VALIDITE_CODE)));
 		envoyer(compte, code);
-		return new DefiSms(defi, compte.telephoneMasque(), codeDeTest(code));
+		return new DefiCode(defi, compte.emailMasque(), codeDeTest(code));
 	}
 
 	@Transactional
 	public ResultatCode verifier(String defi, String code) {
-		Optional<CodeSms> trouve = trouver(defi);
+		Optional<CodeConnexion> trouve = trouver(defi);
 		if (trouve.isEmpty()) {
 			return ResultatCode.demandeInvalide();
 		}
-		CodeSms demande = trouve.get();
+		CodeConnexion demande = trouve.get();
 		if (demande.estExpire(horloge.instant())) {
 			return ResultatCode.expire(CODES_FAUX_MAX - demande.getCodesFaux());
 		}
@@ -74,11 +75,11 @@ public class CodeSmsService {
 	// RG2 : nouveau code possible après 60 secondes ; il remplace l'ancien.
 	@Transactional
 	public ResultatRenvoi renvoyer(String defi) {
-		Optional<CodeSms> trouve = trouver(defi);
+		Optional<CodeConnexion> trouve = trouver(defi);
 		if (trouve.isEmpty()) {
 			return ResultatRenvoi.demandeInvalide();
 		}
-		CodeSms demande = trouve.get();
+		CodeConnexion demande = trouve.get();
 		Instant maintenant = horloge.instant();
 		Instant renvoiPossible = demande.getEnvoyeLe().plus(DELAI_AVANT_RENVOI);
 		if (maintenant.isBefore(renvoiPossible)) {
@@ -88,10 +89,10 @@ public class CodeSmsService {
 		String code = Jetons.codeSixChiffres();
 		demande.remplacerCode(encodeur.encode(code), maintenant, maintenant.plus(VALIDITE_CODE));
 		envoyer(demande.getCompte(), code);
-		return ResultatRenvoi.renvoye(demande.getCompte().telephoneMasque(), codeDeTest(code));
+		return ResultatRenvoi.renvoye(codeDeTest(code));
 	}
 
-	private Optional<CodeSms> trouver(String defi) {
+	private Optional<CodeConnexion> trouver(String defi) {
 		if (ConnexionService.estVide(defi)) {
 			return Optional.empty();
 		}
@@ -99,8 +100,9 @@ public class CodeSmsService {
 	}
 
 	private void envoyer(Compte compte, String code) {
-		sms.envoyer(compte.getTelephone(),
-				"Pointéo : votre code de connexion est " + code + ". Il est valable 5 minutes.");
+		email.envoyer(compte.getEmail(), SUJET, "Bonjour,\n\nVotre code de connexion Pointéo est " + code
+				+ ". Il est valable 5 minutes.\n\nSi vous n'êtes pas à l'origine de cette connexion, "
+				+ "changez votre mot de passe.\n");
 	}
 
 	private String codeDeTest(String code) {

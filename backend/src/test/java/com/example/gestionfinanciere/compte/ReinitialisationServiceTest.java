@@ -39,8 +39,7 @@ class ReinitialisationServiceTest {
 	private final SessionService sessions = mock(SessionService.class);
 	private final EnvoiEmail emails = mock(EnvoiEmail.class);
 	private final HorlogeReglable horloge = new HorlogeReglable(Instant.parse("2026-11-04T09:00:00Z"));
-	private final Compte jean = new Compte(EMAIL, "ancienne-empreinte", Role.COLLABORATEUR, true, "Jean Dupont",
-			"0612345642");
+	private final Compte jean = new Compte(EMAIL, "ancienne-empreinte", Role.COLLABORATEUR, true, "Jean Dupont");
 	private final Map<String, JetonReinitialisation> base = new HashMap<>();
 
 	@BeforeEach

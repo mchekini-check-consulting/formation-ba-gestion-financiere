@@ -12,7 +12,7 @@ test.describe('US-03 Se connecter', () => {
     await expect(page.getByRole('heading', { name: 'Se connecter' })).toBeVisible();
   });
 
-  test('CA1 — collaborateur : bon mot de passe -> écran du code SMS', async ({ page }) => {
+  test('CA1 — collaborateur : bon mot de passe -> écran du code reçu par email', async ({ page }) => {
     await page.getByLabel('Email').fill(EMAIL);
     await page.getByLabel('Mot de passe', { exact: true }).fill(MOT_DE_PASSE);
     await page.getByRole('button', { name: 'Se connecter' }).click();
@@ -46,7 +46,7 @@ test.describe('US-03 Se connecter', () => {
     await expect(page.getByRole('alert')).toHaveText(MESSAGE_ERREUR);
   });
 
-  test('dirigeant client : bon mot de passe -> écran du code SMS', async ({ page }) => {
+  test('dirigeant client : bon mot de passe -> écran du code reçu par email', async ({ page }) => {
     await page.getByLabel('Email').fill('sophie.martin@boulangerie-test.fr');
     await page.getByLabel('Mot de passe', { exact: true }).fill(MOT_DE_PASSE);
     await page.getByRole('button', { name: 'Se connecter' }).click();

@@ -26,7 +26,7 @@ class SessionServiceTest {
 	private final HorlogeReglable horloge = new HorlogeReglable(Instant.parse("2026-11-04T09:00:00Z"));
 	private final SessionService service = new SessionService(sessions, horloge);
 	private final Compte jean = new Compte("jean.dupont@cabinet-test.fr", "x", Role.COLLABORATEUR, true,
-			"Jean Dupont", "0612345642");
+			"Jean Dupont");
 	private final Map<String, SessionUtilisateur> base = new HashMap<>();
 
 	@BeforeEach

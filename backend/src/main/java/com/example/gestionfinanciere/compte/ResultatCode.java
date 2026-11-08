@@ -1,6 +1,6 @@
 package com.example.gestionfinanciere.compte;
 
-// Issue de la vérification d'un code SMS (US-04).
+// Issue de la vérification d'un code reçu par email (US-04).
 public record ResultatCode(Statut statut, int tentativesRestantes, Compte compte) {
 
 	public enum Statut {

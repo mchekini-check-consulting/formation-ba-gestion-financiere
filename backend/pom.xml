@@ -88,7 +88,7 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<!-- Lancement local uniquement (./mvnw spring-boot:run), jamais dans l'image :
-					     code SMS et lien de réinitialisation affichés à l'écran (application.yaml). -->
+					     code reçu par email et liens des emails affichés à l'écran (application.yaml). -->
 					<environmentVariables>
 						<POINTEO_MODE_TEST>true</POINTEO_MODE_TEST>
 					</environmentVariables>

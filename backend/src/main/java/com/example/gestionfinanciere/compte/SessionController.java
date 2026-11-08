@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// US-07, avec l'en-tête "Authorization: Bearer <jeton>" reçu après le code SMS :
+// US-07, avec l'en-tête "Authorization: Bearer <jeton>" reçu après le code envoyé par email :
 //   GET  /auth/session      session active ? (compte aussi comme activité)
 //   POST /auth/deconnexion  « Se déconnecter »
 @RestController

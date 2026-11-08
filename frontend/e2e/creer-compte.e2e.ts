@@ -17,18 +17,19 @@ async function remplirFormulaire(page: Page, siren: string, email: string): Prom
   await page.getByLabel('Prénom').fill('Claire');
   await page.getByLabel('Nom', { exact: true }).fill('Martin');
   await page.getByLabel('Email professionnel').fill(email);
-  await page.getByLabel('Mobile').fill('06 12 34 56 78');
   await page.getByLabel('Mot de passe', { exact: true }).fill(MOT_DE_PASSE);
   await page.getByLabel('Nombre de dossiers prévus').fill('120');
   await page.getByLabel(/J'accepte les/).check();
-  await page.getByRole('button', { name: 'Recevoir le code SMS' }).click();
+  await page.getByRole('button', { name: 'Recevoir le code par email' }).click();
 }
 
 async function creerCabinet(page: Page, siren: string, email: string): Promise<void> {
   await page.goto('/creer-compte');
   await remplirFormulaire(page, siren, email);
-  await expect(page.getByRole('heading', { name: 'Confirmez votre mobile' })).toBeVisible();
-  await page.getByLabel('Code reçu par SMS').fill(await codeRecu(page));
+  await expect(page.getByRole('heading', { name: 'Confirmez votre email', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Encore une étape : confirmez votre email.' })).toBeVisible();
+  await expect(page).toHaveTitle('Pointéo – Confirmer l’email');
+  await page.getByLabel('Code reçu par email').fill(await codeRecu(page));
   await page.getByRole('button', { name: 'Valider et créer mon cabinet' }).click();
   await expect(page.getByRole('heading', { name: 'Cabinet Test est prêt' })).toBeVisible();
 }
@@ -42,6 +43,7 @@ test.describe('US-36 Créer le compte de son cabinet', () => {
 
     await creerCabinet(page, siren, `claire.martin+${siren}@cabinet-test.fr`);
     await expect(page.getByText('Bienvenue Claire Martin')).toBeVisible();
+    await expect(page.getByTestId('bandeau')).toHaveText('Compte créé et email confirmé');
 
     // Claire est connectée : elle arrive sur ses dossiers sans se reconnecter.
     await page.getByRole('link', { name: 'Accéder à mon cabinet' }).click();

@@ -28,7 +28,7 @@ class SessionEtMotDePasseControllerTest {
 	private final ReinitialisationService reinitialisation = mock(ReinitialisationService.class);
 	private final MotDePasseController motDePasse = new MotDePasseController(reinitialisation);
 	private final Compte jean = new Compte("jean.dupont@cabinet-test.fr", "x", Role.COLLABORATEUR, true,
-			"Jean Dupont", "0612345642");
+			"Jean Dupont");
 
 	@Test
 	void us07SessionActive() {

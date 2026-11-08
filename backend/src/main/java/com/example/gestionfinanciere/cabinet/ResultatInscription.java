@@ -2,10 +2,10 @@ package com.example.gestionfinanciere.cabinet;
 
 import java.util.Map;
 
-import com.example.gestionfinanciere.compte.DefiSms;
+import com.example.gestionfinanciere.compte.DefiCode;
 
-// Issue de l'étape 1 « Vos informations » (US-36) : code SMS envoyé, ou ce qui bloque.
-public record ResultatInscription(Statut statut, Map<String, String> erreurs, DefiSms defi) {
+// Issue de l'étape 1 « Vos informations » (US-36) : code envoyé par email, ou ce qui bloque.
+public record ResultatInscription(Statut statut, Map<String, String> erreurs, DefiCode defi) {
 
 	public enum Statut {
 		CODE_ENVOYE,
@@ -14,7 +14,7 @@ public record ResultatInscription(Statut statut, Map<String, String> erreurs, De
 		EMAIL_DEJA_UTILISE
 	}
 
-	static ResultatInscription codeEnvoye(DefiSms defi) {
+	static ResultatInscription codeEnvoye(DefiCode defi) {
 		return new ResultatInscription(Statut.CODE_ENVOYE, Map.of(), defi);
 	}
 

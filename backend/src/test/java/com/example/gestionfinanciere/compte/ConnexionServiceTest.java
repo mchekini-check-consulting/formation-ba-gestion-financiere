@@ -37,7 +37,7 @@ class ConnexionServiceTest {
 			"https://frontend.test");
 
 	private Compte compte(Role role, boolean actif) {
-		Compte compte = new Compte(EMAIL, encodeur.encode(MOT_DE_PASSE), role, actif, "Jean Dupont", "0612345642");
+		Compte compte = new Compte(EMAIL, encodeur.encode(MOT_DE_PASSE), role, actif, "Jean Dupont");
 		when(comptes.findByEmail(EMAIL)).thenReturn(Optional.of(compte));
 		return compte;
 	}

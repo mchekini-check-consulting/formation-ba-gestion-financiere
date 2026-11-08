@@ -25,7 +25,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 
 // US-36 Créer le compte de son cabinet (PTO-61) : vrai serveur HTTP, migrations Flyway et
-// PostgreSQL 16 jetable ; le mode test renvoie le code SMS faute d'opérateur SMS.
+// PostgreSQL 16 jetable ; le mode test renvoie le code faute d'API d'envoi d'emails branchée.
 // Chaque test utilise son propre SIREN et son propre email : aucun test ne dépend d'un autre.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "pointeo.mode-test=true")
 @Testcontainers
@@ -67,7 +67,7 @@ class InscriptionIT {
 	private HttpResponse<String> formulaire(String siren, String email) throws IOException, InterruptedException {
 		return post("/inscription", """
 				{"nomCabinet":"Cabinet Test","siren":"%s","prenom":"Claire","nom":"Martin","email":"%s",
-				 "mobile":"06 12 34 56 78","motDePasse":"%s","nombreDossiers":120,"codeParrainage":"",
+				 "motDePasse":"%s","nombreDossiers":120,"codeParrainage":"",
 				 "cguAcceptees":true}""".formatted(siren, email, MOT_DE_PASSE));
 	}
 
@@ -75,11 +75,14 @@ class InscriptionIT {
 		return post("/inscription/code", "{\"defi\":\"" + defi + "\",\"code\":\"" + code + "\"}");
 	}
 
-	// Étapes 1 et 2 : renvoie la réponse du code SMS.
+	// Étapes 1 et 2 : renvoie la réponse du code reçu par email.
 	private HttpResponse<String> creerCabinet(String siren, String email) throws IOException, InterruptedException {
 		HttpResponse<String> etape1 = formulaire(siren, email);
 		assertThat(etape1.statusCode()).isEqualTo(200);
-		assertThat(champ(etape1, "telephoneMasque")).isEqualTo("06 •• •• •• 78");
+		// L'email est enregistré en minuscules (US-03 RG1).
+		String enregistre = email.toLowerCase(java.util.Locale.ROOT);
+		assertThat(champ(etape1, "emailMasque"))
+				.isEqualTo(enregistre.charAt(0) + "•••••" + enregistre.substring(enregistre.indexOf('@')));
 		return code(champ(etape1, "defi"), champ(etape1, "codeDeTest"));
 	}
 

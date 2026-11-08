@@ -1,4 +1,4 @@
-import { Formulaire, MESSAGES, erreursFormulaire, normaliserMobile } from './validation';
+import { Formulaire, MESSAGES, erreursFormulaire } from './validation';
 
 /** CA1 : formulaire de Claire Martin pour Cabinet Test. */
 function claire(): Formulaire {
@@ -8,7 +8,6 @@ function claire(): Formulaire {
     prenom: 'Claire',
     nom: 'Martin',
     email: 'claire.martin@cabinet-test.fr',
-    mobile: '06 12 34 56 78',
     motDePasse: 'Pointeo2026!!',
     nombreDossiers: 120,
     codeParrainage: '',
@@ -28,7 +27,6 @@ describe('Validation du formulaire « Créer un compte » (US-36 RG2)', () => {
       prenom: '',
       nom: '',
       email: '',
-      mobile: '',
       motDePasse: '',
       nombreDossiers: null,
       codeParrainage: '',
@@ -40,7 +38,6 @@ describe('Validation du formulaire « Créer un compte » (US-36 RG2)', () => {
       prenom: MESSAGES.obligatoire,
       nom: MESSAGES.obligatoire,
       email: MESSAGES.obligatoire,
-      mobile: MESSAGES.obligatoire,
       motDePasse: MESSAGES.obligatoire,
       nombreDossiers: MESSAGES.obligatoire,
       cguAcceptees: MESSAGES.cgu,
@@ -55,7 +52,6 @@ describe('Validation du formulaire « Créer un compte » (US-36 RG2)', () => {
         siren: '12345678',
         prenom: 'P'.repeat(101),
         email: 'claire.martin',
-        mobile: '01 23 45 67 89',
         motDePasse: 'faible',
         nombreDossiers: 0,
         codeParrainage: 'X'.repeat(21),
@@ -65,7 +61,6 @@ describe('Validation du formulaire « Créer un compte » (US-36 RG2)', () => {
       siren: MESSAGES.siren,
       prenom: MESSAGES.tropLong,
       email: MESSAGES.email,
-      mobile: MESSAGES.mobile,
       motDePasse: MESSAGES.motDePasse,
       nombreDossiers: MESSAGES.dossiers,
       codeParrainage: MESSAGES.parrainage,
@@ -73,10 +68,7 @@ describe('Validation du formulaire « Créer un compte » (US-36 RG2)', () => {
     expect(erreursFormulaire({ ...claire(), nombreDossiers: 2.5 }).nombreDossiers).toBe(MESSAGES.dossiers);
   });
 
-  it('formats de mobile acceptés', () => {
-    expect(normaliserMobile('+33 6 12 34 56 78')).toBe('0612345678');
-    expect(normaliserMobile('0033 7 12 34 56 78')).toBe('0712345678');
-    expect(normaliserMobile('06.12.34.56.78')).toBe('0612345678');
-    expect(erreursFormulaire({ ...claire(), mobile: '+33 6 12 34 56 78' })).toEqual({});
+  it('SIREN saisi avec des espaces ou des points : accepté', () => {
+    expect(erreursFormulaire({ ...claire(), siren: '123.456.789' })).toEqual({});
   });
 });

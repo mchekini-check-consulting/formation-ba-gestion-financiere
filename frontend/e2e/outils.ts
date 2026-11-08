@@ -26,7 +26,7 @@ export async function saisirIdentifiants(page: Page, email: string, motDePasse: 
   await page.getByRole('button', { name: 'Se connecter' }).click();
 }
 
-/** Code affiché par le mode test (aucun opérateur SMS branché). */
+/** Code affiché par le mode test (aucune API d'envoi d'emails branchée). */
 export async function codeRecu(page: Page): Promise<string> {
   return (await page.getByTestId('code-de-test').locator('strong').textContent()) ?? '';
 }
@@ -37,7 +37,7 @@ export async function taperCode(page: Page, code: string): Promise<void> {
   }
 }
 
-/** Connexion complète : email + mot de passe, puis code SMS. */
+/** Connexion complète : email + mot de passe, puis code reçu par email. */
 export async function seConnecter(page: Page, email: string, motDePasse = MOT_DE_PASSE): Promise<void> {
   await page.goto('/connexion');
   await saisirIdentifiants(page, email, motDePasse);

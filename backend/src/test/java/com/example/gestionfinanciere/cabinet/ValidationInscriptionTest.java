@@ -13,7 +13,7 @@ class ValidationInscriptionTest {
 	// CA1 : formulaire de Claire Martin pour Cabinet Test.
 	static DemandeInscription claire() {
 		return new DemandeInscription("Cabinet Test", "123 456 789", "Claire", "Martin",
-				"Claire.Martin@Cabinet-Test.fr", "06 12 34 56 78", "Pointeo2026!!", 120, null, true);
+				"Claire.Martin@Cabinet-Test.fr", "Pointeo2026!!", 120, null, true);
 	}
 
 	private static Map<String, String> erreurs(DemandeInscription demande) {
@@ -28,20 +28,20 @@ class ValidationInscriptionTest {
 	@Test
 	void formulaireRemisEnForme() {
 		FormulaireValide f = ValidationInscription.remettreEnForme(new DemandeInscription(" Cabinet Test ",
-				"123 456 789", " Claire ", " Martin ", " Claire.Martin@Cabinet-Test.FR ", "+33 6 12 34 56 78",
+				"123 456 789", " Claire ", " Martin ", " Claire.Martin@Cabinet-Test.FR ",
 				"Pointeo2026!!", 120, " test-4821 ", true));
 		assertEquals(new FormulaireValide("Cabinet Test", "123456789", "Claire", "Martin",
-				"claire.martin@cabinet-test.fr", "0612345678", "Pointeo2026!!", 120, "TEST-4821"), f);
+				"claire.martin@cabinet-test.fr", "Pointeo2026!!", 120, "TEST-4821"), f);
 		assertNull(ValidationInscription.remettreEnForme(claire()).codeParrainage());
 	}
 
 	@Test
 	void champsObligatoires() {
 		Map<String, String> e = erreurs(
-				new DemandeInscription(" ", null, "", null, " ", null, null, null, null, null));
+				new DemandeInscription(" ", null, "", null, " ", null, null, null, null));
 		assertEquals(Map.of("nomCabinet", ValidationInscription.OBLIGATOIRE, "siren", ValidationInscription.OBLIGATOIRE,
 				"prenom", ValidationInscription.OBLIGATOIRE, "nom", ValidationInscription.OBLIGATOIRE, "email",
-				ValidationInscription.OBLIGATOIRE, "mobile", ValidationInscription.OBLIGATOIRE, "motDePasse",
+				ValidationInscription.OBLIGATOIRE, "motDePasse",
 				ValidationInscription.OBLIGATOIRE, "nombreDossiers", ValidationInscription.OBLIGATOIRE,
 				"cguAcceptees", ValidationInscription.CGU_NON_ACCEPTEES), e);
 	}
@@ -49,24 +49,23 @@ class ValidationInscriptionTest {
 	@Test
 	void valeursInvalides() {
 		Map<String, String> e = erreurs(new DemandeInscription("C".repeat(201), "12345678", "P".repeat(101),
-				"Martin", "claire.martin", "01 23 45 67 89", "faible", 0, "X".repeat(21), false));
+				"Martin", "claire.martin", "faible", 0, "X".repeat(21), false));
 		assertEquals(ValidationInscription.TROP_LONG, e.get("nomCabinet"));
 		assertEquals(ValidationInscription.SIREN_INVALIDE, e.get("siren"));
 		assertEquals(ValidationInscription.TROP_LONG, e.get("prenom"));
 		assertEquals(ValidationInscription.EMAIL_INVALIDE, e.get("email"));
-		assertEquals(ValidationInscription.MOBILE_INVALIDE, e.get("mobile"));
 		assertEquals(ValidationInscription.MOT_DE_PASSE_FAIBLE, e.get("motDePasse"));
 		assertEquals(ValidationInscription.DOSSIERS_INVALIDE, e.get("nombreDossiers"));
 		assertEquals(ValidationInscription.PARRAINAGE_INVALIDE, e.get("codeParrainage"));
 		assertEquals(ValidationInscription.CGU_NON_ACCEPTEES, e.get("cguAcceptees"));
-		assertEquals(9, e.size());
+		assertEquals(8, e.size());
 	}
 
 	@Test
 	void sirenAvecLettresRefuse() {
 		DemandeInscription d = claire();
 		assertEquals(ValidationInscription.SIREN_INVALIDE, erreurs(new DemandeInscription(d.nomCabinet(),
-				"12345678A", d.prenom(), d.nom(), d.email(), d.mobile(), d.motDePasse(), d.nombreDossiers(), null,
+				"12345678A", d.prenom(), d.nom(), d.email(), d.motDePasse(), d.nombreDossiers(), null,
 				true)).get("siren"));
 	}
 
@@ -74,7 +73,7 @@ class ValidationInscriptionTest {
 	void tropDeDossiersEtEmailTropLong() {
 		DemandeInscription d = claire();
 		Map<String, String> e = erreurs(new DemandeInscription(d.nomCabinet(), d.siren(), d.prenom(), d.nom(),
-				"a".repeat(250) + "@x.fr", d.mobile(), d.motDePasse(), ValidationInscription.DOSSIERS_MAX + 1, "",
+				"a".repeat(250) + "@x.fr", d.motDePasse(), ValidationInscription.DOSSIERS_MAX + 1, "",
 				true));
 		assertEquals(ValidationInscription.EMAIL_INVALIDE, e.get("email"));
 		assertEquals(ValidationInscription.DOSSIERS_INVALIDE, e.get("nombreDossiers"));
@@ -82,10 +81,7 @@ class ValidationInscriptionTest {
 	}
 
 	@Test
-	void formatsDeMobileAcceptes() {
-		assertEquals("0712345678", ValidationInscription.mobile("07.12.34.56.78"));
-		assertEquals("0612345678", ValidationInscription.mobile("0033 6 12 34 56 78"));
-		assertEquals("0612345678", ValidationInscription.mobile("06-12-34-56-78"));
+	void sirenAvecSeparateursAccepte() {
 		assertEquals("123456789", ValidationInscription.siren("123.456.789"));
 	}
 

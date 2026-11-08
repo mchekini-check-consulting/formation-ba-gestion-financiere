@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
 // Connexion en deux étapes, exposée par le gateway sous /backend/auth/... :
-//   POST /auth/connexion       email + mot de passe (US-03, blocage US-05) -> envoi du code SMS
-//   POST /auth/code            code SMS (US-04) -> ouverture de la session (US-07)
+//   POST /auth/connexion       email + mot de passe (US-03, blocage US-05) -> envoi du code par email
+//   POST /auth/code            code reçu par email (US-04) -> ouverture de la session (US-07)
 //   POST /auth/code/renvoyer   nouveau code après 60 s (US-04 RG2)
 @RestController
 @RequestMapping("/auth")
@@ -20,7 +20,7 @@ public class ConnexionController {
 	static final String MESSAGE_IDENTIFIANTS_INCORRECTS = "Email ou mot de passe incorrect";
 	static final String MESSAGE_COMPTE_BLOQUE = "Compte bloqué 15 minutes : trop de mots de passe incorrects. "
 			+ "Un email vous a été envoyé pour changer votre mot de passe.";
-	static final String MESSAGE_SMS_IMPOSSIBLE = "Le SMS n'a pas pu être envoyé. Réessayez.";
+	static final String MESSAGE_EMAIL_IMPOSSIBLE = "L’email n’a pas pu être envoyé. Réessayez.";
 	static final String MESSAGE_DEMANDE_INVALIDE = "Votre demande de connexion n'est plus valable. Reconnectez-vous.";
 	static final String MESSAGE_TROP_DE_CODES = "Trop de codes incorrects. Reconnectez-vous.";
 	static final String MESSAGE_CODE_EXPIRE = "Ce code a expiré. Demandez un nouveau code.";
@@ -38,17 +38,17 @@ public class ConnexionController {
 	public record ErreurCode(String message, int tentativesRestantes, boolean retourConnexion) {
 	}
 
-	public record CodeRenvoye(String telephoneMasque, String codeDeTest) {
+	public record CodeRenvoye(String codeDeTest) {
 	}
 
 	public record RenvoiTropTot(String message, long secondesRestantes) {
 	}
 
 	private final ConnexionService connexion;
-	private final CodeSmsService codes;
+	private final CodeConnexionService codes;
 	private final SessionService sessions;
 
-	public ConnexionController(ConnexionService connexion, CodeSmsService codes, SessionService sessions) {
+	public ConnexionController(ConnexionService connexion, CodeConnexionService codes, SessionService sessions) {
 		this.connexion = connexion;
 		this.codes = codes;
 		this.sessions = sessions;
@@ -85,22 +85,22 @@ public class ConnexionController {
 		try {
 			ResultatRenvoi resultat = codes.renvoyer(demande.defi());
 			return switch (resultat.statut()) {
-				case RENVOYE -> ResponseEntity.ok(new CodeRenvoye(resultat.telephoneMasque(), resultat.codeDeTest()));
+				case RENVOYE -> ResponseEntity.ok(new CodeRenvoye(resultat.codeDeTest()));
 				case TROP_TOT -> ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
 						.body(new RenvoiTropTot("Vous pourrez demander un nouveau code dans "
 								+ resultat.secondesRestantes() + " s.", resultat.secondesRestantes()));
 				case DEMANDE_INVALIDE -> demandeInvalide();
 			};
 		} catch (EnvoiImpossibleException e) {
-			return erreur(HttpStatus.SERVICE_UNAVAILABLE, MESSAGE_SMS_IMPOSSIBLE);
+			return erreur(HttpStatus.SERVICE_UNAVAILABLE, MESSAGE_EMAIL_IMPOSSIBLE);
 		}
 	}
 
 	private ResponseEntity<Object> envoyerCode(Compte compte) {
 		try {
-			return ResponseEntity.ok(ConnexionResponse.versCodeSms(codes.demarrer(compte)));
+			return ResponseEntity.ok(ConnexionResponse.versCodeEmail(codes.demarrer(compte)));
 		} catch (EnvoiImpossibleException e) {
-			return erreur(HttpStatus.SERVICE_UNAVAILABLE, MESSAGE_SMS_IMPOSSIBLE);
+			return erreur(HttpStatus.SERVICE_UNAVAILABLE, MESSAGE_EMAIL_IMPOSSIBLE);
 		}
 	}
 

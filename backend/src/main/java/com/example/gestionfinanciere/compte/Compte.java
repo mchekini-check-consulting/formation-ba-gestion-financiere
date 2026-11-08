@@ -40,9 +40,6 @@ public class Compte {
 	@Column(name = "nom_affiche", nullable = false)
 	private String nomAffiche;
 
-	@Column(name = "telephone", nullable = false)
-	private String telephone;
-
 	// US-05 : mauvais mots de passe de suite, et fin du blocage éventuel.
 	@Column(name = "echecs_consecutifs", nullable = false)
 	private int echecsConsecutifs;
@@ -64,19 +61,17 @@ public class Compte {
 	protected Compte() {
 	}
 
-	public Compte(String email, String motDePasseHash, Role role, boolean actif, String nomAffiche, String telephone) {
+	public Compte(String email, String motDePasseHash, Role role, boolean actif, String nomAffiche) {
 		this.email = email;
 		this.motDePasseHash = motDePasseHash;
 		this.role = role;
 		this.actif = actif;
 		this.nomAffiche = nomAffiche;
-		this.telephone = telephone;
 	}
 
 	// US-36 RG3 : compte de la personne qui crée le cabinet, administratrice de celui-ci.
-	public static Compte administrateurDe(Cabinet cabinet, String email, String motDePasseHash, String nomAffiche,
-			String telephone) {
-		Compte compte = new Compte(email, motDePasseHash, Role.COLLABORATEUR, true, nomAffiche, telephone);
+	public static Compte administrateurDe(Cabinet cabinet, String email, String motDePasseHash, String nomAffiche) {
+		Compte compte = new Compte(email, motDePasseHash, Role.COLLABORATEUR, true, nomAffiche);
 		compte.cabinet = cabinet;
 		compte.roleCabinet = RoleCabinet.ADMINISTRATEUR;
 		return compte;
@@ -89,7 +84,7 @@ public class Compte {
 	 */
 	public static Compte invite(Cabinet cabinet, String email, String empreinteInutilisable, String nomAffiche,
 			RoleCabinet roleCabinet) {
-		Compte compte = new Compte(email, empreinteInutilisable, Role.COLLABORATEUR, false, nomAffiche, "");
+		Compte compte = new Compte(email, empreinteInutilisable, Role.COLLABORATEUR, false, nomAffiche);
 		compte.cabinet = cabinet;
 		compte.roleCabinet = roleCabinet;
 		return compte;
@@ -125,18 +120,18 @@ public class Compte {
 		reinitialiserEchecs();
 	}
 
-	// US-04 RG1 : numéro masqué, ex. « 06 •• •• •• 42 ».
-	public String telephoneMasque() {
-		return masquer(telephone);
+	// US-04 : email masqué sur l'écran du code, ex. « j•••••@cabinet-test.fr ».
+	public String emailMasque() {
+		return masquerEmail(email);
 	}
 
-	// Aussi utilisé pour le mobile d'une inscription (US-36), avant la création du compte.
-	public static String masquer(String telephone) {
-		String chiffres = telephone == null ? "" : telephone.replaceAll("\\D", "");
-		if (chiffres.length() < 4) {
-			return "•• •• •• •• ••";
+	// Première lettre + « ••••• » + @domaine.
+	public static String masquerEmail(String email) {
+		int arobase = email == null ? -1 : email.lastIndexOf('@');
+		if (arobase < 1) {
+			return "•••••";
 		}
-		return chiffres.substring(0, 2) + " •• •• •• " + chiffres.substring(chiffres.length() - 2);
+		return email.charAt(0) + "•••••" + email.substring(arobase);
 	}
 
 	public Long getId() {
@@ -161,10 +156,6 @@ public class Compte {
 
 	public String getNomAffiche() {
 		return nomAffiche;
-	}
-
-	public String getTelephone() {
-		return telephone;
 	}
 
 	public int getEchecsConsecutifs() {

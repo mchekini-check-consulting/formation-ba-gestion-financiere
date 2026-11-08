@@ -11,7 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-// US-07 : session ouverte après le code SMS ; seule l'empreinte du jeton est stockée.
+// US-07 : session ouverte après le code reçu par email ; seule l'empreinte du jeton est stockée.
 @Entity
 @Table(name = "session_utilisateur")
 public class SessionUtilisateur {

@@ -5,13 +5,14 @@ import { apiBase } from '../api';
 
 export type Role = 'COLLABORATEUR' | 'DIRIGEANT';
 
-/** US-03 : email + mot de passe corrects -> écran du code SMS (US-04). */
+/** US-03 : email + mot de passe corrects -> écran du code reçu par email (US-04). */
 export interface ConnexionReponse {
-  etapeSuivante: 'CODE_SMS';
+  etapeSuivante: 'CODE_EMAIL';
   /** Identifie la tentative de connexion, à renvoyer avec le code. */
   defi: string;
-  telephoneMasque: string;
-  /** Mode test uniquement (aucun opérateur SMS branché). */
+  /** Ex. « j•••••@cabinet-test.fr ». */
+  emailMasque: string;
+  /** Mode test uniquement (aucune API d'envoi d'emails branchée). */
   codeDeTest: string | null;
 }
 
@@ -25,7 +26,6 @@ export interface SessionOuverte {
 }
 
 export interface CodeRenvoye {
-  telephoneMasque: string;
   codeDeTest: string | null;
 }
 

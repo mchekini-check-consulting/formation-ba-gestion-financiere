@@ -7,7 +7,15 @@
       </svg>
       <span>Pointéo</span>
     </a>
-    <h2 class="aside__titre">Créez le compte de votre cabinet en quelques minutes.</h2>
+    @if (etape() === 'code') {
+      <h2 class="aside__titre">Encore une étape : confirmez votre email.</h2>
+      <p class="aside__lead">
+        Un code vous sera envoyé par email à chaque connexion. Il protège l’accès aux dossiers et aux données bancaires
+        de vos clients.
+      </p>
+    } @else {
+      <h2 class="aside__titre">Créez le compte de votre cabinet en quelques minutes.</h2>
+    }
     <ol class="steps" aria-label="Étapes de la création du compte">
       <li [attr.aria-current]="etape() === 'informations' ? 'step' : null">
         <span class="steps__num" [class.steps__num--actif]="etape() === 'informations'">1</span>
@@ -19,8 +27,8 @@
       <li [attr.aria-current]="etape() === 'code' ? 'step' : null">
         <span class="steps__num" [class.steps__num--actif]="etape() === 'code'">2</span>
         <span class="steps__texte">
-          <strong>Code SMS</strong>
-          <span>Pour confirmer votre numéro de mobile.</span>
+          <strong>Code email</strong>
+          <span>Pour confirmer votre email.</span>
         </span>
       </li>
       <li [attr.aria-current]="etape() === 'pret' ? 'step' : null">
@@ -90,13 +98,6 @@
               @if (erreur('email'); as e) { <span class="field__error">{{ e }}</span> }
             </div>
             <div class="field">
-              <label for="mobile">Mobile</label>
-              <input id="mobile" type="tel" formControlName="mobile" autocomplete="tel" placeholder="06 12 34 56 78"
-                [class.invalid]="erreur('mobile')" [attr.aria-invalid]="!!erreur('mobile')" />
-              <span class="field__aide">Un code de confirmation vous sera envoyé par SMS.</span>
-              @if (erreur('mobile'); as e) { <span class="field__error">{{ e }}</span> }
-            </div>
-            <div class="field">
               <label for="mot-de-passe">Mot de passe</label>
               <div class="password" [class.invalid]="erreur('motDePasse')">
                 <input id="mot-de-passe" [type]="motDePasseVisible() ? 'text' : 'password'" formControlName="motDePasse"
@@ -153,26 +154,26 @@
           </div>
 
           <button type="submit" class="submit" [disabled]="enCours()">
-            {{ enCours() ? 'Envoi…' : 'Recevoir le code SMS' }}
+            {{ enCours() ? 'Envoi…' : 'Recevoir le code par email' }}
           </button>
         </form>
       }
 
       @case ('code') {
         <form class="form" (submit)="$event.preventDefault(); validerCode()" novalidate>
-          <button type="button" class="back" (click)="revenirAuFormulaire()">← Modifier mes informations</button>
+          <button type="button" class="back" (click)="revenirAuFormulaire()">← Modifier l’email</button>
           <span class="etape">Étape 2 sur 3</span>
           <div class="form__title">
-            <h1>Confirmez votre mobile</h1>
+            <h1>Confirmez votre email</h1>
             <p>
-              Saisissez le code à 6 chiffres envoyé par SMS au <strong data-testid="telephone">{{ telephoneMasque() }}</strong>.
+              Saisissez le code à 6 chiffres envoyé à <strong data-testid="email">{{ emailSaisi() }}</strong>.
               Il est valable 5 minutes.
             </p>
           </div>
 
           @if (codeDeTest(); as c) {
             <p class="mode-test" data-testid="code-de-test">
-              Mode test (aucun opérateur SMS branché) — code reçu : <strong>{{ c }}</strong>
+              Mode test (aucune API d'envoi d'emails branchée) — code reçu : <strong>{{ c }}</strong>
             </p>
           }
 
@@ -181,7 +182,7 @@
           }
 
           <div class="field">
-            <label for="code">Code reçu par SMS</label>
+            <label for="code">Code reçu par email</label>
             <input id="code" class="code-unique" [formControl]="code" inputmode="numeric" autocomplete="one-time-code"
               maxlength="6" placeholder="••••••" />
           </div>
@@ -204,6 +205,7 @@
         @if (cabinet(); as c) {
           <section class="form pret" aria-labelledby="titre-pret">
             <span class="etape">Étape 3 sur 3</span>
+            <div role="status" class="alert alert--succes" data-testid="bandeau">Compte créé et email confirmé</div>
             <div class="pret__badge" aria-hidden="true">✓</div>
             <div class="form__title">
               <h1 id="titre-pret">{{ c.nomCabinet }} est prêt</h1>

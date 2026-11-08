@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnDestroy, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { Message } from '../connexion/connexion';
@@ -23,6 +24,8 @@ interface ErreurServeur {
 
 export const DELAI_RENVOI_S = 60;
 export const MESSAGE_INDISPONIBLE = 'La création du compte est momentanément impossible. Réessayez dans quelques instants.';
+/** Titre de l'onglet à l'étape 2 « Code email ». */
+export const TITRE_CONFIRMATION = 'Pointéo – Confirmer l’email';
 
 /** US-36 Connaître le tarif et créer le compte de son cabinet (écran « Créer un compte »). */
 @Component({
@@ -34,6 +37,8 @@ export const MESSAGE_INDISPONIBLE = 'La création du compte est momentanément i
 export class CreerCompte implements OnDestroy {
   private readonly inscription = inject(InscriptionService);
   private readonly session = inject(SessionService);
+  private readonly titre = inject(Title);
+  private readonly titreInitial = this.titre.getTitle();
 
   protected readonly form = new FormGroup({
     nomCabinet: new FormControl('', { nonNullable: true }),
@@ -41,7 +46,6 @@ export class CreerCompte implements OnDestroy {
     prenom: new FormControl('', { nonNullable: true }),
     nom: new FormControl('', { nonNullable: true }),
     email: new FormControl('', { nonNullable: true }),
-    mobile: new FormControl('', { nonNullable: true }),
     motDePasse: new FormControl('', { nonNullable: true }),
     nombreDossiers: new FormControl<number | null>(null),
     codeParrainage: new FormControl('', { nonNullable: true }),
@@ -63,7 +67,8 @@ export class CreerCompte implements OnDestroy {
   private readonly erreursServeur = signal<Erreurs>({});
 
   private defi: string | null = null;
-  protected readonly telephoneMasque = signal('');
+  /** Email saisi à l'étape 1, rappelé à l'étape 2 « Confirmez votre email ». */
+  protected readonly emailSaisi = signal('');
   protected readonly codeDeTest = signal<string | null>(null);
   protected readonly secondesAvantRenvoi = signal(0);
   private minuteur: ReturnType<typeof setInterval> | undefined;
@@ -95,6 +100,7 @@ export class CreerCompte implements OnDestroy {
 
   ngOnDestroy(): void {
     clearInterval(this.minuteur);
+    this.titre.setTitle(this.titreInitial);
   }
 
   protected erreur(champ: Champ): string | undefined {
@@ -105,7 +111,7 @@ export class CreerCompte implements OnDestroy {
     this.motDePasseVisible.update((visible) => !visible);
   }
 
-  /** Étape 1 « Vos informations » -> envoi du code SMS. */
+  /** Étape 1 « Vos informations » -> envoi du code par email. */
   protected envoyerFormulaire(): void {
     this.envoye.set(true);
     this.alerte.set(null);
@@ -117,16 +123,16 @@ export class CreerCompte implements OnDestroy {
       next: (reponse) => {
         this.enCours.set(false);
         this.defi = reponse.defi;
-        this.telephoneMasque.set(reponse.telephoneMasque);
+        this.emailSaisi.set(this.valeur().email.trim());
         this.codeDeTest.set(reponse.codeDeTest);
         this.code.reset();
-        this.etape.set('code');
+        this.allerA('code');
         this.demarrerMinuteur(DELAI_RENVOI_S);
       },
       error: (err: HttpErrorResponse) => {
         this.enCours.set(false);
         const corps = (err.error ?? {}) as ErreurServeur;
-        // 400 : champs à corriger ; 409 : SIREN (CA2) ou email déjà utilisé ; 503 : SMS impossible.
+        // 400 : champs à corriger ; 409 : SIREN (CA2) ou email déjà utilisé ; 503 : email impossible.
         this.alerte.set({
           ton: 'erreur',
           texte: [400, 409, 503].includes(err.status) && corps.message ? corps.message : MESSAGE_INDISPONIBLE,
@@ -136,7 +142,7 @@ export class CreerCompte implements OnDestroy {
     });
   }
 
-  /** Étape 2 « Code SMS » -> cabinet créé, étape 3 « Cabinet prêt » (CA1). */
+  /** Étape 2 « Code email » -> cabinet créé, étape 3 « Cabinet prêt » (CA1). */
   protected validerCode(): void {
     if (!this.defi || !this.codeComplet() || this.enCours()) {
       return;
@@ -155,7 +161,7 @@ export class CreerCompte implements OnDestroy {
         });
         this.cabinet.set(cabinet);
         this.alerte.set(null);
-        this.etape.set('pret');
+        this.allerA('pret');
       },
       error: (err: HttpErrorResponse) => {
         this.enCours.set(false);
@@ -178,7 +184,6 @@ export class CreerCompte implements OnDestroy {
     }
     this.inscription.renvoyerCode(this.defi).subscribe({
       next: (renvoi) => {
-        this.telephoneMasque.set(renvoi.telephoneMasque);
         this.codeDeTest.set(renvoi.codeDeTest);
         this.alerte.set({ ton: 'succes', texte: 'Un nouveau code vous a été envoyé.' });
         this.code.reset();
@@ -197,13 +202,19 @@ export class CreerCompte implements OnDestroy {
     });
   }
 
-  /** « Modifier mes informations » : retour à l'étape 1, formulaire conservé. */
+  /** « Modifier l’email » : retour à l'étape 1, formulaire conservé. */
   protected revenirAuFormulaire(message: Message | null = null): void {
     clearInterval(this.minuteur);
     this.defi = null;
     this.codeDeTest.set(null);
     this.alerte.set(message);
-    this.etape.set('informations');
+    this.allerA('informations');
+  }
+
+  /** Change d'étape ; l'onglet s'appelle « Pointéo – Confirmer l’email » pendant l'étape 2. */
+  private allerA(etape: Etape): void {
+    this.etape.set(etape);
+    this.titre.setTitle(etape === 'code' ? TITRE_CONFIRMATION : this.titreInitial);
   }
 
   private valeur(): Formulaire {

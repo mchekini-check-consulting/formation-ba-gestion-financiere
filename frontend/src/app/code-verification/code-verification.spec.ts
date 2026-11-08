@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { SessionService } from '../session/session.service';
-import { CodeVerification } from './code-verification';
+import { CodeVerification, MESSAGE_EMAIL_IMPOSSIBLE } from './code-verification';
 
 describe('CodeVerification (US-04)', () => {
   let http: HttpTestingController;
@@ -11,7 +11,7 @@ describe('CodeVerification (US-04)', () => {
 
   beforeEach(async () => {
     sessionStorage.clear();
-    history.replaceState({ defi: 'defi-1', telephoneMasque: '06 •• •• •• 42', codeDeTest: '482917' }, '');
+    history.replaceState({ defi: 'defi-1', emailMasque: 'j•••••@cabinet-test.fr', codeDeTest: '482917' }, '');
     await TestBed.configureTestingModule({
       imports: [CodeVerification],
       providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
@@ -45,9 +45,13 @@ describe('CodeVerification (US-04)', () => {
     return { fixture, page, cases, taper, valider };
   }
 
-  it('RG1 : affiche le numéro masqué, six cases et le code du mode test', async () => {
+  it('RG1 : affiche l’email masqué, six cases et le code du mode test', async () => {
     const { page, cases } = await ouvrir();
-    expect(page.querySelector('[data-testid=telephone]')?.textContent).toBe('06 •• •• •• 42');
+    expect(page.querySelector('[data-testid=email]')?.textContent).toBe('j•••••@cabinet-test.fr');
+    expect(page.querySelector('.form__title p')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'Saisissez le code à 6 chiffres envoyé par email à j•••••@cabinet-test.fr. Il est valable 5 minutes. ' +
+        'Pensez à regarder vos courriers indésirables.',
+    );
     expect(cases().length).toBe(6);
     expect(page.querySelector('[data-testid=code-de-test]')?.textContent).toContain('482917');
     expect(page.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(true);
@@ -157,14 +161,14 @@ describe('CodeVerification (US-04)', () => {
     bouton.click();
     const requete = http.expectOne('/api/auth/code/renvoyer');
     expect(requete.request.body).toEqual({ defi: 'defi-1' });
-    requete.flush({ telephoneMasque: '06 •• •• •• 42', codeDeTest: '123456' });
+    requete.flush({ codeDeTest: '123456' });
     await fixture.whenStable();
     expect(page.querySelector('[role=status]')?.textContent).toContain('Un nouveau code vous a été envoyé.');
     expect(page.querySelector('[data-testid=code-de-test]')?.textContent).toContain('123456');
     expect(page.textContent).toContain('Renvoyer un code dans 60 s');
   });
 
-  it('RG2 : renvoi refusé (trop tôt, SMS impossible, demande périmée)', async () => {
+  it('RG2 : renvoi refusé (trop tôt, email impossible, demande périmée)', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
     const { fixture, page } = await ouvrir();
     const renvoyer = async () => {
@@ -178,9 +182,14 @@ describe('CodeVerification (US-04)', () => {
     await fixture.whenStable();
     expect(page.textContent).toContain('Renvoyer un code dans 30 s');
 
-    (await renvoyer()).flush({ message: "Le SMS n'a pas pu être envoyé. Réessayez." }, { status: 503, statusText: 'X' });
+    (await renvoyer()).flush({ message: MESSAGE_EMAIL_IMPOSSIBLE }, { status: 503, statusText: 'X' });
     await fixture.whenStable();
-    expect(page.querySelector('[role=alert]')?.textContent).toContain("Le SMS n'a pas pu être envoyé");
+    expect(page.querySelector('[role=alert]')?.textContent).toContain('L’email n’a pas pu être envoyé. Réessayez.');
+
+    // Sans message du serveur : même texte par défaut.
+    (await renvoyer()).flush(null, { status: 503, statusText: 'X' });
+    await fixture.whenStable();
+    expect(page.querySelector('[role=alert]')?.textContent).toContain('L’email n’a pas pu être envoyé. Réessayez.');
 
     (await renvoyer()).flush({ message: 'Périmée', retourConnexion: true }, { status: 401, statusText: 'X' });
     expect(navigate).toHaveBeenCalledWith(['/connexion'], { state: { message: 'Périmée' } });

@@ -11,11 +11,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-// US-04 : code SMS d'une tentative de connexion. Le "défi" identifie la tentative
+// US-04 : code reçu par email lors d'une tentative de connexion. Le "défi" identifie la tentative
 // (donné à l'écran après le mot de passe) ; seules les empreintes sont stockées.
+// La table garde son nom d'origine (code_sms, migration V7).
 @Entity
 @Table(name = "code_sms")
-public class CodeSms {
+public class CodeConnexion {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,10 +44,10 @@ public class CodeSms {
 	@Column(name = "termine", nullable = false)
 	private boolean termine;
 
-	protected CodeSms() {
+	protected CodeConnexion() {
 	}
 
-	public CodeSms(Compte compte, String empreinteDefi, String empreinteCode, Instant envoyeLe, Instant expireLe) {
+	public CodeConnexion(Compte compte, String empreinteDefi, String empreinteCode, Instant envoyeLe, Instant expireLe) {
 		this.compte = compte;
 		this.empreinteDefi = empreinteDefi;
 		this.empreinteCode = empreinteCode;

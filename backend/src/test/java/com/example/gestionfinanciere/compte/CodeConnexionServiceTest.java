@@ -29,23 +29,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.gestionfinanciere.compte.ResultatCode.Statut;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
-import com.example.gestionfinanciere.notification.EnvoiSms;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
 
-class CodeSmsServiceTest {
+// US-04 : le service d'envoi d'emails est remplacé par un bouchon (mock), y compris pour l'échec d'envoi.
+class CodeConnexionServiceTest {
 
 	private final PasswordEncoder encodeur = new BCryptPasswordEncoder(4);
-	private final CodeSmsRepository codes = mock(CodeSmsRepository.class);
-	private final EnvoiSms sms = mock(EnvoiSms.class);
+	private final CodeConnexionRepository codes = mock(CodeConnexionRepository.class);
+	private final EnvoiEmail email = mock(EnvoiEmail.class);
 	private final HorlogeReglable horloge = new HorlogeReglable(Instant.parse("2026-11-04T09:00:00Z"));
 	private final Compte jean = new Compte("jean.dupont@cabinet-test.fr", "x", Role.COLLABORATEUR, true,
-			"Jean Dupont", "0612345642");
+			"Jean Dupont");
 	// Base simulée : codes enregistrés, retrouvés par empreinte du défi.
-	private final Map<String, CodeSms> base = new HashMap<>();
+	private final Map<String, CodeConnexion> base = new HashMap<>();
 
 	@BeforeEach
 	void base() {
-		when(codes.save(any(CodeSms.class))).thenAnswer(appel -> {
-			CodeSms code = appel.getArgument(0);
+		when(codes.save(any(CodeConnexion.class))).thenAnswer(appel -> {
+			CodeConnexion code = appel.getArgument(0);
 			base.put(code.getEmpreinteDefi(), code);
 			return code;
 		});
@@ -53,17 +54,18 @@ class CodeSmsServiceTest {
 				.thenAnswer(appel -> Optional.ofNullable(base.get(appel.<String>getArgument(0))));
 	}
 
-	private CodeSmsService service(boolean modeTest) {
-		return new CodeSmsService(codes, encodeur, horloge, sms, modeTest);
+	private CodeConnexionService service(boolean modeTest) {
+		return new CodeConnexionService(codes, encodeur, horloge, email, modeTest);
 	}
 
 	@Test
-	void rg1DemarrerEnvoieUnCodeASixChiffresAuNumeroDuCompte() {
-		DefiSms defi = service(true).demarrer(jean);
+	void rg1DemarrerEnvoieUnCodeASixChiffresALEmailDuCompte() {
+		DefiCode defi = service(true).demarrer(jean);
 		assertTrue(defi.codeDeTest().matches("\\d{6}"));
-		assertEquals("06 •• •• •• 42", defi.telephoneMasque());
-		verify(sms).envoyer(eq("0612345642"), contains(defi.codeDeTest()));
-		CodeSms enregistre = base.get(Jetons.empreinte(defi.defi()));
+		assertEquals("j•••••@cabinet-test.fr", defi.emailMasque());
+		verify(email).envoyer(eq("jean.dupont@cabinet-test.fr"), eq(CodeConnexionService.SUJET),
+				contains(defi.codeDeTest()));
+		CodeConnexion enregistre = base.get(Jetons.empreinte(defi.defi()));
 		assertEquals(Instant.parse("2026-11-04T09:05:00Z"), enregistre.getExpireLe());
 		assertNotEquals(defi.codeDeTest(), enregistre.getEmpreinteCode());
 	}
@@ -74,15 +76,15 @@ class CodeSmsServiceTest {
 	}
 
 	@Test
-	void smsImpossibleRemonteLErreur() {
-		doThrow(new EnvoiImpossibleException("opérateur", null)).when(sms).envoyer(anyString(), anyString());
+	void emailImpossibleRemonteLErreur() {
+		doThrow(new EnvoiImpossibleException("api", null)).when(email).envoyer(anyString(), anyString(), anyString());
 		assertThrows(EnvoiImpossibleException.class, () -> service(true).demarrer(jean));
 	}
 
 	@Test
 	void ca1BonCodeDansLesCinqMinutesOuvreLaConnexion() {
-		CodeSmsService service = service(true);
-		DefiSms defi = service.demarrer(jean);
+		CodeConnexionService service = service(true);
+		DefiCode defi = service.demarrer(jean);
 		horloge.avancer(Duration.ofMinutes(4));
 		ResultatCode resultat = service.verifier(defi.defi(), defi.codeDeTest());
 		assertEquals(Statut.REUSSI, resultat.statut());
@@ -91,16 +93,16 @@ class CodeSmsServiceTest {
 
 	@Test
 	void rg1LeCodeNeSertQuUneFois() {
-		CodeSmsService service = service(true);
-		DefiSms defi = service.demarrer(jean);
+		CodeConnexionService service = service(true);
+		DefiCode defi = service.demarrer(jean);
 		service.verifier(defi.defi(), defi.codeDeTest());
 		assertEquals(Statut.DEMANDE_INVALIDE, service.verifier(defi.defi(), defi.codeDeTest()).statut());
 	}
 
 	@Test
 	void ca2CodeFauxIndiqueLesTentativesRestantes() {
-		CodeSmsService service = service(true);
-		DefiSms defi = service.demarrer(jean);
+		CodeConnexionService service = service(true);
+		DefiCode defi = service.demarrer(jean);
 		ResultatCode resultat = service.verifier(defi.defi(), autreCode(defi.codeDeTest()));
 		assertEquals(Statut.FAUX, resultat.statut());
 		assertEquals(2, resultat.tentativesRestantes());
@@ -109,8 +111,8 @@ class CodeSmsServiceTest {
 
 	@Test
 	void rg3TroisCodesFauxRenvoientALaConnexion() {
-		CodeSmsService service = service(true);
-		DefiSms defi = service.demarrer(jean);
+		CodeConnexionService service = service(true);
+		DefiCode defi = service.demarrer(jean);
 		String faux = autreCode(defi.codeDeTest());
 		service.verifier(defi.defi(), faux);
 		service.verifier(defi.defi(), faux);
@@ -120,8 +122,8 @@ class CodeSmsServiceTest {
 
 	@Test
 	void ca3CodeRecuIlYASixMinutesExpire() {
-		CodeSmsService service = service(true);
-		DefiSms defi = service.demarrer(jean);
+		CodeConnexionService service = service(true);
+		DefiCode defi = service.demarrer(jean);
 		horloge.avancer(Duration.ofMinutes(6));
 		ResultatCode resultat = service.verifier(defi.defi(), defi.codeDeTest());
 		assertEquals(ResultatCode.Statut.EXPIRE, resultat.statut());
@@ -130,7 +132,7 @@ class CodeSmsServiceTest {
 
 	@Test
 	void defiInconnuOuVide() {
-		CodeSmsService service = service(true);
+		CodeConnexionService service = service(true);
 		assertEquals(Statut.DEMANDE_INVALIDE, service.verifier("inconnu", "123456").statut());
 		assertEquals(Statut.DEMANDE_INVALIDE, service.verifier(null, "123456").statut());
 		assertEquals(ResultatRenvoi.Statut.DEMANDE_INVALIDE, service.renvoyer(" ").statut());
@@ -138,8 +140,8 @@ class CodeSmsServiceTest {
 
 	@Test
 	void rg2RenvoiAvant60SecondesRefuseAvecLeTempsRestant() {
-		CodeSmsService service = service(true);
-		DefiSms defi = service.demarrer(jean);
+		CodeConnexionService service = service(true);
+		DefiCode defi = service.demarrer(jean);
 		horloge.avancer(Duration.ofSeconds(20));
 		ResultatRenvoi resultat = service.renvoyer(defi.defi());
 		assertEquals(ResultatRenvoi.Statut.TROP_TOT, resultat.statut());
@@ -148,13 +150,12 @@ class CodeSmsServiceTest {
 
 	@Test
 	void rg2LeNouveauCodeRemplaceLAncien() {
-		CodeSmsService service = service(true);
-		DefiSms defi = service.demarrer(jean);
+		CodeConnexionService service = service(true);
+		DefiCode defi = service.demarrer(jean);
 		horloge.avancer(Duration.ofSeconds(60));
 		ResultatRenvoi renvoi = service.renvoyer(defi.defi());
 		assertEquals(ResultatRenvoi.Statut.RENVOYE, renvoi.statut());
-		assertEquals("06 •• •• •• 42", renvoi.telephoneMasque());
-		verify(sms, times(2)).envoyer(eq("0612345642"), anyString());
+		verify(email, times(2)).envoyer(eq("jean.dupont@cabinet-test.fr"), anyString(), anyString());
 		if (!renvoi.codeDeTest().equals(defi.codeDeTest())) {
 			assertEquals(Statut.FAUX, service.verifier(defi.defi(), defi.codeDeTest()).statut());
 		}
