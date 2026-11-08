@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.gestionfinanciere.cabinet.ValidationInscription;
 import com.example.gestionfinanciere.compte.Compte;
+import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 
 // US-10 Créer un dossier client. L'appelant vérifie avant que la personne connectée est un
@@ -40,6 +41,17 @@ public class DossierService {
 	// Sans transaction englobante : si deux créations simultanées passent la vérification, la
 	// contrainte unique de la base refuse la seconde, traitée comme un doublon.
 	public ResultatCreationDossier creer(Compte collaborateur, DemandeDossier demande) {
+		ResultatCreationDossier resultat = creerSansJournal(collaborateur, demande);
+		EvenementMetier evenement = EvenementMetier.de("dossier.creation", resultat.statut())
+				.avec(collaborateur.identifiantsPourLogs()).avecChampsInvalides(resultat.erreurs());
+		if (resultat.dossier() != null) {
+			evenement.avec("dossierId", resultat.dossier().id());
+		}
+		evenement.journaliser(resultat.statut() == ResultatCreationDossier.Statut.CREE);
+		return resultat;
+	}
+
+	private ResultatCreationDossier creerSansJournal(Compte collaborateur, DemandeDossier demande) {
 		Map<String, String> erreurs = ValidationDossier.erreurs(demande);
 		if (!erreurs.isEmpty()) {
 			return ResultatCreationDossier.invalide(erreurs);
@@ -65,6 +77,8 @@ public class DossierService {
 	public Optional<VueDossier> consulter(Compte collaborateur, Long id) {
 		Optional<VueDossier> dossier = dossiers.findByIdAndCabinetId(id, collaborateur.getCabinet().getId())
 				.map(VueDossier::de);
+		EvenementMetier.de("dossier.consultation", dossier.isPresent() ? "trouve" : "introuvable")
+				.avec(collaborateur.identifiantsPourLogs()).avec("dossierId", id).journaliser(dossier.isPresent());
 		if (dossier.isPresent()) {
 			log.atInfo().addKeyValue(CHAMP_DOSSIER, id).log("dossier ouvert");
 		} else {

@@ -21,6 +21,7 @@ import com.example.gestionfinanciere.compte.Role;
 import com.example.gestionfinanciere.compte.SessionController;
 import com.example.gestionfinanciere.compte.SessionController.ErreurSession;
 import com.example.gestionfinanciere.compte.SessionService;
+import com.example.gestionfinanciere.logging.EvenementMetier;
 
 // US-10 Dossiers clients, exposés par le gateway sous /backend/dossiers/... ; avec l'en-tête
 // "Authorization: Bearer <jeton>" de la session (US-07), réservés aux collaborateurs d'un cabinet :
@@ -100,9 +101,14 @@ public class DossierController {
 					.body(new ErreurSession(SessionController.MESSAGE_NON_CONNECTE, "NON_CONNECTE"));
 			case EXPIREE -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(new ErreurSession(SessionController.MESSAGE_SESSION_EXPIREE, "SESSION_EXPIREE"));
-			case ACTIVE -> estCollaborateurDUnCabinet(session.compte()) ? null
-					: ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErreurResponse(MESSAGE_RESERVE));
+			case ACTIVE -> estCollaborateurDUnCabinet(session.compte()) ? null : interdit(session.compte());
 		};
+	}
+
+	// PTO-84 : refus d'accès journalisé (identifiants techniques seulement).
+	private static ResponseEntity<Object> interdit(Compte compte) {
+		EvenementMetier.de("dossier.acces", "refuse").depuisLeControleur().avec(compte.identifiantsPourLogs()).warn();
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErreurResponse(MESSAGE_RESERVE));
 	}
 
 	private static boolean estCollaborateurDUnCabinet(Compte compte) {

@@ -2,6 +2,8 @@ package com.example.gestionfinanciere.compte;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -196,6 +198,16 @@ public class Compte {
 
 	public boolean isAdministrateur() {
 		return roleCabinet == RoleCabinet.ADMINISTRATEUR;
+	}
+
+	// PTO-84 : identifiants techniques du compte pour les logs métier (jamais email ni nom).
+	public Map<String, Object> identifiantsPourLogs() {
+		Map<String, Object> identifiants = new LinkedHashMap<>();
+		identifiants.put("compteId", id);
+		identifiants.put("cabinetId", cabinet == null ? null : cabinet.getId());
+		identifiants.put("role", role);
+		identifiants.put("roleCabinet", roleCabinet);
+		return identifiants;
 	}
 
 }
