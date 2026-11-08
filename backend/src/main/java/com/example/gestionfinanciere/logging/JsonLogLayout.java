@@ -23,6 +23,10 @@ public class JsonLogLayout extends LayoutBase<ILoggingEvent> {
 		fields.put("msg", event.getFormattedMessage());
 		fields.put("logger", event.getLoggerName());
 		fields.putAll(event.getMDCPropertyMap());
+		// Champs métier ajoutés à la ligne par addKeyValue, ex. le numéro du dossier
+		if (event.getKeyValuePairs() != null) {
+			event.getKeyValuePairs().forEach(paire -> fields.put(paire.key, paire.value));
+		}
 
 		IThrowableProxy throwable = event.getThrowableProxy();
 		if (throwable != null) {

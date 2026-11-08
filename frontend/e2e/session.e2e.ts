@@ -42,8 +42,9 @@ test('RG2 — « Rester connecté » garde la session ouverte', async ({ page })
   await page.getByRole('button', { name: 'Rester connecté' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  await page.getByRole('link', { name: /Boulangerie Leroy SARL/ }).click();
-  await expect(page.getByRole('heading', { name: 'Boulangerie Leroy SARL' })).toBeVisible();
+  // La session est toujours ouverte : on peut continuer à naviguer.
+  await page.getByRole('link', { name: 'Créer un dossier' }).click();
+  await expect(page.getByRole('heading', { name: 'Créer un dossier' })).toBeVisible();
 });
 
 test('pages réservées : sans connexion ou avec le mauvais rôle', async ({ page }) => {

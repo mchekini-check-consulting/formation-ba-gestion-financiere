@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere.compte;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,6 +18,8 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.gestionfinanciere.compte.ResultatSession.Statut;
 
@@ -46,6 +49,19 @@ class SessionServiceTest {
 		ResultatSession resultat = service.consulter(jeton);
 		assertEquals(Statut.ACTIVE, resultat.statut());
 		assertSame(jean, resultat.compte());
+	}
+
+	// Logs : la personne connectée est écrite sur les lignes de la requête (numéros seulement).
+	@Test
+	void sessionActiveIdentifieLUtilisateurDansLesLogs() {
+		ReflectionTestUtils.setField(jean, "id", 42L);
+		try {
+			service.consulter(service.ouvrir(jean));
+			assertEquals("42", MDC.get("utilisateur"));
+			assertNull(MDC.get("cabinet")); // compte de démonstration sans cabinet
+		} finally {
+			MDC.clear();
+		}
 	}
 
 	@Test

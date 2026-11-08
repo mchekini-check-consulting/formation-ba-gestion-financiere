@@ -24,6 +24,10 @@ import com.example.gestionfinanciere.cabinet.Cabinet;
 import com.example.gestionfinanciere.cabinet.ValidationInscription;
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.HorlogeReglable;
+import com.example.gestionfinanciere.logging.JournalCapture;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 
 class DossierServiceTest {
 
@@ -101,6 +105,46 @@ class DossierServiceTest {
 		assertEquals(Optional.of(new VueDossier(42L, "Fleurs Martin EURL", "812345679", MAINTENANT)),
 				service.consulter(jean, 42L));
 		assertTrue(service.consulter(jean, 43L).isEmpty());
+	}
+
+	// Logs : création (info, numéro du dossier seulement : ni raison sociale ni SIREN).
+	@Test
+	void logDossierCree() {
+		try (JournalCapture journal = JournalCapture.de(DossierService.class)) {
+			service.creer(jean, fleursMartin());
+
+			ILoggingEvent ligne = journal.seule(Level.INFO);
+			assertEquals("dossier créé", ligne.getFormattedMessage());
+			assertEquals(Map.of("dossier", "42"), JournalCapture.champs(ligne));
+		}
+	}
+
+	@Test
+	void logDoublonEnInfo() {
+		when(dossiers.existsByCabinetIdAndSiren(7L, "812345679")).thenReturn(true);
+		try (JournalCapture journal = JournalCapture.de(DossierService.class)) {
+			service.creer(jean, fleursMartin());
+
+			assertEquals("création de dossier refusée : SIREN déjà suivi par le cabinet",
+					journal.seule(Level.INFO).getFormattedMessage());
+		}
+	}
+
+	// Logs : ouverture (info) ; dossier d'un autre cabinet (warn, refus d'accès).
+	@Test
+	void logOuvertureEtRefusDAcces() {
+		Dossier dossier = new Dossier(cabinetTest, "Fleurs Martin EURL", "812345679", jean, MAINTENANT);
+		ReflectionTestUtils.setField(dossier, "id", 42L);
+		when(dossiers.findByIdAndCabinetId(42L, 7L)).thenReturn(Optional.of(dossier));
+		try (JournalCapture journal = JournalCapture.de(DossierService.class)) {
+			service.consulter(jean, 42L);
+			service.consulter(jean, 99L);
+
+			assertEquals("dossier ouvert", journal.seule(Level.INFO).getFormattedMessage());
+			ILoggingEvent refus = journal.seule(Level.WARN);
+			assertEquals("accès refusé : dossier introuvable ou d'un autre cabinet", refus.getFormattedMessage());
+			assertEquals(Map.of("dossier", "99"), JournalCapture.champs(refus));
+		}
 	}
 
 }

@@ -88,6 +88,8 @@ class DossierIT {
 		HttpResponse<String> creation = creer(jeton, "Fleurs Martin EURL", "812 345 679");
 		assertThat(creation.statusCode()).isEqualTo(201);
 		assertThat(creation.body()).contains("\"raisonSociale\":\"Fleurs Martin EURL\"", "\"siren\":\"812345679\"");
+		// Logs : identifiant de la requête, à retrouver dans Grafana.
+		assertThat(creation.headers().firstValue("X-Request-Id")).isPresent();
 
 		Matcher id = ID.matcher(creation.body());
 		assertThat(id.find()).isTrue();

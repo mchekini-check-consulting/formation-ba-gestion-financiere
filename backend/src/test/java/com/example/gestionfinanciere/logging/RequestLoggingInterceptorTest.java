@@ -10,6 +10,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.servlet.HandlerMapping;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
@@ -57,6 +58,22 @@ class RequestLoggingInterceptorTest {
 
 		ILoggingEvent event = appender.list.get(0);
 		assertEquals("unmatched", event.getMDCPropertyMap().get("route"));
+	}
+
+	@Test
+	void niveauSelonLeStatut() {
+		appender.start();
+		logger.addAppender(appender);
+
+		for (int status : new int[] { 201, 403, 503 }) {
+			MockHttpServletResponse response = new MockHttpServletResponse();
+			response.setStatus(status);
+			interceptor.afterCompletion(new MockHttpServletRequest("GET", "/dossiers/1"), response, new Object(), null);
+		}
+
+		assertEquals(Level.INFO, appender.list.get(0).getLevel());
+		assertEquals(Level.WARN, appender.list.get(1).getLevel()); // refus d'accès
+		assertEquals(Level.ERROR, appender.list.get(2).getLevel()); // panne
 	}
 
 }

@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class RequestLoggingInterceptor implements HandlerInterceptor {
 
 	private static final Logger log = LoggerFactory.getLogger(RequestLoggingInterceptor.class);
+	private static final String MESSAGE = "http request handled";
 	private static final String START_ATTRIBUTE = RequestLoggingInterceptor.class.getName() + ".start";
 
 	@Override
@@ -40,7 +41,16 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
 				.with("status", String.valueOf(response.getStatus()))
 				.with("durationMs", String.valueOf(durationMs));
 		try {
-			log.info("http request handled");
+			// Niveau selon le code HTTP : demande refusée (4xx, ex. non connecté, accès interdit) en warn,
+			// panne (5xx) en error, sinon info
+			int status = response.getStatus();
+			if (status >= 500) {
+				log.error(MESSAGE);
+			} else if (status >= 400) {
+				log.warn(MESSAGE);
+			} else {
+				log.info(MESSAGE);
+			}
 		} finally {
 			ctx.close();
 		}
