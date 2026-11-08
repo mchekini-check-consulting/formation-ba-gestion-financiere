@@ -59,7 +59,7 @@ class DossierIT {
 		Cabinet cabinet = cabinets.save(new Cabinet("Cabinet Test", String.valueOf(100_000_000
 				+ Math.abs(id.hashCode() % 900_000_000)), 120, null, Instant.now(), Instant.now()));
 		Compte jean = comptes.save(Compte.administrateurDe(cabinet, "jean+" + id + "@cabinet-test.fr", "x",
-				"Jean Dupont", "0612345678"));
+				"Jean Dupont"));
 		return sessions.ouvrir(jean);
 	}
 

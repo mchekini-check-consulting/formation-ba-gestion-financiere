@@ -92,11 +92,11 @@ class DossierControllerTest {
 	@Test
 	void reserveAuxCollaborateursDUnCabinet() {
 		// Compte sans cabinet (comptes de démonstration).
-		connecte(new Compte("demo@test.fr", "x", Role.COLLABORATEUR, true, "Démo", "06"));
+		connecte(new Compte("demo@test.fr", "x", Role.COLLABORATEUR, true, "Démo"));
 		assertEquals(HttpStatus.FORBIDDEN, controller.creer(AUTORISATION, demande).getStatusCode());
 
 		// Dirigeant client.
-		connecte(new Compte("sophie@test.fr", "x", Role.DIRIGEANT, true, "Sophie Martin", "06"));
+		connecte(new Compte("sophie@test.fr", "x", Role.DIRIGEANT, true, "Sophie Martin"));
 		ResponseEntity<Object> reponse = controller.consulter(AUTORISATION, 42L);
 		assertEquals(HttpStatus.FORBIDDEN, reponse.getStatusCode());
 		assertEquals(new ErreurResponse(DossierController.MESSAGE_RESERVE), reponse.getBody());
