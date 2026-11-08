@@ -18,6 +18,7 @@ import com.example.gestionfinanciere.compte.ResultatSession;
 import com.example.gestionfinanciere.compte.SessionController;
 import com.example.gestionfinanciere.compte.SessionController.ErreurSession;
 import com.example.gestionfinanciere.compte.SessionService;
+import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
 // US-19 Équipe du cabinet, exposée par le gateway sous /backend/equipe/... ; avec l'en-tête
@@ -90,9 +91,14 @@ public class EquipeController {
 					.body(new ErreurSession(SessionController.MESSAGE_NON_CONNECTE, "NON_CONNECTE"));
 			case EXPIREE -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(new ErreurSession(SessionController.MESSAGE_SESSION_EXPIREE, "SESSION_EXPIREE"));
-			case ACTIVE -> estAdministrateur(session.compte()) ? null
-					: ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErreurResponse(MESSAGE_RESERVE));
+			case ACTIVE -> estAdministrateur(session.compte()) ? null : interdit(session.compte());
 		};
+	}
+
+	// PTO-84 : refus d'accès journalisé (identifiants techniques seulement).
+	private static ResponseEntity<Object> interdit(Compte compte) {
+		EvenementMetier.de("equipe.acces", "refuse").depuisLeControleur().avec(compte.identifiantsPourLogs()).warn();
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErreurResponse(MESSAGE_RESERVE));
 	}
 
 	private static boolean estAdministrateur(Compte compte) {

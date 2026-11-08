@@ -17,8 +17,10 @@ import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.DefiCode;
 import com.example.gestionfinanciere.compte.Jetons;
 import com.example.gestionfinanciere.compte.ResultatRenvoi;
+import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
+import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
 // US-36 Créer le compte de son cabinet, en 3 étapes (RG3) : informations, code reçu par email
 // pour confirmer l'email, puis « Cabinet prêt ». Le code suit les règles de la US-04 :
@@ -31,6 +33,7 @@ public class InscriptionService {
 	static final Duration DELAI_AVANT_RENVOI = Duration.ofSeconds(60);
 	static final int CODES_FAUX_MAX = 3;
 	static final String SUJET = "Confirmez votre email Pointéo";
+	static final String EMAIL_IMPOSSIBLE = "email_impossible";
 
 	private final InscriptionRepository inscriptions;
 	private final CabinetRepository cabinets;
@@ -55,6 +58,47 @@ public class InscriptionService {
 	// Étape 1 : vérifie le formulaire (RG2) puis envoie le code à l'email saisi.
 	@Transactional
 	public ResultatInscription demarrer(DemandeInscription demande) {
+		try {
+			ResultatInscription resultat = verifierEtEnvoyer(demande);
+			EvenementMetier.de("inscription.demarree", resultat.statut()).avecChampsInvalides(resultat.erreurs())
+					.journaliser(resultat.statut() == ResultatInscription.Statut.CODE_ENVOYE);
+			return resultat;
+		} catch (EnvoiImpossibleException e) {
+			EvenementMetier.de("inscription.demarree", EMAIL_IMPOSSIBLE).error();
+			throw e;
+		}
+	}
+
+	// Étape 2 : avec le bon code, crée le cabinet et son administrateur (CA1).
+	@Transactional
+	public ResultatCodeInscription validerCode(String defi, String code) {
+		ResultatCodeInscription resultat = verifierEtCreer(defi, code);
+		EvenementMetier evenement = EvenementMetier.de("inscription.code_verifie", resultat.statut());
+		if (resultat.compte() != null) {
+			evenement.avec(resultat.compte().identifiantsPourLogs());
+		}
+		if (resultat.statut() == Statut.FAUX) {
+			evenement.avec("tentativesRestantes", resultat.tentativesRestantes());
+		}
+		evenement.journaliser(resultat.statut() == Statut.CABINET_CREE);
+		return resultat;
+	}
+
+	// Nouveau code possible après 60 secondes ; il remplace l'ancien.
+	@Transactional
+	public ResultatRenvoi renvoyer(String defi) {
+		try {
+			ResultatRenvoi resultat = renvoyerCode(defi);
+			EvenementMetier.de("inscription.code_renvoye", resultat.statut())
+					.journaliser(resultat.statut() == ResultatRenvoi.Statut.RENVOYE);
+			return resultat;
+		} catch (EnvoiImpossibleException e) {
+			EvenementMetier.de("inscription.code_renvoye", EMAIL_IMPOSSIBLE).error();
+			throw e;
+		}
+	}
+
+	private ResultatInscription verifierEtEnvoyer(DemandeInscription demande) {
 		Map<String, String> erreurs = ValidationInscription.erreurs(demande);
 		if (!erreurs.isEmpty()) {
 			return ResultatInscription.invalide(erreurs);
@@ -76,9 +120,7 @@ public class InscriptionService {
 				codeDeTest(code)));
 	}
 
-	// Étape 2 : avec le bon code, crée le cabinet et son administrateur (CA1).
-	@Transactional
-	public ResultatCodeInscription validerCode(String defi, String code) {
+	private ResultatCodeInscription verifierEtCreer(String defi, String code) {
 		Optional<Inscription> trouvee = trouver(defi);
 		if (trouvee.isEmpty()) {
 			return ResultatCodeInscription.autre(Statut.DEMANDE_INVALIDE, 0);
@@ -111,9 +153,7 @@ public class InscriptionService {
 		return ResultatCodeInscription.cabinetCree(administrateur);
 	}
 
-	// Nouveau code possible après 60 secondes ; il remplace l'ancien.
-	@Transactional
-	public ResultatRenvoi renvoyer(String defi) {
+	private ResultatRenvoi renvoyerCode(String defi) {
 		Optional<Inscription> trouvee = trouver(defi);
 		if (trouvee.isEmpty()) {
 			return ResultatRenvoi.demandeInvalide();

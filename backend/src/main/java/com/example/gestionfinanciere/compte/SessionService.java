@@ -3,11 +3,13 @@ package com.example.gestionfinanciere.compte;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 
 // US-07 Terminer sa session : déconnexion et expiration après 30 minutes sans activité.
@@ -30,6 +32,7 @@ public class SessionService {
 	public String ouvrir(Compte compte) {
 		String jeton = Jetons.nouveau();
 		sessions.save(new SessionUtilisateur(compte, Jetons.empreinte(jeton), horloge.instant()));
+		EvenementMetier.de("session.ouverte", "ouverte").avec(compte.identifiantsPourLogs()).info();
 		return jeton;
 	}
 
@@ -44,6 +47,7 @@ public class SessionService {
 		Instant maintenant = horloge.instant();
 		if (!maintenant.isBefore(session.getDerniereActivite().plus(INACTIVITE_MAX))) {
 			session.fermer(); // RG2 : 30 minutes sans activité
+			EvenementMetier.de("session.fermee", "expiree").avec(session.getCompte().identifiantsPourLogs()).info();
 			return ResultatSession.expiree();
 		}
 		session.enregistrerActivite(maintenant);
@@ -53,13 +57,21 @@ public class SessionService {
 	// RG1 : « Se déconnecter » ferme la session.
 	@Transactional
 	public void fermer(String jeton) {
-		trouver(jeton).ifPresent(SessionUtilisateur::fermer);
+		Optional<SessionUtilisateur> session = trouver(jeton);
+		session.ifPresent(SessionUtilisateur::fermer);
+		EvenementMetier evenement = EvenementMetier.de("session.fermee",
+				session.isPresent() ? "deconnexion" : "session_inconnue");
+		session.ifPresent(s -> evenement.avec(s.getCompte().identifiantsPourLogs()));
+		evenement.journaliser(session.isPresent());
 	}
 
 	// US-06 : après un changement de mot de passe, les autres sessions sont fermées.
 	@Transactional
 	public void fermerToutes(Compte compte) {
-		sessions.findByCompteAndFermeeFalse(compte).forEach(SessionUtilisateur::fermer);
+		List<SessionUtilisateur> ouvertes = sessions.findByCompteAndFermeeFalse(compte);
+		ouvertes.forEach(SessionUtilisateur::fermer);
+		EvenementMetier.de("session.fermee", "mot_de_passe_change").avec(compte.identifiantsPourLogs())
+				.avec("sessionsFermees", ouvertes.size()).info();
 	}
 
 	private Optional<SessionUtilisateur> trouver(String jeton) {

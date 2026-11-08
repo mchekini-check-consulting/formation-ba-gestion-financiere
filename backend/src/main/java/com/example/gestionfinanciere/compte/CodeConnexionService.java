@@ -10,8 +10,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
+import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
 // US-04 Valider la connexion par un code reçu par email.
 @Service
@@ -22,6 +24,7 @@ public class CodeConnexionService {
 	static final Duration DELAI_AVANT_RENVOI = Duration.ofSeconds(60);
 	static final int CODES_FAUX_MAX = 3;
 	static final String SUJET = "Votre code de connexion Pointéo";
+	static final String EMAIL_IMPOSSIBLE = "email_impossible";
 
 	private final CodeConnexionRepository codes;
 	private final PasswordEncoder encodeur;
@@ -41,6 +44,45 @@ public class CodeConnexionService {
 	// Après le bon mot de passe : crée un code (RG1 : 6 chiffres, 5 minutes) et l'envoie par email.
 	@Transactional
 	public DefiCode demarrer(Compte compte) {
+		try {
+			DefiCode defi = envoyerUnCode(compte);
+			EvenementMetier.de("connexion.code_envoye", "envoye").avec(compte.identifiantsPourLogs()).info();
+			return defi;
+		} catch (EnvoiImpossibleException e) {
+			EvenementMetier.de("connexion.code_envoye", EMAIL_IMPOSSIBLE).avec(compte.identifiantsPourLogs()).error();
+			throw e;
+		}
+	}
+
+	@Transactional
+	public ResultatCode verifier(String defi, String code) {
+		ResultatCode resultat = verifierCode(defi, code);
+		EvenementMetier evenement = EvenementMetier.de("connexion.code_verifie", resultat.statut());
+		if (resultat.compte() != null) {
+			evenement.avec(resultat.compte().identifiantsPourLogs());
+		}
+		if (resultat.statut() == ResultatCode.Statut.FAUX) {
+			evenement.avec("tentativesRestantes", resultat.tentativesRestantes());
+		}
+		evenement.journaliser(resultat.statut() == ResultatCode.Statut.REUSSI);
+		return resultat;
+	}
+
+	// RG2 : nouveau code possible après 60 secondes ; il remplace l'ancien.
+	@Transactional
+	public ResultatRenvoi renvoyer(String defi) {
+		try {
+			ResultatRenvoi resultat = renvoyerCode(defi);
+			EvenementMetier.de("connexion.code_renvoye", resultat.statut())
+					.journaliser(resultat.statut() == ResultatRenvoi.Statut.RENVOYE);
+			return resultat;
+		} catch (EnvoiImpossibleException e) {
+			EvenementMetier.de("connexion.code_renvoye", EMAIL_IMPOSSIBLE).error();
+			throw e;
+		}
+	}
+
+	private DefiCode envoyerUnCode(Compte compte) {
 		String defi = Jetons.nouveau();
 		String code = Jetons.codeSixChiffres();
 		Instant maintenant = horloge.instant();
@@ -50,8 +92,7 @@ public class CodeConnexionService {
 		return new DefiCode(defi, compte.emailMasque(), codeDeTest(code));
 	}
 
-	@Transactional
-	public ResultatCode verifier(String defi, String code) {
+	private ResultatCode verifierCode(String defi, String code) {
 		Optional<CodeConnexion> trouve = trouver(defi);
 		if (trouve.isEmpty()) {
 			return ResultatCode.demandeInvalide();
@@ -72,9 +113,7 @@ public class CodeConnexionService {
 		return ResultatCode.faux(restantes);
 	}
 
-	// RG2 : nouveau code possible après 60 secondes ; il remplace l'ancien.
-	@Transactional
-	public ResultatRenvoi renvoyer(String defi) {
+	private ResultatRenvoi renvoyerCode(String defi) {
 		Optional<CodeConnexion> trouve = trouver(defi);
 		if (trouve.isEmpty()) {
 			return ResultatRenvoi.demandeInvalide();

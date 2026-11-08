@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 
@@ -20,6 +21,7 @@ import com.example.gestionfinanciere.notification.EnvoiEmail;
 public class ReinitialisationService {
 
 	static final Duration VALIDITE_LIEN = Duration.ofHours(1);
+	static final String EVENEMENT_CHANGEMENT = "mot_de_passe.reinitialisation";
 
 	private final CompteRepository comptes;
 	private final JetonReinitialisationRepository jetons;
@@ -55,6 +57,7 @@ public class ReinitialisationService {
 		}
 		Optional<Compte> compte = comptes.findByEmail(ConnexionService.normaliser(email)).filter(Compte::isActif);
 		if (compte.isEmpty()) {
+			EvenementMetier.de("mot_de_passe.lien_demande", "compte_inconnu_ou_inactif").warn();
 			return Optional.empty();
 		}
 		String jeton = Jetons.nouveau();
@@ -65,6 +68,8 @@ public class ReinitialisationService {
 						+ "Pour choisir un nouveau mot de passe, ouvrez ce lien (valable 1 heure, une seule fois) :\n"
 						+ frontendUrl + "/reinitialiser-mot-de-passe?jeton=" + jeton + "\n\n"
 						+ "Si vous n'avez rien demandé, ignorez cet email.\n");
+		EvenementMetier.de("mot_de_passe.lien_demande", "lien_envoye").avec(compte.get().identifiantsPourLogs())
+				.info();
 		return modeTest ? Optional.of(jeton) : Optional.empty();
 	}
 
@@ -78,10 +83,14 @@ public class ReinitialisationService {
 	public ResultatReinitialisation reinitialiser(String jeton, String motDePasse) {
 		Optional<JetonReinitialisation> trouve = trouverValable(jeton);
 		if (trouve.isEmpty()) {
+			EvenementMetier.de(EVENEMENT_CHANGEMENT, ResultatReinitialisation.Statut.LIEN_EXPIRE).warn();
 			return ResultatReinitialisation.lienExpire();
 		}
 		List<String> regles = RegleMotDePasse.nonRespectees(motDePasse);
 		if (!regles.isEmpty()) {
+			EvenementMetier.de(EVENEMENT_CHANGEMENT, ResultatReinitialisation.Statut.TROP_FAIBLE)
+					.avec(trouve.get().getCompte().identifiantsPourLogs()).avec("reglesNonRespectees", regles.size())
+					.warn();
 			return ResultatReinitialisation.tropFaible(regles); // CA3 : rien n'est changé
 		}
 		JetonReinitialisation lien = trouve.get();
@@ -89,6 +98,8 @@ public class ReinitialisationService {
 		Compte compte = lien.getCompte();
 		compte.changerMotDePasse(encodeur.encode(motDePasse));
 		sessions.fermerToutes(compte);
+		EvenementMetier.de(EVENEMENT_CHANGEMENT, ResultatReinitialisation.Statut.CHANGE)
+				.avec(compte.identifiantsPourLogs()).info();
 		return ResultatReinitialisation.change();
 	}
 
