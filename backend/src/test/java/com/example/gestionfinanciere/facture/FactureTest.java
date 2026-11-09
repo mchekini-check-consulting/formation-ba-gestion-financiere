@@ -40,6 +40,16 @@ class FactureTest {
 		assertNull(facture.getId());
 	}
 
+	// US-12 RG3 : la première ouverture fait disparaître le badge « Nouvelle » ; elle n'est pas écrasée.
+	@Test
+	void ouverteUneSeuleFois() {
+		Facture facture = new Facture(dossier, Facture.Sens.VENTE, "v.pdf", "application/pdf", MAINTENANT, jean);
+		facture.marquerOuverte(MAINTENANT.plusSeconds(10));
+		facture.marquerOuverte(MAINTENANT.plusSeconds(20));
+		assertEquals(MAINTENANT.plusSeconds(10), facture.getOuverteLe());
+		assertFalse(LigneFacture.de(facture).nouvelle());
+	}
+
 	@Test
 	void dirigeantInviteRattacheASonDossierEtInactif() {
 		Compte sophie = Compte.dirigeantInvite(42L, "sophie@test.fr", "x", "Sophie Martin");

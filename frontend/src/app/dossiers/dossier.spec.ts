@@ -44,7 +44,14 @@ describe('US-11 Ouvrir un dossier', () => {
     expect(page.textContent).toContain('Chargement…');
     http.expectOne('/api/dossiers/2').flush(reponse);
     await fixture.whenStable();
+    // US-12 : l'onglet Factures fournisseurs charge ses factures.
+    factures('ACHAT');
+    await fixture.whenStable();
     return { fixture, page };
+  }
+
+  function factures(sens: 'ACHAT' | 'VENTE') {
+    http.expectOne(`/api/dossiers/2/factures?sens=${sens}`).flush({ factures: [], exemplesPossibles: false });
   }
 
   function onglets(page: HTMLElement) {
@@ -76,12 +83,14 @@ describe('US-11 Ouvrir un dossier', () => {
       'Modules',
     ]);
     expect(onglets(page).map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
-    expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('factures fournisseurs');
+    expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune facture fournisseur pour le moment');
 
     onglets(page)[1].click();
     await fixture.whenStable();
+    factures('VENTE');
+    await fixture.whenStable();
     expect(onglets(page)[1].getAttribute('aria-selected')).toBe('true');
-    expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('factures clients');
+    expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune facture client pour le moment');
 
     onglets(page)[2].click();
     await fixture.whenStable();
@@ -124,6 +133,8 @@ describe('US-11 Ouvrir un dossier', () => {
     adresse.next(convertToParamMap({}));
     await fixture.whenStable();
     http.expectOne('/api/dossiers/').flush(FLEURS);
+    await fixture.whenStable();
+    factures('ACHAT');
     await fixture.whenStable();
     expect(onglets(page)[0].getAttribute('aria-selected')).toBe('true');
   });

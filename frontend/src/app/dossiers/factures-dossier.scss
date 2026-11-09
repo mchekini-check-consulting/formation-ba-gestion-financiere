@@ -1,0 +1,91 @@
+// US-12 Factures d'un dossier : mêmes couleurs que la liste des dossiers.
+$encre: #16130f;
+$or: #8c6b36;
+$gris: #6e6456;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  border-top: 1px solid #f1ebe0;
+  text-align: left;
+}
+
+th {
+  border-top: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: $gris;
+}
+
+.fichier {
+  margin-right: 8px;
+  color: $encre;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f1ebe0;
+  color: #3a332a;
+  font-size: 12px;
+  font-weight: 600;
+
+  &--nouvelle {
+    background: #fff1db;
+    color: #8a4b00;
+  }
+}
+
+.vide {
+  margin: 0;
+  padding: 24px 0;
+  text-align: center;
+  font-size: 16px;
+  color: $gris;
+}
+
+.muted {
+  margin: 0;
+  color: $gris;
+}
+
+.exemples {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border: 1px dashed $or;
+  border-radius: 10px;
+  background: none;
+  color: $or;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.alerte {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #8c1d18;
+  font-size: 14px;
+}
