@@ -1,10 +1,13 @@
 package com.example.gestionfinanciere.facture;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Optional;
 
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,15 +23,19 @@ import com.example.gestionfinanciere.compte.SessionController;
 import com.example.gestionfinanciere.compte.SessionService;
 import com.example.gestionfinanciere.dossier.DossierController;
 
-// US-12 Factures d'un dossier, exposées par le gateway sous /backend/dossiers/{id}/factures ;
+// US-12 Factures d'un dossier et US-13 aperçu / téléchargement, exposées par le gateway sous /backend/dossiers/{id}/factures ;
 // mêmes droits que le dossier (US-11 RG3), session obligatoire (US-07) :
 //   GET  /dossiers/{id}/factures?sens=ACHAT|VENTE  factures fournisseurs (achats) ou clients (ventes)
+//   GET  /dossiers/{id}/factures/{f}               nom et type du fichier (US-13)
+//   GET  /dossiers/{id}/factures/{f}/fichier       fichier d'origine : aperçu, ou ?telechargement=true (US-13)
 //   POST /dossiers/{id}/factures/exemples          mode test seulement : factures d'exemple
 @RestController
 @RequestMapping("/dossiers/{dossierId}/factures")
 public class FactureController {
 
 	static final String MESSAGE_SENS_INVALIDE = "Indiquez ACHAT ou VENTE";
+	// US-13 RG3 : facture d'un dossier sans droits, inexistante ou sans fichier.
+	static final String MESSAGE_FACTURE_INTROUVABLE = "Facture introuvable ou accès non autorisé";
 
 	private final FactureService factures;
 	private final SessionService sessions;
@@ -57,6 +64,58 @@ public class FactureController {
 		}
 		return factures.lister(session.compte(), numero.get(), onglet.get())
 				.<ResponseEntity<Object>>map(ResponseEntity::ok).orElseGet(DossierController::introuvable);
+	}
+
+	@GetMapping("/{factureId}")
+	public ResponseEntity<Object> consulter(
+			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String autorisation,
+			@PathVariable String dossierId, @PathVariable String factureId) {
+		ResultatSession session = sessions.consulter(SessionController.jeton(autorisation));
+		ResponseEntity<Object> refus = DossierController.refus(session);
+		if (refus != null) {
+			return refus;
+		}
+		Optional<Long> dossier = DossierController.numero(dossierId);
+		Optional<Long> facture = DossierController.numero(factureId);
+		if (dossier.isEmpty() || facture.isEmpty()) {
+			return factureIntrouvable();
+		}
+		return factures.consulter(session.compte(), dossier.get(), facture.get())
+				.<ResponseEntity<Object>>map(ResponseEntity::ok).orElseGet(FactureController::factureIntrouvable);
+	}
+
+	// US-13 RG1 : aperçu (affiché dans la page) ; RG2 : téléchargement du fichier d'origine.
+	@GetMapping("/{factureId}/fichier")
+	public ResponseEntity<Object> fichier(
+			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String autorisation,
+			@PathVariable String dossierId, @PathVariable String factureId,
+			@RequestParam(value = "telechargement", defaultValue = "false") boolean telechargement) {
+		ResultatSession session = sessions.consulter(SessionController.jeton(autorisation));
+		ResponseEntity<Object> refus = DossierController.refus(session);
+		if (refus != null) {
+			return refus;
+		}
+		Optional<Long> dossier = DossierController.numero(dossierId);
+		Optional<Long> facture = DossierController.numero(factureId);
+		if (dossier.isEmpty() || facture.isEmpty()) {
+			return factureIntrouvable();
+		}
+		return factures.ouvrir(session.compte(), dossier.get(), facture.get(), telechargement)
+				.map(fichier -> envoyer(fichier, telechargement)).orElseGet(FactureController::factureIntrouvable);
+	}
+
+	private static ResponseEntity<Object> envoyer(FichierFacture fichier, boolean telechargement) {
+		ContentDisposition disposition = (telechargement ? ContentDisposition.attachment() : ContentDisposition.inline())
+				.filename(fichier.nomFichier(), StandardCharsets.UTF_8).build();
+		return ResponseEntity.ok().contentType(MediaType.parseMediaType(fichier.typeFichier()))
+				.header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+				// Fichier privé : jamais gardé par un cache, jamais interprété autrement que son type.
+				.header(HttpHeaders.CACHE_CONTROL, "no-store").header("X-Content-Type-Options", "nosniff")
+				.body(fichier.contenu());
+	}
+
+	private static ResponseEntity<Object> factureIntrouvable() {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErreurResponse(MESSAGE_FACTURE_INTROUVABLE));
 	}
 
 	@PostMapping("/exemples")

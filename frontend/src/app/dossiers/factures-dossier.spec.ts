@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { SessionService } from '../session/session.service';
 import { LigneFacture, Sens, formaterDepot } from './facture.service';
 import { FacturesDossier } from './factures-dossier';
@@ -28,7 +29,7 @@ describe('US-12 Factures d’un dossier', () => {
     sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [FacturesDossier],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(SessionService).ouvrir({ jeton: 'jeton', role: 'COLLABORATEUR', nomAffiche: 'Jean Dupont' });
@@ -57,10 +58,12 @@ describe('US-12 Factures d’un dossier', () => {
   it('RG2 et RG3 : fichier, date de dépôt, déposée par, « Reçue », badge « Nouvelle »', async () => {
     const { page } = await afficher('ACHAT', [TICKET, ELECTRICITE]);
     expect(lignes(page)).toEqual([
-      ['ticket-fournitures.jpgNouvelle','08/11/2026 à 10:05', 'Jean Dupont', 'Reçue'],
+      ['ticket-fournitures.jpgNouvelle', '08/11/2026 à 10:05', 'Jean Dupont', 'Reçue'],
       ['facture-electricite-octobre.pdf', '05/11/2026 à 10:00', 'Jean Dupont', 'Reçue'],
     ]);
     expect(page.querySelectorAll('.badge--nouvelle')).toHaveLength(1);
+    // US-13 RG1 : un clic sur le fichier ouvre son aperçu.
+    expect(page.querySelector('a.fichier')?.getAttribute('href')).toBe('/dossiers/42/factures/2');
     expect(page.querySelector('.exemples')).toBeNull();
   });
 

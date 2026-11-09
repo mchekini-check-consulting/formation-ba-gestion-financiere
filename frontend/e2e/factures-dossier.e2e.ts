@@ -19,7 +19,7 @@ test.describe('US-12 Factures d’un dossier', () => {
     // RG1 et RG2 : factures fournisseurs, la plus récente d'abord.
     const achats = page.getByRole('tabpanel').locator('tbody tr');
     await expect(achats).toHaveCount(2);
-    await expect(achats.nth(0)).toContainText('ticket-fournitures.jpg');
+    await expect(achats.nth(0)).toContainText('ticket-fournitures.png');
     await expect(achats.nth(0)).toContainText('Claire Martin');
     await expect(achats.nth(0)).toContainText('Reçue');
     await expect(achats.nth(0)).toContainText(/\d{2}\/\d{2}\/\d{4} à \d{2}:\d{2}/);

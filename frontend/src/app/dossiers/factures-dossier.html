@@ -18,7 +18,8 @@
         @for (f of l.factures; track f.id) {
           <tr>
             <td>
-              <span class="fichier">{{ f.nomFichier }}</span>
+              <!-- US-13 RG1 : un clic ouvre l'aperçu -->
+              <a class="fichier" [routerLink]="['/dossiers', dossierId(), 'factures', f.id]">{{ f.nomFichier }}</a>
               @if (f.nouvelle) {
                 <span class="badge badge--nouvelle">Nouvelle</span>
               }

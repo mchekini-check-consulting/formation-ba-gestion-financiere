@@ -1,0 +1,36 @@
+<a [routerLink]="['/dossiers', dossierId()]" [queryParams]="{ onglet: onglet(facture()) }" class="retour">
+  ← Retour au dossier
+</a>
+
+@if (erreur(); as e) {
+  <p class="alerte" role="alert">{{ e }}</p>
+} @else if (facture(); as f) {
+  <header class="entete">
+    <h1>{{ f.nomFichier }}</h1>
+    <!-- RG2 : fichier d'origine -->
+    <button type="button" class="bouton" [disabled]="telechargementEnCours()" (click)="telecharger()">
+      Télécharger
+    </button>
+  </header>
+
+  <!-- RG1 : aperçu du PDF ou de l'image -->
+  <section class="apercu">
+    @if (lien(); as l) {
+      @switch (affichage(f)) {
+        @case ('pdf') {
+          <iframe [src]="cadre(l)" [title]="'Aperçu de ' + f.nomFichier"></iframe>
+        }
+        @case ('image') {
+          <img [src]="cadre(l)" [alt]="'Aperçu de ' + f.nomFichier" />
+        }
+        @default {
+          <p class="muted">Aperçu indisponible pour ce type de fichier : utilisez « Télécharger ».</p>
+        }
+      }
+    } @else {
+      <p class="muted">Chargement de l'aperçu…</p>
+    }
+  </section>
+} @else {
+  <p class="muted">Chargement…</p>
+}

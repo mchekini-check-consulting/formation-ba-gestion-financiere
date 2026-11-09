@@ -36,7 +36,9 @@ export class Dossier implements OnInit {
     this.route.paramMap.subscribe((parametres) => {
       this.dossier.set(null);
       this.erreur.set(null);
-      this.onglet.set('fournisseurs');
+      // Retour de l'aperçu d'une facture (US-13) : même onglet qu'avant.
+      const demande = this.route.snapshot?.queryParamMap.get('onglet');
+      this.onglet.set(ONGLETS.find((o) => o.id === demande)?.id ?? 'fournisseurs');
       // Le serveur vérifie les droits (RG3) : l'adresse est transmise telle quelle.
       this.dossiers.consulter(parametres.get('id') ?? '').subscribe({
         next: (dossier) => this.dossier.set(dossier),

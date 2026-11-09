@@ -65,6 +65,10 @@ public class Facture {
 	@Column(name = "ouverte_le")
 	private Instant ouverteLe;
 
+	// US-13 : fichier d'origine (PDF ou image) ; vide si la facture n'en a pas.
+	@Column(name = "contenu")
+	private byte[] contenu;
+
 	protected Facture() {
 	}
 
@@ -77,6 +81,13 @@ public class Facture {
 		this.deposeeLe = deposeeLe;
 		this.deposeePar = deposeePar;
 		this.statut = Statut.RECUE;
+	}
+
+	// US-13 : facture avec son fichier d'origine.
+	public Facture(Dossier dossier, Sens sens, String nomFichier, String typeFichier, Instant deposeeLe,
+			Compte deposeePar, byte[] contenu) {
+		this(dossier, sens, nomFichier, typeFichier, deposeeLe, deposeePar);
+		this.contenu = contenu == null ? null : contenu.clone();
 	}
 
 	// US-12 RG3 / US-13 : ouverte par quelqu'un du cabinet, le badge « Nouvelle » disparaît.
@@ -120,6 +131,10 @@ public class Facture {
 
 	public Instant getOuverteLe() {
 		return ouverteLe;
+	}
+
+	public byte[] getContenu() {
+		return contenu == null ? null : contenu.clone();
 	}
 
 }

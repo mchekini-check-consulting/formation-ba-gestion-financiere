@@ -16,6 +16,14 @@ export interface LigneFacture {
   nouvelle: boolean;
 }
 
+/** US-13 : en-tête de la page d'aperçu. */
+export interface VueFacture {
+  id: number;
+  nomFichier: string;
+  typeFichier: string;
+  sens: Sens;
+}
+
 /** exemplesPossibles : mode test seulement (dev, qualif), jamais en preprod ni en prod. */
 export interface ListeFactures {
   factures: LigneFacture[];
@@ -32,6 +40,17 @@ export class FactureService {
     return this.http.get<ListeFactures>(`${this.url}/${dossierId}/factures`, {
       params: new HttpParams().set('sens', sens),
     });
+  }
+
+  /** US-13 : nom et type du fichier, pour la page d'aperçu. */
+  consulter(dossierId: number | string, factureId: number | string): Observable<VueFacture> {
+    return this.http.get<VueFacture>(`${this.url}/${dossierId}/factures/${factureId}`);
+  }
+
+  /** US-13 RG1 : fichier pour l'aperçu ; RG2 : fichier d'origine à télécharger. */
+  fichier(dossierId: number | string, factureId: number | string, telechargement: boolean): Observable<Blob> {
+    const params = telechargement ? new HttpParams().set('telechargement', 'true') : undefined;
+    return this.http.get(`${this.url}/${dossierId}/factures/${factureId}/fichier`, { params, responseType: 'blob' });
   }
 
   /** Mode test : factures d'exemple, le dépôt (US-15) n'existant pas encore. */

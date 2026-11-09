@@ -1,2 +1,5 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+# Fichiers d'exemple des factures (US-13) : jamais de conversion des fins de ligne.
+*.pdf binary
+*.png binary
