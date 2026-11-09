@@ -65,6 +65,16 @@ public class Invitation {
 		}
 	}
 
+	// US-08 RG1 : valable 7 jours, une seule fois, et pas annulée par un renvoi (US-14 RG2).
+	public boolean estValable(Instant maintenant) {
+		return utiliseeLe == null && annuleeLe == null && maintenant.isBefore(expireLe);
+	}
+
+	// US-08 RG1 : le lien ne sert qu'une fois.
+	public void utiliser(Instant quand) {
+		utiliseeLe = quand;
+	}
+
 	public Long getId() {
 		return id;
 	}
