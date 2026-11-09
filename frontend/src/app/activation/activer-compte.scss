@@ -1,0 +1,39 @@
+// US-08 Activer son compte : même mise en page que « Nouveau mot de passe » (US-06).
+@use '../auth-page';
+
+$or: #8c6b36;
+
+.aside--top {
+  justify-content: flex-start;
+}
+
+.form {
+  max-width: 440px;
+  gap: 16px;
+
+  h1 {
+    margin: 0;
+    font-family: 'Playfair Display', Inter, sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+}
+
+.field > input {
+  width: 100%;
+}
+
+.cgu {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0;
+    accent-color: $or;
+  }
+}

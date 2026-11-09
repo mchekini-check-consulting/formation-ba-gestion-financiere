@@ -138,6 +138,12 @@ public class Compte {
 		reinitialiserEchecs();
 	}
 
+	// US-08 RG2 et RG3 : mot de passe choisi depuis le lien d'invitation, compte actif aussitôt.
+	public void activer(String empreinteMotDePasse) {
+		changerMotDePasse(empreinteMotDePasse);
+		actif = true;
+	}
+
 	// US-04 : email masqué sur l'écran du code, ex. « j•••••@cabinet-test.fr ».
 	public String emailMasque() {
 		return masquerEmail(email);

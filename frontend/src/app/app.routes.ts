@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { ActiverCompte } from './activation/activer-compte';
 import { Clients } from './clients/clients';
 import { ApercuFacture } from './dossiers/apercu-facture';
 import { CodeVerification } from './code-verification/code-verification';
@@ -48,7 +49,7 @@ export const routes: Routes = [
     ],
   },
   // Lien de l'email d'invitation (US-19) : activation du compte avec l'US-08.
-  { path: 'activer-compte', component: PageAVenir },
+  { path: 'activer-compte', component: ActiverCompte },
   { path: 'mentions-legales', component: PageAVenir },
   { path: 'cgu', component: PageAVenir },
   { path: 'confidentialite', component: PageAVenir },
