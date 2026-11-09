@@ -7,13 +7,21 @@
       <h1>{{ d.raisonSociale }}</h1>
       <p class="sous-titre">SIREN {{ siren(d) }}</p>
     </div>
-    <span
-      class="etat"
-      [class.etat--invite]="d.etatEspaceClient === 'INVITE'"
-      [class.etat--actif]="d.etatEspaceClient === 'ACTIF'"
-    >
-      Espace client : {{ libelleEtat(d.etatEspaceClient) }}
-    </span>
+    <div class="espace-client">
+      <span
+        class="etat"
+        [class.etat--invite]="d.etatEspaceClient === 'INVITE'"
+        [class.etat--actif]="d.etatEspaceClient === 'ACTIF'"
+      >
+        Espace client : {{ libelleEtat(d.etatEspaceClient) }}
+      </span>
+      <!-- US-14 : inviter le dirigeant, puis renvoyer l'invitation -->
+      <app-invitation-dirigeant
+        [dossierId]="d.id"
+        [etat]="d.etatEspaceClient"
+        (invite)="changerEtat($event)"
+      />
+    </div>
   </header>
 
   <!-- RG2 : onglets, Factures fournisseurs par défaut -->

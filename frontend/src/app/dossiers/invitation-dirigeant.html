@@ -1,0 +1,52 @@
+@if (etat() === 'NON_INVITE' && !ouvert()) {
+  <button type="button" class="bouton" (click)="ouvrir()">Inviter le dirigeant</button>
+} @else if (etat() === 'INVITE') {
+  <!-- RG2 : nouveau lien, l'ancien est annulé -->
+  <button type="button" class="bouton bouton--secondaire" [disabled]="enCours()" (click)="renvoyer()">
+    {{ enCours() ? 'Envoi…' : "Renvoyer l'invitation" }}
+  </button>
+}
+
+@if (ouvert()) {
+  <form class="carte" [formGroup]="formulaire" (ngSubmit)="inviter()" novalidate aria-labelledby="titre-invitation">
+    <h2 id="titre-invitation">Inviter le dirigeant</h2>
+    <p class="aide">Il recevra un email au nom de votre cabinet pour activer son espace client (lien valable 7 jours).</p>
+    <div class="champs">
+      <div class="champ">
+        <label for="prenom-dirigeant">Prénom</label>
+        <input id="prenom-dirigeant" formControlName="prenom" autocomplete="off" [attr.aria-invalid]="!!erreurs().prenom" />
+        @if (erreurs().prenom; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+      <div class="champ">
+        <label for="nom-dirigeant">Nom</label>
+        <input id="nom-dirigeant" formControlName="nom" autocomplete="off" [attr.aria-invalid]="!!erreurs().nom" />
+        @if (erreurs().nom; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+      <div class="champ">
+        <label for="email-dirigeant">Email</label>
+        <input id="email-dirigeant" type="email" formControlName="email" autocomplete="off" [attr.aria-invalid]="!!erreurs().email" />
+        @if (erreurs().email; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+    </div>
+    @if (alerte(); as a) {
+      <p class="alerte" role="alert">{{ a }}</p>
+    }
+    <div class="actions">
+      <button type="submit" class="bouton" [disabled]="enCours()">
+        {{ enCours() ? 'Envoi…' : "Envoyer l'invitation" }}
+      </button>
+      <button type="button" class="lien" (click)="annuler()">Annuler</button>
+    </div>
+  </form>
+} @else if (alerte(); as a) {
+  <p class="alerte" role="alert">{{ a }}</p>
+}
+
+@if (succes(); as s) {
+  <p class="succes" role="status">
+    {{ s }}
+    @if (lienDeTest(); as lien) {
+      <a class="lien-test" [href]="lien">Mode test : lien d'invitation</a>
+    }
+  </p>
+}

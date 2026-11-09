@@ -67,6 +67,15 @@ describe('US-11 Ouvrir un dossier', () => {
     expect(etat?.classList).toContain('etat--invite');
   });
 
+  it('US-14 RG3 : après l’invitation du dirigeant, l’en-tête passe à « Invité »', async () => {
+    const { fixture, page } = await ouvrir({ ...FLEURS, etatEspaceClient: 'NON_INVITE' });
+    expect(page.textContent).toContain('Inviter le dirigeant');
+    fixture.componentInstance.changerEtat('INVITE');
+    await fixture.whenStable();
+    expect(page.querySelector('.etat')?.textContent?.trim()).toBe('Espace client : Invité');
+    expect(page.textContent).toContain("Renvoyer l'invitation");
+  });
+
   it('RG1 : états Non invité et Actif', async () => {
     const nonInvite = await ouvrir({ ...FLEURS, etatEspaceClient: 'NON_INVITE' });
     expect(nonInvite.page.querySelector('.etat')?.textContent?.trim()).toBe('Espace client : Non invité');

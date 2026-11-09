@@ -40,6 +40,14 @@ h1 {
   color: $gris;
 }
 
+.espace-client {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 100%;
+}
+
 .etat {
   padding: 5px 12px;
   border-radius: 999px;

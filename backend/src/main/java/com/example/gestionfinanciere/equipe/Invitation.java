@@ -58,6 +58,13 @@ public class Invitation {
 		this.expireLe = expireLe;
 	}
 
+	// US-14 RG2 : « Renvoyer l'invitation » annule ce lien.
+	public void annuler(Instant quand) {
+		if (annuleeLe == null) {
+			annuleeLe = quand;
+		}
+	}
+
 	public Long getId() {
 		return id;
 	}
