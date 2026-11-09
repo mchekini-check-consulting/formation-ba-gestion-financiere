@@ -1,4 +1,5 @@
 import { Component, OnChanges, inject, input, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FactureService, LigneFacture, ListeFactures, Sens, formaterDepot } from './facture.service';
 
 const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réessayez.';
@@ -11,6 +12,7 @@ export const MESSAGES_VIDE: Record<Sens, string> = {
 
 /** US-12 Factures d'un onglet du dossier (US-11 RG2). */
 @Component({
+  imports: [RouterLink],
   selector: 'app-factures-dossier',
   templateUrl: './factures-dossier.html',
   styleUrl: './factures-dossier.scss',

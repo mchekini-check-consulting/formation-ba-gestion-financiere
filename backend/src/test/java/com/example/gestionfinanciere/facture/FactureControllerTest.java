@@ -1,7 +1,10 @@
 package com.example.gestionfinanciere.facture;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,7 +15,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import com.example.gestionfinanciere.cabinet.Cabinet;
@@ -83,6 +88,58 @@ class FactureControllerTest {
 		assertEquals(HttpStatus.FORBIDDEN, controller.ajouterExemples(AUTORISATION, "42").getStatusCode());
 		verify(factures, never()).lister(any(), any(), any());
 		verify(factures, never()).ajouterExemples(any(), any());
+	}
+
+	// US-13 RG1 : aperçu dans la page ; RG2 : téléchargement du fichier d'origine.
+	@Test
+	void us13ApercuEtTelechargement() {
+		connecte(jean);
+		FichierFacture fichier = new FichierFacture("facture électricité.pdf", "application/pdf", new byte[] { 1, 2 });
+		when(factures.ouvrir(jean, 42L, 5L, false)).thenReturn(Optional.of(fichier));
+		when(factures.ouvrir(jean, 42L, 5L, true)).thenReturn(Optional.of(fichier));
+
+		ResponseEntity<Object> apercu = controller.fichier(AUTORISATION, "42", "5", false);
+		assertEquals(HttpStatus.OK, apercu.getStatusCode());
+		assertEquals(MediaType.APPLICATION_PDF, apercu.getHeaders().getContentType());
+		assertArrayEquals(new byte[] { 1, 2 }, (byte[]) apercu.getBody());
+		assertTrue(apercu.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION).startsWith("inline;"));
+		assertEquals("no-store", apercu.getHeaders().getCacheControl());
+		assertEquals("nosniff", apercu.getHeaders().getFirst("X-Content-Type-Options"));
+
+		ResponseEntity<Object> telechargement = controller.fichier(AUTORISATION, "42", "5", true);
+		assertTrue(telechargement.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION)
+				.startsWith("attachment; filename="));
+	}
+
+	@Test
+	void us13NomEtTypeDuFichier() {
+		connecte(jean);
+		VueFacture vue = new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT);
+		when(factures.consulter(jean, 42L, 5L)).thenReturn(Optional.of(vue));
+		assertEquals(vue, controller.consulter(AUTORISATION, "42", "5").getBody());
+	}
+
+	// US-13 RG3 : sans connexion, aucun fichier ; sans droits, « Facture introuvable ou accès non autorisé ».
+	@Test
+	void us13ControleDAcces() {
+		when(sessions.consulter(null)).thenReturn(ResultatSession.nonConnecte());
+		assertEquals(HttpStatus.UNAUTHORIZED, controller.fichier(null, "42", "5", false).getStatusCode());
+		assertEquals(HttpStatus.UNAUTHORIZED, controller.consulter(null, "42", "5").getStatusCode());
+
+		connecte(jean);
+		when(factures.ouvrir(any(), any(), any(), anyBoolean())).thenReturn(Optional.empty());
+		when(factures.consulter(any(), any(), any())).thenReturn(Optional.empty());
+		ErreurResponse introuvable = new ErreurResponse("Facture introuvable ou accès non autorisé");
+		for (String[] ids : new String[][] { { "42", "6" }, { "x", "5" }, { "42", "y" } }) {
+			ResponseEntity<Object> fichier = controller.fichier(AUTORISATION, ids[0], ids[1], true);
+			assertEquals(HttpStatus.NOT_FOUND, fichier.getStatusCode());
+			assertEquals(introuvable, fichier.getBody());
+			assertEquals(introuvable, controller.consulter(AUTORISATION, ids[0], ids[1]).getBody());
+		}
+
+		connecte(new Compte("sophie@test.fr", "x", Role.DIRIGEANT, true, "Sophie Martin"));
+		assertEquals(HttpStatus.FORBIDDEN, controller.fichier(AUTORISATION, "42", "5", false).getStatusCode());
+		assertEquals(HttpStatus.FORBIDDEN, controller.consulter(AUTORISATION, "42", "5").getStatusCode());
 	}
 
 	@Test

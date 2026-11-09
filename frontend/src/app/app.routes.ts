@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { Clients } from './clients/clients';
+import { ApercuFacture } from './dossiers/apercu-facture';
 import { CodeVerification } from './code-verification/code-verification';
 import { CreerCompte } from './creer-compte/creer-compte';
 import { CreerDossier } from './dossiers/creer-dossier';
@@ -39,6 +40,8 @@ export const routes: Routes = [
       { path: 'dossiers/nouveau', component: CreerDossier, data: { role: 'COLLABORATEUR' } },
       // US-11 : ouvrir un dossier (en-tête, onglets) ; droits vérifiés par le backend.
       { path: 'dossiers/:id', component: Dossier, data: { role: 'COLLABORATEUR' } },
+      // US-13 : aperçu et téléchargement d'une facture ; sans connexion, retour à la connexion (RG3).
+      { path: 'dossiers/:id/factures/:factureId', component: ApercuFacture, data: { role: 'COLLABORATEUR' } },
       { path: 'espace-client', component: EspaceClient, data: { role: 'DIRIGEANT' } },
       // US-19 : équipe du cabinet, réservée à ses administrateurs (RG1).
       { path: 'equipe', component: Equipe, data: { role: 'COLLABORATEUR', administrateur: true } },

@@ -1,6 +1,8 @@
 package com.example.gestionfinanciere.facture;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -48,6 +50,28 @@ class FactureTest {
 		facture.marquerOuverte(MAINTENANT.plusSeconds(20));
 		assertEquals(MAINTENANT.plusSeconds(10), facture.getOuverteLe());
 		assertFalse(LigneFacture.de(facture).nouvelle());
+	}
+
+	// US-13 : fichier d'origine, copié pour ne jamais être modifié de l'extérieur ; jamais affiché.
+	@Test
+	void fichierDOrigine() {
+		byte[] contenu = { 1, 2, 3 };
+		Facture facture = new Facture(dossier, Facture.Sens.ACHAT, "a.pdf", "application/pdf", MAINTENANT, jean,
+				contenu);
+		contenu[0] = 9;
+		assertArrayEquals(new byte[] { 1, 2, 3 }, facture.getContenu());
+		assertNull(new Facture(dossier, Facture.Sens.ACHAT, "a.pdf", "application/pdf", MAINTENANT, jean, null)
+				.getContenu());
+
+		FichierFacture fichier = FichierFacture.de(facture);
+		assertArrayEquals(new byte[] { 1, 2, 3 }, fichier.contenu());
+		assertEquals(fichier, new FichierFacture("a.pdf", "application/pdf", new byte[] { 1, 2, 3 }));
+		assertEquals(fichier.hashCode(), FichierFacture.de(facture).hashCode());
+		assertNotEquals(fichier, new FichierFacture("a.pdf", "application/pdf", new byte[] { 1 }));
+		assertNotEquals(fichier, new FichierFacture("b.pdf", "application/pdf", new byte[] { 1, 2, 3 }));
+		assertNotEquals(fichier, new FichierFacture("a.pdf", "image/png", new byte[] { 1, 2, 3 }));
+		assertNotEquals(fichier, (Object) "a.pdf");
+		assertEquals("FichierFacture[application/pdf, 3 octets]", fichier.toString());
 	}
 
 	@Test
