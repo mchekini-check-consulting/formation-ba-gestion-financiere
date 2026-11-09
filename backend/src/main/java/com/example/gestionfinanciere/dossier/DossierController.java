@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere.dossier;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.springframework.http.HttpHeaders;
@@ -92,19 +93,26 @@ public class DossierController {
 		if (refus != null) {
 			return refus;
 		}
-		if (!NUMERO.matcher(id).matches()) {
+		Optional<Long> numero = numero(id);
+		if (numero.isEmpty()) {
 			return introuvable();
 		}
-		return dossiers.consulter(session.compte(), Long.valueOf(id)).<ResponseEntity<Object>>map(ResponseEntity::ok)
+		return dossiers.consulter(session.compte(), numero.get()).<ResponseEntity<Object>>map(ResponseEntity::ok)
 				.orElseGet(DossierController::introuvable);
 	}
 
-	private static ResponseEntity<Object> introuvable() {
+	// US-11 RG3 : numéro de dossier lu dans l'adresse ; vide si ce n'est pas un numéro.
+	public static Optional<Long> numero(String id) {
+		return NUMERO.matcher(id).matches() ? Optional.of(Long.valueOf(id)) : Optional.empty();
+	}
+
+	// US-11 RG3 : dossier inexistant, d'un autre cabinet ou adresse tapée à la main.
+	public static ResponseEntity<Object> introuvable() {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErreurResponse(MESSAGE_INTROUVABLE));
 	}
 
-	// US-07 : session absente ou expirée -> 401 ; pas collaborateur d'un cabinet -> 403.
-	private static ResponseEntity<Object> refus(ResultatSession session) {
+	// US-07 : session absente ou expirée -> 401 ; pas collaborateur d'un cabinet -> 403 ; sinon null.
+	public static ResponseEntity<Object> refus(ResultatSession session) {
 		return switch (session.statut()) {
 			case NON_CONNECTE -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
 					.body(new ErreurSession(SessionController.MESSAGE_NON_CONNECTE, "NON_CONNECTE"));

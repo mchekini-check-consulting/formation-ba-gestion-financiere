@@ -22,7 +22,7 @@ test.describe('US-11 Ouvrir un dossier', () => {
 
     await clients.click();
     await expect(clients).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByRole('tabpanel')).toContainText('factures clients');
+    await expect(page.getByRole('tabpanel')).toContainText('Aucune facture client pour le moment');
   });
 
   test('RG3 — dossier d’un autre cabinet ou adresse tapée à la main', async ({ page }) => {

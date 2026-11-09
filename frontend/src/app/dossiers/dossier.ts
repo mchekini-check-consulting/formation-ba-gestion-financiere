@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DossierClient, DossierService, EtatEspaceClient, LIBELLES_ETAT, formaterSiren } from './dossier.service';
+import { FacturesDossier } from './factures-dossier';
 
 /** US-11 RG2 : onglets du dossier, « Factures fournisseurs » ouvert par défaut. */
 export type Onglet = 'fournisseurs' | 'clients' | 'modules';
@@ -18,7 +19,7 @@ const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réess
 
 /** US-11 Ouvrir un dossier (US-10 RG3 : le dossier créé s'ouvre ici). */
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, FacturesDossier],
   selector: 'app-dossier',
   templateUrl: './dossier.html',
   styleUrl: './dossier.scss',

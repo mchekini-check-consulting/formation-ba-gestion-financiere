@@ -1,0 +1,42 @@
+@if (erreur(); as e) {
+  <p class="alerte" role="alert">{{ e }}</p>
+} @else if (liste(); as l) {
+  @if (l.factures.length === 0) {
+    <!-- CA vide -->
+    <p class="vide">{{ vide() }}</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Fichier</th>
+          <th scope="col">Déposée le</th>
+          <th scope="col">Déposée par</th>
+          <th scope="col">Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (f of l.factures; track f.id) {
+          <tr>
+            <td>
+              <span class="fichier">{{ f.nomFichier }}</span>
+              @if (f.nouvelle) {
+                <span class="badge badge--nouvelle">Nouvelle</span>
+              }
+            </td>
+            <td>{{ depot(f) }}</td>
+            <td>{{ f.deposeePar }}</td>
+            <td><span class="badge">Reçue</span></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+  @if (l.exemplesPossibles) {
+    <!-- Mode test seulement : le dépôt de factures (US-15) n'existe pas encore. -->
+    <button type="button" class="exemples" [disabled]="ajoutEnCours()" (click)="ajouterExemples()">
+      Ajouter des factures d'exemple (mode test)
+    </button>
+  }
+} @else {
+  <p class="muted">Chargement…</p>
+}

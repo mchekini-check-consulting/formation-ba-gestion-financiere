@@ -79,6 +79,13 @@ public class Facture {
 		this.statut = Statut.RECUE;
 	}
 
+	// US-12 RG3 / US-13 : ouverte par quelqu'un du cabinet, le badge « Nouvelle » disparaît.
+	public void marquerOuverte(Instant quand) {
+		if (ouverteLe == null) {
+			ouverteLe = quand;
+		}
+	}
+
 	public Long getId() {
 		return id;
 	}
