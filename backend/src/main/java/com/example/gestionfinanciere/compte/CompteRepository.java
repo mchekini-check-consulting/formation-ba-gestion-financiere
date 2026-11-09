@@ -13,4 +13,9 @@ public interface CompteRepository extends JpaRepository<Compte, Long> {
 	// US-19 : équipe d'un cabinet, par ordre alphabétique.
 	List<Compte> findByCabinetIdOrderByNomAfficheAsc(Long cabinetId);
 
+	// US-14 : compte du dirigeant d'un dossier (créé à l'invitation).
+	boolean existsByDossierId(Long dossierId);
+
+	Optional<Compte> findFirstByDossierIdOrderByIdDesc(Long dossierId);
+
 }

@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DossierClient, DossierService, EtatEspaceClient, LIBELLES_ETAT, formaterSiren } from './dossier.service';
 import { FacturesDossier } from './factures-dossier';
+import { InvitationDirigeant } from './invitation-dirigeant';
 
 /** US-11 RG2 : onglets du dossier, « Factures fournisseurs » ouvert par défaut. */
 export type Onglet = 'fournisseurs' | 'clients' | 'modules';
@@ -19,7 +20,7 @@ const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réess
 
 /** US-11 Ouvrir un dossier (US-10 RG3 : le dossier créé s'ouvre ici). */
 @Component({
-  imports: [RouterLink, FacturesDossier],
+  imports: [RouterLink, FacturesDossier, InvitationDirigeant],
   selector: 'app-dossier',
   templateUrl: './dossier.html',
   styleUrl: './dossier.scss',
@@ -50,6 +51,11 @@ export class Dossier implements OnInit {
 
   choisir(onglet: Onglet): void {
     this.onglet.set(onglet);
+  }
+
+  /** US-14 RG3 : Non invité -> Invité après l'invitation. */
+  changerEtat(etat: EtatEspaceClient): void {
+    this.dossier.update((dossier) => (dossier ? { ...dossier, etatEspaceClient: etat } : dossier));
   }
 
   protected siren(dossier: DossierClient): string {
