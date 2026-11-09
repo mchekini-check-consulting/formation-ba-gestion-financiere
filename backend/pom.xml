@@ -31,6 +31,14 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jackson</artifactId>
 		</dependency>
+		<!-- Contrat d'interface des API (OpenAPI), généré depuis les contrôleurs :
+		     /v3/api-docs (JSON) et /swagger-ui.html (page de consultation et d'essai).
+		     Activé seulement si POINTEO_SWAGGER=true (application.yaml). -->
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>3.2.0</version>
+		</dependency>
 		<!-- Mots de passe stockés hachés (BCrypt) ; seulement la brique "crypto",
 		     sans activer Spring Security sur les autres routes -->
 		<dependency>
@@ -91,6 +99,7 @@
 					     code reçu par email et liens des emails affichés à l'écran (application.yaml). -->
 					<environmentVariables>
 						<POINTEO_MODE_TEST>true</POINTEO_MODE_TEST>
+						<POINTEO_SWAGGER>true</POINTEO_SWAGGER>
 					</environmentVariables>
 				</configuration>
 			</plugin>

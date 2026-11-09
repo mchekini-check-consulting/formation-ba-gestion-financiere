@@ -45,6 +45,9 @@ applications:
       # d'API d'envoi d'emails branchée. Jamais en preprod/prod.
       - key: POINTEO_MODE_TEST
         value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
+      # Contrat d'interface des API (Swagger) : .../backend/swagger-ui.html. Jamais en preprod/prod.
+      - key: POINTEO_SWAGGER
+        value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
   - name: gateway
     type: gateway
     # Pas d'image/tag : fourni par la plateforme (petit Traefik autonome),

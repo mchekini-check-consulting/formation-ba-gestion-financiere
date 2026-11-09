@@ -2,6 +2,12 @@ logging:
   level:
     root: ${LOG_LEVEL:info}
 
+server:
+  # Derrière le gateway, l'adresse vue par le navigateur commence par /backend (préfixe retiré
+  # par le gateway, transmis dans X-Forwarded-Prefix) : nécessaire pour que la page Swagger
+  # retrouve le contrat sur https://gateway.../backend/v3/api-docs.
+  forward-headers-strategy: framework
+
 spring:
   application:
     name: gestion-financiere
@@ -25,3 +31,12 @@ pointeo:
   # Jamais en preprod/prod. Activé en local par ./mvnw spring-boot:run (pom.xml) et en
   # dev/qualif par POINTEO_MODE_TEST (helm.yaml).
   mode-test: false
+
+# Contrat d'interface des API (Swagger / OpenAPI) : /swagger-ui.html et /v3/api-docs.
+# Désactivé par défaut ; activé en local par ./mvnw spring-boot:run (pom.xml) et en dev/qualif
+# par POINTEO_SWAGGER (helm.yaml). Jamais en preprod/prod.
+springdoc:
+  api-docs:
+    enabled: ${POINTEO_SWAGGER:false}
+  swagger-ui:
+    enabled: ${POINTEO_SWAGGER:false}
