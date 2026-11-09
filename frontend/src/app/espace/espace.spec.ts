@@ -1,12 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { Router, provideRouter } from '@angular/router';
 import { InactiviteService } from '../session/inactivite.service';
 import { SessionService } from '../session/session.service';
 import { Espace } from './espace';
-import { Dossier, EspaceClient } from './pages';
+import { EspaceClient } from './pages';
 
 describe('Espace connecté (US-07)', () => {
   let http: HttpTestingController;
@@ -15,12 +14,11 @@ describe('Espace connecté (US-07)', () => {
   beforeEach(async () => {
     sessionStorage.clear();
     await TestBed.configureTestingModule({
-      imports: [Espace, Dossier, EspaceClient],
+      imports: [Espace, EspaceClient],
       providers: [
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: '2' })) } },
       ],
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
@@ -106,36 +104,5 @@ describe('Espace connecté (US-07)', () => {
     const client = TestBed.createComponent(EspaceClient);
     await client.whenStable();
     expect((client.nativeElement as HTMLElement).querySelector('h1')?.textContent).toBe('Bonjour Sophie Martin');
-  });
-
-  it('US-10 RG3 : la page du dossier affiche le dossier lu dans le backend', async () => {
-    connecter('COLLABORATEUR', 'Jean Dupont');
-    const dossier = TestBed.createComponent(Dossier);
-    await dossier.whenStable();
-    const page = dossier.nativeElement as HTMLElement;
-    expect(page.textContent).toContain('Chargement…');
-    http.expectOne('/api/dossiers/2').flush({ id: 2, raisonSociale: 'Fleurs Martin EURL', siren: '812345679', creeLe: '2026-11-08T09:00:00Z' });
-    await dossier.whenStable();
-    expect(page.querySelector('h1')?.textContent).toBe('Fleurs Martin EURL');
-    expect(page.textContent).toContain('812 345 679');
-  });
-
-  it('US-10 : dossier absent ou service indisponible', async () => {
-    connecter('COLLABORATEUR', 'Jean Dupont');
-    const absent = TestBed.createComponent(Dossier);
-    await absent.whenStable();
-    http.expectOne('/api/dossiers/2').flush({ message: 'Dossier introuvable' }, { status: 404, statusText: 'Not Found' });
-    await absent.whenStable();
-    const page = absent.nativeElement as HTMLElement;
-    expect(page.querySelector('h1')?.textContent).toBe('Dossier introuvable');
-    expect(page.querySelector('[role=alert]')?.textContent).toContain("Ce dossier n'existe pas dans votre cabinet.");
-
-    const panne = TestBed.createComponent(Dossier);
-    await panne.whenStable();
-    http.expectOne('/api/dossiers/2').flush(null, { status: 503, statusText: 'Unavailable' });
-    await panne.whenStable();
-    expect((panne.nativeElement as HTMLElement).querySelector('[role=alert]')?.textContent).toContain(
-      'momentanément indisponible',
-    );
   });
 });

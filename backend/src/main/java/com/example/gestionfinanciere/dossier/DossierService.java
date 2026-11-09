@@ -71,12 +71,13 @@ public class DossierService {
 		}
 	}
 
-	// RG3 : le dossier s'ouvre après sa création. Vide s'il n'existe pas ou appartient à un
-	// autre cabinet.
+	// US-10 RG3 : le dossier s'ouvre après sa création. US-11 : en-tête avec l'état de l'espace
+	// client (RG1) ; vide s'il n'existe pas ou appartient à un autre cabinet (RG3).
 	@Transactional(readOnly = true)
 	public Optional<VueDossier> consulter(Compte collaborateur, Long id) {
 		Optional<VueDossier> dossier = dossiers.findByIdAndCabinetId(id, collaborateur.getCabinet().getId())
-				.map(VueDossier::de);
+				.map(trouve -> VueDossier.de(trouve, EtatEspaceClient.de(dossiers.compterComptesDirigeant(id),
+						dossiers.compterComptesDirigeantActifs(id))));
 		EvenementMetier.de("dossier.consultation", dossier.isPresent() ? "trouve" : "introuvable")
 				.avec(collaborateur.identifiantsPourLogs()).avec("dossierId", id).journaliser(dossier.isPresent());
 		if (dossier.isPresent()) {

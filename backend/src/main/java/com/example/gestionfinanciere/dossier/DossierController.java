@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere.dossier;
 
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -27,7 +28,7 @@ import com.example.gestionfinanciere.logging.EvenementMetier;
 // "Authorization: Bearer <jeton>" de la session (US-07), réservés aux collaborateurs d'un cabinet :
 //   GET  /dossiers       liste des dossiers du cabinet (US-09), ?recherche=raison sociale ou SIREN
 //   POST /dossiers       créer un dossier (raison sociale, SIREN)
-//   GET  /dossiers/{id}  ouvrir un dossier du cabinet
+//   GET  /dossiers/{id}  ouvrir un dossier du cabinet (US-11 : 404 s'il est absent ou d'un autre cabinet)
 @RestController
 @RequestMapping("/dossiers")
 public class DossierController {
@@ -35,7 +36,9 @@ public class DossierController {
 	static final String MESSAGE_RESERVE = "Seuls les collaborateurs d'un cabinet ont accès aux dossiers";
 	static final String MESSAGE_FORMULAIRE = "Certains champs sont à corriger";
 	static final String MESSAGE_SIREN_DEJA_UTILISE = "Un dossier existe déjà pour ce SIREN dans ce cabinet";
-	static final String MESSAGE_INTROUVABLE = "Dossier introuvable";
+	// US-11 RG3 : même réponse pour un dossier inexistant, d'un autre cabinet ou une adresse tapée à la main.
+	static final String MESSAGE_INTROUVABLE = "Dossier introuvable ou accès non autorisé";
+	private static final Pattern NUMERO = Pattern.compile("^\\d{1,18}$");
 
 	public record ErreursFormulaire(String message, Map<String, String> erreurs) {
 	}
@@ -83,15 +86,21 @@ public class DossierController {
 	@GetMapping("/{id}")
 	public ResponseEntity<Object> consulter(
 			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String autorisation,
-			@PathVariable Long id) {
+			@PathVariable String id) {
 		ResultatSession session = sessions.consulter(SessionController.jeton(autorisation));
 		ResponseEntity<Object> refus = refus(session);
 		if (refus != null) {
 			return refus;
 		}
-		return dossiers.consulter(session.compte(), id).<ResponseEntity<Object>>map(ResponseEntity::ok)
-				.orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
-						.body(new ErreurResponse(MESSAGE_INTROUVABLE)));
+		if (!NUMERO.matcher(id).matches()) {
+			return introuvable();
+		}
+		return dossiers.consulter(session.compte(), Long.valueOf(id)).<ResponseEntity<Object>>map(ResponseEntity::ok)
+				.orElseGet(DossierController::introuvable);
+	}
+
+	private static ResponseEntity<Object> introuvable() {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErreurResponse(MESSAGE_INTROUVABLE));
 	}
 
 	// US-07 : session absente ou expirée -> 401 ; pas collaborateur d'un cabinet -> 403.

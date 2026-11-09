@@ -7,7 +7,8 @@ import { Connexion } from './connexion/connexion';
 import { Equipe } from './equipe/equipe';
 import { Espace } from './espace/espace';
 import { ListeDossiers } from './dossiers/liste-dossiers';
-import { Dossier, EspaceClient } from './espace/pages';
+import { Dossier } from './dossiers/dossier';
+import { EspaceClient } from './espace/pages';
 import { ItemsPage } from './items-page/items-page';
 import { Landing } from './landing/landing';
 import { PageAVenir } from './landing/page-a-venir';
@@ -36,6 +37,7 @@ export const routes: Routes = [
       { path: 'dossiers', component: ListeDossiers, data: { role: 'COLLABORATEUR' } },
       // US-10 : créer un dossier client, qui s'ouvre ensuite (RG3).
       { path: 'dossiers/nouveau', component: CreerDossier, data: { role: 'COLLABORATEUR' } },
+      // US-11 : ouvrir un dossier (en-tête, onglets) ; droits vérifiés par le backend.
       { path: 'dossiers/:id', component: Dossier, data: { role: 'COLLABORATEUR' } },
       { path: 'espace-client', component: EspaceClient, data: { role: 'DIRIGEANT' } },
       // US-19 : équipe du cabinet, réservée à ses administrateurs (RG1).

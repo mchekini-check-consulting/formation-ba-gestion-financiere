@@ -1,0 +1,53 @@
+<a routerLink="/dossiers" class="retour">← Dossiers</a>
+
+@if (dossier(); as d) {
+  <!-- RG1 : raison sociale, SIREN et état de l'espace client -->
+  <header class="entete">
+    <div>
+      <h1>{{ d.raisonSociale }}</h1>
+      <p class="sous-titre">SIREN {{ siren(d) }}</p>
+    </div>
+    <span
+      class="etat"
+      [class.etat--invite]="d.etatEspaceClient === 'INVITE'"
+      [class.etat--actif]="d.etatEspaceClient === 'ACTIF'"
+    >
+      Espace client : {{ libelleEtat(d.etatEspaceClient) }}
+    </span>
+  </header>
+
+  <!-- RG2 : onglets, Factures fournisseurs par défaut -->
+  <div class="onglets" role="tablist" aria-label="Contenu du dossier">
+    @for (o of onglets; track o.id) {
+      <button
+        type="button"
+        role="tab"
+        class="onglet"
+        [id]="'onglet-' + o.id"
+        [attr.aria-selected]="onglet() === o.id"
+        [attr.aria-controls]="'panneau-' + o.id"
+        (click)="choisir(o.id)"
+      >
+        {{ o.libelle }}
+      </button>
+    }
+  </div>
+
+  <section class="carte" role="tabpanel" [id]="'panneau-' + onglet()" [attr.aria-labelledby]="'onglet-' + onglet()">
+    @switch (onglet()) {
+      @case ('fournisseurs') {
+        <p class="muted">Les factures fournisseurs du dossier s'afficheront ici.</p>
+      }
+      @case ('clients') {
+        <p class="muted">Les factures clients du dossier s'afficheront ici.</p>
+      }
+      @case ('modules') {
+        <p class="muted">Les modules du dossier s'afficheront ici.</p>
+      }
+    }
+  </section>
+} @else if (erreur(); as e) {
+  <p class="alerte" role="alert">{{ e }}</p>
+} @else {
+  <p class="muted">Chargement…</p>
+}
