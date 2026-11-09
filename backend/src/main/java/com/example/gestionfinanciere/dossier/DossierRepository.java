@@ -15,6 +15,13 @@ public interface DossierRepository extends JpaRepository<Dossier, Long> {
 	// Un cabinet ne voit jamais les dossiers d'un autre cabinet.
 	Optional<Dossier> findByIdAndCabinetId(Long id, Long cabinetId);
 
+	// US-11 RG1 : comptes du dirigeant du dossier (tous, puis activés) -> état de l'espace client.
+	@Query("select count(c) from Compte c where c.dossierId = :dossierId")
+	long compterComptesDirigeant(@Param("dossierId") Long dossierId);
+
+	@Query("select count(c) from Compte c where c.dossierId = :dossierId and c.actif = true")
+	long compterComptesDirigeantActifs(@Param("dossierId") Long dossierId);
+
 	/**
 	 * US-09 : dossiers du cabinet, triés par raison sociale, avec le nombre de factures et les
 	 * comptes du dirigeant (état de l'espace client). RG2 : {@code motif} filtre la raison

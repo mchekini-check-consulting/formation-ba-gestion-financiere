@@ -9,6 +9,8 @@ export interface DossierClient {
   raisonSociale: string;
   siren: string;
   creeLe: string;
+  /** US-11 RG1 : état de l'espace client, affiché dans l'en-tête du dossier. */
+  etatEspaceClient: EtatEspaceClient;
 }
 
 export interface DemandeDossier {
@@ -51,7 +53,8 @@ export class DossierService {
     return this.http.post<DossierClient>(this.url, demande);
   }
 
-  consulter(id: number): Observable<DossierClient> {
+  /** US-11 : id tel que lu dans l'adresse ; le serveur refuse ce qui n'est pas un dossier du cabinet. */
+  consulter(id: number | string): Observable<DossierClient> {
     return this.http.get<DossierClient>(`${this.url}/${id}`);
   }
 }

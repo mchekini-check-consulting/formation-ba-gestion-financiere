@@ -61,7 +61,8 @@ class DossierServiceTest {
 		ResultatCreationDossier resultat = service.creer(jean, fleursMartin());
 
 		assertEquals(ResultatCreationDossier.Statut.CREE, resultat.statut());
-		assertEquals(new VueDossier(42L, "Fleurs Martin EURL", "812345679", MAINTENANT), resultat.dossier());
+		assertEquals(new VueDossier(42L, "Fleurs Martin EURL", "812345679", MAINTENANT, EtatEspaceClient.NON_INVITE),
+				resultat.dossier());
 		ArgumentCaptor<Dossier> enregistre = ArgumentCaptor.forClass(Dossier.class);
 		verify(dossiers).save(enregistre.capture());
 		assertSame(cabinetTest, enregistre.getValue().getCabinet());
@@ -103,9 +104,23 @@ class DossierServiceTest {
 		when(dossiers.findByIdAndCabinetId(42L, 7L)).thenReturn(Optional.of(dossier));
 		when(dossiers.findByIdAndCabinetId(43L, 7L)).thenReturn(Optional.empty());
 
-		assertEquals(Optional.of(new VueDossier(42L, "Fleurs Martin EURL", "812345679", MAINTENANT)),
-				service.consulter(jean, 42L));
+		assertEquals(Optional.of(new VueDossier(42L, "Fleurs Martin EURL", "812345679", MAINTENANT,
+				EtatEspaceClient.NON_INVITE)), service.consulter(jean, 42L));
 		assertTrue(service.consulter(jean, 43L).isEmpty());
+	}
+
+	// US-11 RG1 : l'en-tête du dossier montre l'état de l'espace client (Invité, puis Actif).
+	@Test
+	void us11EtatDeLEspaceClientDansLEnTete() {
+		Dossier dossier = new Dossier(cabinetTest, "Fleurs Martin EURL", "812345679", jean, MAINTENANT);
+		ReflectionTestUtils.setField(dossier, "id", 42L);
+		when(dossiers.findByIdAndCabinetId(42L, 7L)).thenReturn(Optional.of(dossier));
+		when(dossiers.compterComptesDirigeant(42L)).thenReturn(1L);
+
+		assertEquals(EtatEspaceClient.INVITE, service.consulter(jean, 42L).orElseThrow().etatEspaceClient());
+
+		when(dossiers.compterComptesDirigeantActifs(42L)).thenReturn(1L);
+		assertEquals(EtatEspaceClient.ACTIF, service.consulter(jean, 42L).orElseThrow().etatEspaceClient());
 	}
 
 	// US-09 RG3 : la liste est toujours celle du cabinet du collaborateur ; sans recherche, tout.

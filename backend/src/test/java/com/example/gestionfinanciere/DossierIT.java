@@ -112,6 +112,29 @@ class DossierIT {
 		assertThat(appel("GET", "/dossiers/" + id.group(1), null, jeanConnecte()).statusCode()).isEqualTo(404);
 	}
 
+	// US-11 : en-tête (RG1) avec l'état de l'espace client ; RG3 : autre cabinet, adresse tapée à
+	// la main ou sans connexion -> aucun dossier.
+	@Test
+	void us11OuvrirUnDossier() throws Exception {
+		String jeton = jeanConnecte();
+		Long id = idDe(creer(jeton, "Garage Morel SAS", "798654321"));
+
+		assertThat(appel("GET", "/dossiers/" + id, null, jeton).body())
+				.contains("\"raisonSociale\":\"Garage Morel SAS\"", "\"siren\":\"798654321\"",
+						"\"etatEspaceClient\":\"NON_INVITE\"");
+		comptes.save(Compte.dirigeantInvite(id, "paul+" + id + "@test.fr", "x", "Paul"));
+		assertThat(appel("GET", "/dossiers/" + id, null, jeton).body()).contains("\"etatEspaceClient\":\"INVITE\"");
+
+		for (String chemin : new String[] { "/dossiers/" + id, "/dossiers/abc", "/dossiers/999999999" }) {
+			String jetonAutre = chemin.endsWith(String.valueOf(id)) ? jeanConnecte() : jeton;
+			HttpResponse<String> refus = appel("GET", chemin, null, jetonAutre);
+			assertThat(refus.statusCode()).isEqualTo(404);
+			assertThat(refus.body()).contains("Dossier introuvable ou accès non autorisé")
+					.doesNotContain("Garage Morel SAS");
+		}
+		assertThat(appel("GET", "/dossiers/" + id, null, null).statusCode()).isEqualTo(401);
+	}
+
 	@Test
 	void ca2DoublonDansLeCabinetMaisPasDansUnAutre() throws Exception {
 		String jeton = jeanConnecte();

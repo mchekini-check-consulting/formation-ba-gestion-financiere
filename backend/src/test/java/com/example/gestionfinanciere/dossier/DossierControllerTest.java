@@ -39,7 +39,8 @@ class DossierControllerTest {
 	// Un comptable (pas administrateur) peut aussi créer un dossier.
 	private final Compte jean = Compte.invite(cabinet, "jean@test.fr", "x", "Jean Dupont", RoleCabinet.COMPTABLE);
 	private final DemandeDossier demande = DossierServiceTest.fleursMartin();
-	private final VueDossier fleurs = new VueDossier(42L, "Fleurs Martin EURL", "812345679", Instant.EPOCH);
+	private final VueDossier fleurs = new VueDossier(42L, "Fleurs Martin EURL", "812345679", Instant.EPOCH,
+			EtatEspaceClient.INVITE);
 
 	private void connecte(Compte compte) {
 		when(sessions.consulter("jeton")).thenReturn(ResultatSession.active(compte));
@@ -81,13 +82,25 @@ class DossierControllerTest {
 		when(dossiers.consulter(jean, 42L)).thenReturn(Optional.of(fleurs));
 		when(dossiers.consulter(jean, 43L)).thenReturn(Optional.empty());
 
-		ResponseEntity<Object> trouve = controller.consulter(AUTORISATION, 42L);
+		ResponseEntity<Object> trouve = controller.consulter(AUTORISATION, "42");
 		assertEquals(HttpStatus.OK, trouve.getStatusCode());
 		assertEquals(fleurs, trouve.getBody());
 
-		ResponseEntity<Object> absent = controller.consulter(AUTORISATION, 43L);
+		ResponseEntity<Object> absent = controller.consulter(AUTORISATION, "43");
 		assertEquals(HttpStatus.NOT_FOUND, absent.getStatusCode());
-		assertEquals(new ErreurResponse("Dossier introuvable"), absent.getBody());
+		assertEquals(new ErreurResponse("Dossier introuvable ou accès non autorisé"), absent.getBody());
+	}
+
+	// US-11 RG3 : adresse tapée à la main qui n'est pas un numéro de dossier -> même message.
+	@Test
+	void us11AdresseTapeeALaMain() {
+		connecte(jean);
+		for (String id : List.of("abc", "-1", "1.5", "9999999999999999999")) {
+			ResponseEntity<Object> reponse = controller.consulter(AUTORISATION, id);
+			assertEquals(HttpStatus.NOT_FOUND, reponse.getStatusCode());
+			assertEquals(new ErreurResponse("Dossier introuvable ou accès non autorisé"), reponse.getBody());
+		}
+		verify(dossiers, never()).consulter(any(), any());
 	}
 
 	@Test
@@ -98,7 +111,7 @@ class DossierControllerTest {
 
 		// Dirigeant client.
 		connecte(new Compte("sophie@test.fr", "x", Role.DIRIGEANT, true, "Sophie Martin"));
-		ResponseEntity<Object> reponse = controller.consulter(AUTORISATION, 42L);
+		ResponseEntity<Object> reponse = controller.consulter(AUTORISATION, "42");
 		assertEquals(HttpStatus.FORBIDDEN, reponse.getStatusCode());
 		assertEquals(new ErreurResponse(DossierController.MESSAGE_RESERVE), reponse.getBody());
 		verify(dossiers, never()).creer(any(), any());
@@ -137,7 +150,7 @@ class DossierControllerTest {
 		assertEquals(new ErreurSession("Vous n'êtes pas connecté", "NON_CONNECTE"), sans.getBody());
 
 		when(sessions.consulter("jeton")).thenReturn(ResultatSession.expiree());
-		ResponseEntity<Object> expiree = controller.consulter(AUTORISATION, 42L);
+		ResponseEntity<Object> expiree = controller.consulter(AUTORISATION, "42");
 		assertEquals(HttpStatus.UNAUTHORIZED, expiree.getStatusCode());
 		assertEquals(new ErreurSession("Votre session a expiré", "SESSION_EXPIREE"), expiree.getBody());
 	}
