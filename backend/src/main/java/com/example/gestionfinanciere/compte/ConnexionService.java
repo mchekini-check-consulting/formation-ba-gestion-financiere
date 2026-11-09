@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 
@@ -50,6 +51,16 @@ public class ConnexionService {
 	 */
 	@Transactional
 	public ResultatConnexion authentifier(String email, String motDePasse) {
+		ResultatConnexion resultat = verifierIdentifiants(email, motDePasse);
+		EvenementMetier evenement = EvenementMetier.de("connexion.mot_de_passe", resultat.statut());
+		if (resultat.compte() != null) {
+			evenement.avec(resultat.compte().identifiantsPourLogs());
+		}
+		evenement.journaliser(resultat.statut() == ResultatConnexion.Statut.REUSSIE);
+		return resultat;
+	}
+
+	private ResultatConnexion verifierIdentifiants(String email, String motDePasse) {
 		if (estVide(email) || estVide(motDePasse)) {
 			return ResultatConnexion.incorrecte();
 		}
@@ -68,6 +79,8 @@ public class ConnexionService {
 			return ResultatConnexion.reussie(compte);
 		}
 		if (compte.enregistrerEchec(maintenant, ECHECS_AVANT_BLOCAGE, DUREE_BLOCAGE)) {
+			EvenementMetier.de("connexion.compte_bloque", "bloque_15_minutes").avec(compte.identifiantsPourLogs())
+					.warn();
 			prevenirDuBlocage(compte);
 			return ResultatConnexion.bloquee();
 		}

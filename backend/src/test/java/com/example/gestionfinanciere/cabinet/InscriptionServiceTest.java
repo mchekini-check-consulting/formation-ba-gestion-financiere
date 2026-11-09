@@ -19,14 +19,21 @@ import static org.mockito.Mockito.when;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 
 import com.example.gestionfinanciere.cabinet.ResultatCodeInscription.Statut;
 import com.example.gestionfinanciere.compte.Compte;
@@ -35,6 +42,7 @@ import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.compte.Jetons;
 import com.example.gestionfinanciere.compte.ResultatRenvoi;
 import com.example.gestionfinanciere.compte.Role;
+import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
@@ -96,6 +104,45 @@ class InscriptionServiceTest {
 		assertTrue(encodeur.matches("Pointeo2026!!", i.getMotDePasseHash()));
 		assertEquals(Jetons.empreinte(resultat.defi().defi()), i.getEmpreinteDefi());
 		assertTrue(encodeur.matches(code, i.getEmpreinteCode()));
+	}
+
+	// PTO-84 CA1, CA2, CA3, CA5 : chaque étape est journalisée, sans email, nom, SIREN, mot de passe ni code.
+	@Test
+	void logsMetierDuParcoursSansDonneePersonnelle() {
+		Logger logger = (Logger) LoggerFactory.getLogger(EvenementMetier.class);
+		ListAppender<ILoggingEvent> logs = new ListAppender<>();
+		logs.start();
+		logger.addAppender(logs);
+		try {
+			service.demarrer(new DemandeInscription("Cabinet Test", "123", "Claire", "Martin", "claire@test.fr",
+					"Pointeo2026!!", 120, null, false));
+			when(cabinets.existsBySiren("123456789")).thenReturn(true);
+			demarrer();
+			when(cabinets.existsBySiren("123456789")).thenReturn(false);
+			ResultatInscription etape1 = demarrer();
+			service.validerCode(etape1.defi().defi(), "000000");
+			service.validerCode(etape1.defi().defi(), etape1.defi().codeDeTest());
+
+			List<String> resultats = logs.list.stream()
+					.map(e -> e.getMDCPropertyMap().get("event") + "=" + e.getMDCPropertyMap().get("outcome")).toList();
+			assertEquals(List.of("inscription.demarree=invalide", "inscription.demarree=siren_deja_utilise",
+					"inscription.demarree=code_envoye", "inscription.code_verifie=faux",
+					"inscription.code_verifie=cabinet_cree"), resultats);
+			assertEquals("cguAcceptees,siren", logs.list.get(0).getMDCPropertyMap().get("champsInvalides"));
+			assertEquals(Level.WARN, logs.list.get(1).getLevel());
+			assertEquals("2", logs.list.get(3).getMDCPropertyMap().get("tentativesRestantes"));
+			assertEquals("ADMINISTRATEUR", logs.list.get(4).getMDCPropertyMap().get("roleCabinet"));
+			assertEquals(Level.INFO, logs.list.get(4).getLevel());
+
+			List<String> interdits = List.of("claire", "Claire", "Martin", "123456789", "123 456 789", "Pointeo2026",
+					etape1.defi().codeDeTest(), etape1.defi().defi());
+			for (ILoggingEvent log : logs.list) {
+				String ligne = log.getFormattedMessage() + " " + log.getMDCPropertyMap();
+				interdits.forEach(mot -> assertFalse(ligne.contains(mot), () -> "donnée personnelle dans : " + ligne));
+			}
+		} finally {
+			logger.detachAppender(logs);
+		}
 	}
 
 	@Test
