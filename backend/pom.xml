@@ -39,6 +39,12 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>3.2.0</version>
 		</dependency>
+		<!-- Envoi des emails par SMTP (notification/EnvoiEmailConfiguration) : Mailpit de la
+		     plateforme en dev/qualif, Mailpit de compose.yaml en local. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
 		<!-- Mots de passe stockés hachés (BCrypt) ; seulement la brique "crypto",
 		     sans activer Spring Security sur les autres routes -->
 		<dependency>
@@ -100,6 +106,8 @@
 					<environmentVariables>
 						<POINTEO_MODE_TEST>true</POINTEO_MODE_TEST>
 						<POINTEO_SWAGGER>true</POINTEO_SWAGGER>
+						<!-- Emails envoyés au Mailpit de compose.yaml (http://localhost:8025) -->
+						<SMTP_HOST>localhost</SMTP_HOST>
 					</environmentVariables>
 				</configuration>
 			</plugin>
