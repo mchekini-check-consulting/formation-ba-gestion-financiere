@@ -6,7 +6,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,18 +40,15 @@ public class InscriptionService {
 	private final PasswordEncoder encodeur;
 	private final Clock horloge;
 	private final EnvoiEmail envoiEmail;
-	private final boolean modeTest;
 
 	public InscriptionService(InscriptionRepository inscriptions, CabinetRepository cabinets,
-			CompteRepository comptes, PasswordEncoder encodeur, Clock horloge, EnvoiEmail envoiEmail,
-			@Value("${pointeo.mode-test:false}") boolean modeTest) {
+			CompteRepository comptes, PasswordEncoder encodeur, Clock horloge, EnvoiEmail envoiEmail) {
 		this.inscriptions = inscriptions;
 		this.cabinets = cabinets;
 		this.comptes = comptes;
 		this.encodeur = encodeur;
 		this.horloge = horloge;
 		this.envoiEmail = envoiEmail;
-		this.modeTest = modeTest;
 	}
 
 	// Étape 1 : vérifie le formulaire (RG2) puis envoie le code à l'email saisi.
@@ -116,8 +112,7 @@ public class InscriptionService {
 		inscriptions.save(new Inscription(formulaire, encodeur.encode(formulaire.motDePasse()), maintenant,
 				Jetons.empreinte(defi), encodeur.encode(code), maintenant, maintenant.plus(VALIDITE_CODE)));
 		envoyer(formulaire.email(), code);
-		return ResultatInscription.codeEnvoye(new DefiCode(defi, Compte.masquerEmail(formulaire.email()),
-				codeDeTest(code)));
+		return ResultatInscription.codeEnvoye(new DefiCode(defi, Compte.masquerEmail(formulaire.email())));
 	}
 
 	private ResultatCodeInscription verifierEtCreer(String defi, String code) {
@@ -168,7 +163,7 @@ public class InscriptionService {
 		String code = Jetons.codeSixChiffres();
 		inscription.remplacerCode(encodeur.encode(code), maintenant, maintenant.plus(VALIDITE_CODE));
 		envoyer(inscription.getEmail(), code);
-		return ResultatRenvoi.renvoye(codeDeTest(code));
+		return ResultatRenvoi.renvoye();
 	}
 
 	private Optional<Inscription> trouver(String defi) {
@@ -181,10 +176,6 @@ public class InscriptionService {
 	private void envoyer(String email, String code) {
 		envoiEmail.envoyer(email, SUJET, "Bonjour,\n\nVotre code de confirmation Pointéo est " + code
 				+ ". Il est valable 5 minutes.\n\nSi vous n'avez pas demandé à créer un compte, ignorez cet email.\n");
-	}
-
-	private String codeDeTest(String code) {
-		return modeTest ? code : null;
 	}
 
 	private static boolean estUnCode(String code) {

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -25,16 +26,22 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.RoleCabinet;
 import com.example.gestionfinanciere.compte.SessionService;
+import com.example.gestionfinanciere.notification.EmailsRecus;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
 
 // US-19 Inviter un collaborateur avec un rôle (PTO-26) : vrai serveur HTTP, migrations Flyway
 // (dont V9) et PostgreSQL 16 jetable. Chaque test crée son propre cabinet.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "pointeo.mode-test=true")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class EquipeIT {
 
 	@Container
 	@ServiceConnection
 	static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16");
+
+	// Emails simulés : le code ou le lien est lu dans l'email envoyé, jamais dans la réponse.
+	@MockitoBean
+	private EnvoiEmail envoiEmail;
 
 	@Value("${local.server.port}")
 	private int port;
@@ -85,7 +92,9 @@ class EquipeIT {
 
 		HttpResponse<String> invitation = inviter(jeton, email, "COMPTABLE");
 		assertThat(invitation.statusCode()).isEqualTo(201);
-		assertThat(invitation.body()).contains("\"statut\":\"INVITE\"", "\"role\":\"COMPTABLE\"", "\"jetonDeTest\":\"");
+		assertThat(invitation.body()).contains("\"statut\":\"INVITE\"", "\"role\":\"COMPTABLE\"")
+				.doesNotContain("jeton");
+		assertThat(EmailsRecus.dernierJeton(envoiEmail, email)).isNotBlank();
 
 		HttpResponse<String> equipe = appel("GET", "/equipe", null, jeton);
 		assertThat(equipe.statusCode()).isEqualTo(200);

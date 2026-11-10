@@ -43,10 +43,10 @@ class InvitationDirigeantControllerTest {
 	@Test
 	void rg1InvitationEnvoyee() {
 		connecte(jean);
-		when(invitations.inviter(jean, 42L, demande)).thenReturn(ResultatInvitationDirigeant.envoyee("lien"));
+		when(invitations.inviter(jean, 42L, demande)).thenReturn(ResultatInvitationDirigeant.envoyee());
 		ResponseEntity<Object> reponse = controller.inviter(AUTORISATION, "42", demande);
 		assertEquals(HttpStatus.CREATED, reponse.getStatusCode());
-		assertEquals(new InvitationEnvoyee(EtatEspaceClient.INVITE, "lien"), reponse.getBody());
+		assertEquals(new InvitationEnvoyee(EtatEspaceClient.INVITE), reponse.getBody());
 	}
 
 	@Test
@@ -80,10 +80,10 @@ class InvitationDirigeantControllerTest {
 	@Test
 	void rg2Renvoi() {
 		connecte(jean);
-		when(invitations.renvoyer(jean, 42L)).thenReturn(ResultatInvitationDirigeant.envoyee(null));
+		when(invitations.renvoyer(jean, 42L)).thenReturn(ResultatInvitationDirigeant.envoyee());
 		ResponseEntity<Object> renvoi = controller.renvoyer(AUTORISATION, "42");
 		assertEquals(HttpStatus.OK, renvoi.getStatusCode());
-		assertEquals(new InvitationEnvoyee(EtatEspaceClient.INVITE, null), renvoi.getBody());
+		assertEquals(new InvitationEnvoyee(EtatEspaceClient.INVITE), renvoi.getBody());
 
 		when(invitations.renvoyer(jean, 43L))
 				.thenReturn(ResultatInvitationDirigeant.refus(ResultatInvitationDirigeant.Statut.ETAT_INCOMPATIBLE));

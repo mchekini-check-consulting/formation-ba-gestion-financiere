@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere.cabinet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -12,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.example.gestionfinanciere.cabinet.InscriptionController.CabinetCree;
-import com.example.gestionfinanciere.cabinet.InscriptionController.CodeRenvoye;
 import com.example.gestionfinanciere.cabinet.InscriptionController.CodeRequest;
 import com.example.gestionfinanciere.cabinet.InscriptionController.ErreurCode;
 import com.example.gestionfinanciere.cabinet.InscriptionController.ErreursFormulaire;
@@ -41,7 +41,7 @@ class InscriptionControllerTest {
 
 	@Test
 	void etape1CodeEnvoye() {
-		DefiCode defi = new DefiCode("defi", "c•••••@cabinet-test.fr", "482917");
+		DefiCode defi = new DefiCode("defi", "c•••••@cabinet-test.fr");
 		when(inscription.demarrer(demande)).thenReturn(ResultatInscription.codeEnvoye(defi));
 		ResponseEntity<Object> reponse = controller.demarrer(demande);
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
@@ -125,10 +125,10 @@ class InscriptionControllerTest {
 
 	@Test
 	void renvoiDuCode() {
-		when(inscription.renvoyer("defi")).thenReturn(ResultatRenvoi.renvoye("111222"));
+		when(inscription.renvoyer("defi")).thenReturn(ResultatRenvoi.renvoye());
 		ResponseEntity<Object> reponse = controller.renvoyerCode(new RenvoiRequest("defi"));
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
-		assertEquals(new CodeRenvoye("111222"), reponse.getBody());
+		assertNull(reponse.getBody());
 	}
 
 	@Test

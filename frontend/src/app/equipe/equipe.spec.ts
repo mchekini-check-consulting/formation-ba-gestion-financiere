@@ -90,18 +90,10 @@ describe('Équipe du cabinet (US-19)', () => {
     await stable();
 
     expect(texte('.succes')).toContain('Invitation envoyée à lucie.moreau@cabinet-test.fr');
-    expect(page.querySelector('.lien-test')?.getAttribute('href')).toBe('/activer-compte?jeton=jeton-lien');
+    // Le lien arrive par email (Mailpit en dev/qualif) : jamais affiché, même si le backend le renvoie.
+    expect(page.querySelector('a[href*="activer-compte"]')).toBeNull();
     expect(lignes()[1]).toEqual(['Lucie Moreau', 'lucie.moreau@cabinet-test.fr', 'Comptable', 'Invitée']);
     expect(page.querySelector<HTMLInputElement>('#prenom')!.value).toBe('');
-  });
-
-  it('hors mode test : pas de lien d’invitation affiché', async () => {
-    const { page, stable, remplir, envoyer } = await ouvrir();
-    await remplir();
-    await envoyer();
-    http.expectOne('/api/equipe/invitations').flush({ membre: LUCIE, jetonDeTest: null });
-    await stable();
-    expect(page.querySelector('.lien-test')).toBeNull();
   });
 
   it('CA2 : adresse déjà utilisée -> message, sous l’email aussi', async () => {

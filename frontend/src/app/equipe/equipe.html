@@ -38,9 +38,6 @@
     @if (succes(); as s) {
       <p class="succes" role="status">
         {{ s }}
-        @if (lienDeTest(); as lien) {
-          <a class="lien-test" [href]="lien">Mode test : lien d'invitation</a>
-        }
       </p>
     }
 

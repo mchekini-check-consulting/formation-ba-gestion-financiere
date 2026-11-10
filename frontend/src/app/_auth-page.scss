@@ -276,22 +276,6 @@ a {
   }
 }
 
-// Mode test : code ou lien affiché faute d'API d'envoi d'emails branchée.
-.mode-test {
-  padding: 10px 14px;
-  border: 1px dashed $or;
-  border-radius: 10px;
-  background: #fbf8f2;
-  color: #3a332a;
-  font-size: 13px;
-
-  strong {
-    font-family: 'DM Mono', monospace;
-    font-size: 15px;
-    letter-spacing: 0.1em;
-  }
-}
-
 .back {
   font-size: 14px;
 }

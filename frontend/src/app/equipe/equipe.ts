@@ -34,7 +34,6 @@ export class Equipe implements OnInit {
   protected readonly erreurs = signal<Partial<Record<Champ, string>>>({});
   protected readonly alerte = signal<string | null>(null);
   protected readonly succes = signal<string | null>(null);
-  protected readonly lienDeTest = signal<string | null>(null);
   protected readonly enCours = signal(false);
 
   ngOnInit(): void {
@@ -62,7 +61,6 @@ export class Equipe implements OnInit {
     const erreurs = erreursInvitation(demande);
     this.erreurs.set(erreurs);
     this.succes.set(null);
-    this.lienDeTest.set(null);
     if (Object.keys(erreurs).length > 0) {
       this.alerte.set('Certains champs sont à corriger');
       return;
@@ -70,11 +68,10 @@ export class Equipe implements OnInit {
     this.alerte.set(null);
     this.enCours.set(true);
     this.equipe.inviter(demande).subscribe({
-      next: ({ membre, jetonDeTest }) => {
+      next: ({ membre }) => {
         this.enCours.set(false);
         this.membres.update((liste) => [...liste, membre].sort((a, b) => a.nomAffiche.localeCompare(b.nomAffiche)));
         this.succes.set(`Invitation envoyée à ${membre.email}`);
-        this.lienDeTest.set(jetonDeTest ? `/activer-compte?jeton=${jetonDeTest}` : null);
         this.formulaire.reset();
       },
       error: (err: HttpErrorResponse) => {

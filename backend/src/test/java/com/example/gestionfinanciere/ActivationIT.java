@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -31,10 +32,12 @@ import com.example.gestionfinanciere.compte.Role;
 import com.example.gestionfinanciere.compte.SessionService;
 import com.example.gestionfinanciere.equipe.Invitation;
 import com.example.gestionfinanciere.equipe.InvitationRepository;
+import com.example.gestionfinanciere.notification.EmailsRecus;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
 
-// US-08 Activer son compte : vrai serveur HTTP, migrations Flyway et PostgreSQL 16 jetable, en
-// mode test (les liens d'invitation US-14 et US-19 sont renvoyés à l'écran).
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "pointeo.mode-test=true")
+// US-08 Activer son compte : vrai serveur HTTP, migrations Flyway et PostgreSQL 16 jetable ; les liens
+// d'invitation US-14 et US-19 sont lus dans l'email envoyé (simulé).
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class ActivationIT {
 
@@ -44,8 +47,11 @@ class ActivationIT {
 
 	private static final String MOT_DE_PASSE = "Sophie#Pointeo2026";
 	private static final Pattern ID = Pattern.compile("\"id\":(\\d+)");
-	private static final Pattern JETON = Pattern.compile("\"jetonDeTest\":\"([^\"]+)\"");
 	private static final Pattern SESSION = Pattern.compile("\"jeton\":\"([^\"]+)\"");
+
+	// Emails simulés : le code ou le lien est lu dans l'email envoyé, jamais dans la réponse.
+	@MockitoBean
+	private EnvoiEmail envoiEmail;
 
 	@Value("${local.server.port}")
 	private int port;
@@ -85,6 +91,12 @@ class ActivationIT {
 		return http.send(requete.build(), HttpResponse.BodyHandlers.ofString());
 	}
 
+	// Invitation envoyée : jeton lu dans le lien de l'email, jamais dans la réponse.
+	private String lienRecu(String reponseInvitation) {
+		assertThat(reponseInvitation).contains("INVITE").doesNotContain("jeton");
+		return EmailsRecus.dernierJeton(envoiEmail);
+	}
+
 	private static String extraire(Pattern motif, String texte) {
 		Matcher trouve = motif.matcher(texte);
 		assertThat(trouve.find()).isTrue();
@@ -108,7 +120,7 @@ class ActivationIT {
 		Long dossier = Long.valueOf(extraire(ID, appel("POST", "/dossiers",
 				"{\"raisonSociale\":\"Boulangerie Leroy SARL\",\"siren\":\"812345678\"}", jean).body()));
 		String email = "sophie+" + dossier + "@boulangerie-test.fr";
-		String lien = extraire(JETON, appel("POST", "/dossiers/" + dossier + "/invitation",
+		String lien = lienRecu(appel("POST", "/dossiers/" + dossier + "/invitation",
 				"{\"prenom\":\"Sophie\",\"nom\":\"Martin\",\"email\":\"" + email + "\"}", jean).body());
 
 		HttpResponse<String> valable = verifier(lien);
@@ -152,7 +164,7 @@ class ActivationIT {
 	void collaborateurActiveSonCompte() throws Exception {
 		String jean = jeanConnecte();
 		String email = "lucie+" + UUID.randomUUID() + "@cabinet-test.fr";
-		String lien = extraire(JETON, appel("POST", "/equipe/invitations", """
+		String lien = lienRecu(appel("POST", "/equipe/invitations", """
 				{"prenom":"Lucie","nom":"Moreau","email":"%s","role":"COMPTABLE"}""".formatted(email), jean).body());
 		HttpResponse<String> active = activer(lien, MOT_DE_PASSE, true);
 		assertThat(active.statusCode()).isEqualTo(200);

@@ -80,7 +80,7 @@ export class Connexion {
         this.enCours.set(false);
         // US-03 CA1 : l'écran du code reçu par email s'affiche (US-04).
         void this.router.navigate(['/verification-code'], {
-          state: { defi: reponse.defi, emailMasque: reponse.emailMasque, codeDeTest: reponse.codeDeTest },
+          state: { defi: reponse.defi, emailMasque: reponse.emailMasque },
         });
       },
       error: (err: HttpErrorResponse) => {

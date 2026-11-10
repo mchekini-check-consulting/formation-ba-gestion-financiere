@@ -2,8 +2,8 @@ package com.example.gestionfinanciere.dossier;
 
 import java.util.Map;
 
-// Issue d'une invitation ou d'un renvoi (US-14). jetonDeTest : lien d'invitation, en mode test uniquement.
-public record ResultatInvitationDirigeant(Statut statut, Map<String, String> erreurs, String jetonDeTest) {
+// Issue d'une invitation ou d'un renvoi (US-14).
+public record ResultatInvitationDirigeant(Statut statut, Map<String, String> erreurs) {
 
 	public enum Statut {
 		ENVOYEE,
@@ -15,16 +15,16 @@ public record ResultatInvitationDirigeant(Statut statut, Map<String, String> err
 		ETAT_INCOMPATIBLE
 	}
 
-	static ResultatInvitationDirigeant envoyee(String jetonDeTest) {
-		return new ResultatInvitationDirigeant(Statut.ENVOYEE, Map.of(), jetonDeTest);
+	static ResultatInvitationDirigeant envoyee() {
+		return new ResultatInvitationDirigeant(Statut.ENVOYEE, Map.of());
 	}
 
 	static ResultatInvitationDirigeant invalide(Map<String, String> erreurs) {
-		return new ResultatInvitationDirigeant(Statut.INVALIDE, Map.copyOf(erreurs), null);
+		return new ResultatInvitationDirigeant(Statut.INVALIDE, Map.copyOf(erreurs));
 	}
 
 	static ResultatInvitationDirigeant refus(Statut statut) {
-		return new ResultatInvitationDirigeant(statut, Map.of(), null);
+		return new ResultatInvitationDirigeant(statut, Map.of());
 	}
 
 }

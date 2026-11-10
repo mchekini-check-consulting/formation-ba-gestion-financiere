@@ -12,8 +12,6 @@ export interface ConnexionReponse {
   defi: string;
   /** Ex. « j•••••@cabinet-test.fr ». */
   emailMasque: string;
-  /** Mode test uniquement (aucune API d'envoi d'emails branchée). */
-  codeDeTest: string | null;
 }
 
 /** US-04 : bon code -> session ouverte (US-07). */
@@ -25,10 +23,6 @@ export interface SessionOuverte {
   administrateur?: boolean;
 }
 
-export interface CodeRenvoye {
-  codeDeTest: string | null;
-}
-
 export interface SessionActive {
   nomAffiche: string;
   role: Role;
@@ -37,8 +31,6 @@ export interface SessionActive {
 
 export interface DemandeEnvoyee {
   message: string;
-  /** Mode test uniquement (aucune API d'email branchée). */
-  jetonDeTest: string | null;
 }
 
 /** Appels d'authentification au backend (via le gateway) : US-03 à US-07. */
@@ -55,8 +47,8 @@ export class AuthService {
     return this.http.post<SessionOuverte>(`${this.url}/code`, { defi, code });
   }
 
-  renvoyerCode(defi: string): Observable<CodeRenvoye> {
-    return this.http.post<CodeRenvoye>(`${this.url}/code/renvoyer`, { defi });
+  renvoyerCode(defi: string): Observable<void> {
+    return this.http.post<void>(`${this.url}/code/renvoyer`, { defi });
   }
 
   /** Session encore active ? Compte aussi comme une activité côté serveur. */

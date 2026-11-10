@@ -1,7 +1,7 @@
 package com.example.gestionfinanciere.compte;
 
 // Issue d'une demande « Renvoyer un code » (US-04 RG2, US-36).
-public record ResultatRenvoi(Statut statut, long secondesRestantes, String codeDeTest) {
+public record ResultatRenvoi(Statut statut, long secondesRestantes) {
 
 	public enum Statut {
 		RENVOYE,
@@ -9,16 +9,16 @@ public record ResultatRenvoi(Statut statut, long secondesRestantes, String codeD
 		DEMANDE_INVALIDE
 	}
 
-	public static ResultatRenvoi renvoye(String codeDeTest) {
-		return new ResultatRenvoi(Statut.RENVOYE, 0, codeDeTest);
+	public static ResultatRenvoi renvoye() {
+		return new ResultatRenvoi(Statut.RENVOYE, 0);
 	}
 
 	public static ResultatRenvoi tropTot(long secondesRestantes) {
-		return new ResultatRenvoi(Statut.TROP_TOT, secondesRestantes, null);
+		return new ResultatRenvoi(Statut.TROP_TOT, secondesRestantes);
 	}
 
 	public static ResultatRenvoi demandeInvalide() {
-		return new ResultatRenvoi(Statut.DEMANDE_INVALIDE, 0, null);
+		return new ResultatRenvoi(Statut.DEMANDE_INVALIDE, 0);
 	}
 
 }

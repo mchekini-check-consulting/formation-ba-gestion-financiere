@@ -31,12 +31,6 @@ import { EtapesMotDePasse } from './etapes';
             <!-- RG2 : même message que l'email existe ou non -->
             <div role="status" class="alert alert--succes">{{ texte }}</div>
           }
-          @if (jetonDeTest(); as jeton) {
-            <p class="mode-test" data-testid="lien-de-test">
-              Mode test (aucune API d'email branchée) —
-              <a routerLink="/reinitialiser-mot-de-passe" [queryParams]="{ jeton }">ouvrir le lien reçu par email</a>
-            </p>
-          }
           @if (erreur(); as texte) {
             <div role="alert" class="alert">{{ texte }}</div>
           }
@@ -53,7 +47,6 @@ export class MotDePasseOublie {
   protected readonly envoye = signal(false);
   protected readonly enCours = signal(false);
   protected readonly confirmation = signal<string | null>(null);
-  protected readonly jetonDeTest = signal<string | null>(null);
   protected readonly erreur = signal<string | null>(null);
 
   protected envoyer(): void {
@@ -67,7 +60,6 @@ export class MotDePasseOublie {
       next: (reponse) => {
         this.enCours.set(false);
         this.confirmation.set(reponse.message);
-        this.jetonDeTest.set(reponse.jetonDeTest);
       },
       error: () => {
         this.enCours.set(false);

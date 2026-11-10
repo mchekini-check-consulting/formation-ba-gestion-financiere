@@ -37,8 +37,8 @@ pointeo:
     smtp-user: ${SMTP_USER:}
     smtp-password: ${SMTP_PASSWORD:}
     expediteur: ${MAIL_FROM:noreply@pointeo.fr}
-  # En mode test, le code reçu par email et les liens des emails sont aussi renvoyés à l'écran
-  # pour pouvoir se connecter sans ouvrir Mailpit.
+  # Mode test : bouton « factures d'exemple » d'un dossier (le dépôt de factures n'existe pas encore).
+  # Les codes et liens des emails ne sont jamais renvoyés à l'écran : ils arrivent par email (Mailpit).
   # Jamais en preprod/prod. Activé en local par ./mvnw spring-boot:run (pom.xml) et en
   # dev/qualif par POINTEO_MODE_TEST (helm.yaml).
   mode-test: false

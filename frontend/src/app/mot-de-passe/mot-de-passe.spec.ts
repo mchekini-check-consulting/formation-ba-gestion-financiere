@@ -63,9 +63,8 @@ describe('MotDePasseOublie (US-06 étape 1)', () => {
     requete.flush({ message: 'Si un compte existe, un email vous a été envoyé', jetonDeTest: 'abc' });
     await fixture.whenStable();
     expect(page.querySelector('[role=status]')?.textContent).toContain('Si un compte existe, un email vous a été envoyé');
-    expect(page.querySelector('[data-testid=lien-de-test] a')?.getAttribute('href')).toBe(
-      '/reinitialiser-mot-de-passe?jeton=abc',
-    );
+    // Le lien arrive par email (Mailpit en dev/qualif) : jamais affiché, même si le backend le renvoie.
+    expect(page.querySelector('a[href*="reinitialiser-mot-de-passe"]')).toBeNull();
   });
 
   it('backend injoignable -> message de service indisponible', async () => {

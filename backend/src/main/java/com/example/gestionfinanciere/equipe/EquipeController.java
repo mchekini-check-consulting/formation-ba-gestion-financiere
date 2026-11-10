@@ -37,7 +37,7 @@ public class EquipeController {
 	public record ErreursFormulaire(String message, Map<String, String> erreurs) {
 	}
 
-	public record InvitationEnvoyee(Membre membre, String jetonDeTest) {
+	public record InvitationEnvoyee(Membre membre) {
 	}
 
 	private final EquipeService equipe;
@@ -72,7 +72,7 @@ public class EquipeController {
 			ResultatInvitation resultat = equipe.inviter(session.compte(), demande);
 			return switch (resultat.statut()) {
 				case ENVOYEE -> ResponseEntity.status(HttpStatus.CREATED)
-						.body(new InvitationEnvoyee(resultat.membre(), resultat.jetonDeTest()));
+						.body(new InvitationEnvoyee(resultat.membre()));
 				case INVALIDE -> ResponseEntity.badRequest()
 						.body(new ErreursFormulaire(MESSAGE_FORMULAIRE, resultat.erreurs()));
 				case EMAIL_DEJA_UTILISE -> ResponseEntity.status(HttpStatus.CONFLICT).body(new ErreursFormulaire(

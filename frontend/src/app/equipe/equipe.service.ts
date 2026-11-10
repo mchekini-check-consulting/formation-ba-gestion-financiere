@@ -29,8 +29,6 @@ export interface DemandeInvitation {
 
 export interface InvitationEnvoyee {
   membre: Membre;
-  /** Mode test uniquement (aucune API d'email branchée) : jeton du lien d'invitation. */
-  jetonDeTest: string | null;
 }
 
 /** US-19 Inviter un collaborateur avec un rôle : appels au backend (via le gateway). */

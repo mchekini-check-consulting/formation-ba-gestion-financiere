@@ -45,11 +45,10 @@ public class InvitationDirigeantService {
 	private final Clock horloge;
 	private final EnvoiEmail emails;
 	private final String frontendUrl;
-	private final boolean modeTest;
 
 	public InvitationDirigeantService(DossierRepository dossiers, CompteRepository comptes,
 			InvitationRepository invitations, PasswordEncoder encodeur, Clock horloge, EnvoiEmail emails,
-			@Value("${pointeo.frontend-url}") String frontendUrl, @Value("${pointeo.mode-test:false}") boolean modeTest) {
+			@Value("${pointeo.frontend-url}") String frontendUrl) {
 		this.dossiers = dossiers;
 		this.comptes = comptes;
 		this.invitations = invitations;
@@ -57,7 +56,6 @@ public class InvitationDirigeantService {
 		this.horloge = horloge;
 		this.emails = emails;
 		this.frontendUrl = frontendUrl;
-		this.modeTest = modeTest;
 	}
 
 	// RG1 : crée le compte du dirigeant (inactif) et lui envoie l'invitation au nom du cabinet.
@@ -121,7 +119,7 @@ public class InvitationDirigeantService {
 						+ "(valable 7 jours, une seule fois) :\n"
 						+ frontendUrl + "/activer-compte?jeton=" + jeton + "\n\n"
 						+ cabinet + "\n");
-		return ResultatInvitationDirigeant.envoyee(modeTest ? jeton : null);
+		return ResultatInvitationDirigeant.envoyee();
 	}
 
 	private interface Action {
