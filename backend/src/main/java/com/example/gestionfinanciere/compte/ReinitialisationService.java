@@ -30,12 +30,10 @@ public class ReinitialisationService {
 	private final Clock horloge;
 	private final EnvoiEmail emails;
 	private final String frontendUrl;
-	private final boolean modeTest;
 
 	public ReinitialisationService(CompteRepository comptes, JetonReinitialisationRepository jetons,
 			SessionService sessions, PasswordEncoder encodeur, Clock horloge, EnvoiEmail emails,
-			@Value("${pointeo.frontend-url}") String frontendUrl,
-			@Value("${pointeo.mode-test:false}") boolean modeTest) {
+			@Value("${pointeo.frontend-url}") String frontendUrl) {
 		this.comptes = comptes;
 		this.jetons = jetons;
 		this.sessions = sessions;
@@ -43,22 +41,21 @@ public class ReinitialisationService {
 		this.horloge = horloge;
 		this.emails = emails;
 		this.frontendUrl = frontendUrl;
-		this.modeTest = modeTest;
 	}
 
 	/**
 	 * RG1 : envoie un lien valable 1 heure si un compte actif existe ; RG2 : l'appelant
-	 * répond de la même façon dans tous les cas. Renvoie le jeton uniquement en mode test.
+	 * répond de la même façon dans tous les cas.
 	 */
 	@Transactional
-	public Optional<String> demander(String email) {
+	public void demander(String email) {
 		if (ConnexionService.estVide(email)) {
-			return Optional.empty();
+			return;
 		}
 		Optional<Compte> compte = comptes.findByEmail(ConnexionService.normaliser(email)).filter(Compte::isActif);
 		if (compte.isEmpty()) {
 			EvenementMetier.de("mot_de_passe.lien_demande", "compte_inconnu_ou_inactif").warn();
-			return Optional.empty();
+			return;
 		}
 		String jeton = Jetons.nouveau();
 		jetons.save(new JetonReinitialisation(compte.get(), Jetons.empreinte(jeton),
@@ -70,7 +67,6 @@ public class ReinitialisationService {
 						+ "Si vous n'avez rien demandé, ignorez cet email.\n");
 		EvenementMetier.de("mot_de_passe.lien_demande", "lien_envoye").avec(compte.get().identifiantsPourLogs())
 				.info();
-		return modeTest ? Optional.of(jeton) : Optional.empty();
 	}
 
 	// CA2 : le lien ouvert est-il encore valable ?

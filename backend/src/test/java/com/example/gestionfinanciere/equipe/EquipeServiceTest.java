@@ -34,6 +34,7 @@ import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.compte.Jetons;
 import com.example.gestionfinanciere.compte.Role;
 import com.example.gestionfinanciere.compte.RoleCabinet;
+import com.example.gestionfinanciere.notification.EmailsRecus;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 
 class EquipeServiceTest {
@@ -45,7 +46,7 @@ class EquipeServiceTest {
 	private final InvitationRepository invitations = mock(InvitationRepository.class);
 	private final EnvoiEmail emails = mock(EnvoiEmail.class);
 	private final EquipeService service = new EquipeService(comptes, invitations, encodeur,
-			new HorlogeReglable(MAINTENANT), emails, "https://frontend.test", true);
+			new HorlogeReglable(MAINTENANT), emails, "https://frontend.test");
 
 	private final Cabinet cabinetTest = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
 	private final Compte claire = Compte.administrateurDe(cabinetTest, "claire.martin@cabinet-test.fr", "x",
@@ -66,6 +67,7 @@ class EquipeServiceTest {
 	@Test
 	void ca1LucieApparaitInviteeEtRecoitLEmail() {
 		ResultatInvitation resultat = service.inviter(claire, lucie());
+		String jeton = EmailsRecus.dernierJeton(emails, "lucie.moreau@cabinet-test.fr");
 
 		assertEquals(ResultatInvitation.Statut.ENVOYEE, resultat.statut());
 		assertEquals(new Membre(null, "Lucie Moreau", "lucie.moreau@cabinet-test.fr", RoleCabinet.COMPTABLE,
@@ -86,18 +88,11 @@ class EquipeServiceTest {
 		assertEquals(MAINTENANT, invitation.getValue().getEnvoyeeLe());
 		assertEquals(MAINTENANT.plus(Duration.ofDays(7)), invitation.getValue().getExpireLe());
 		assertNull(invitation.getValue().getUtiliseeLe());
-		assertEquals(Jetons.empreinte(resultat.jetonDeTest()), invitation.getValue().getEmpreinteJeton());
+		assertEquals(Jetons.empreinte(jeton), invitation.getValue().getEmpreinteJeton());
 
 		verify(emails).envoyer(eq("lucie.moreau@cabinet-test.fr"),
 				eq("Claire Martin vous invite à rejoindre Cabinet Test sur Pointéo"),
-				contains("https://frontend.test/activer-compte?jeton=" + resultat.jetonDeTest()));
-	}
-
-	@Test
-	void horsModeTestLeLienNEstPasRenvoye() {
-		EquipeService production = new EquipeService(comptes, invitations, encodeur, new HorlogeReglable(MAINTENANT),
-				emails, "https://frontend.test", false);
-		assertNull(production.inviter(claire, lucie()).jetonDeTest());
+				contains("https://frontend.test/activer-compte?jeton=" + jeton));
 	}
 
 	@Test

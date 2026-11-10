@@ -171,12 +171,6 @@
             </p>
           </div>
 
-          @if (codeDeTest(); as c) {
-            <p class="mode-test" data-testid="code-de-test">
-              Mode test (aucune API d'envoi d'emails branchée) — code reçu : <strong>{{ c }}</strong>
-            </p>
-          }
-
           @if (alerte(); as m) {
             <div [attr.role]="m.ton === 'succes' ? 'status' : 'alert'" class="alert alert--{{ m.ton }}" data-testid="alerte">{{ m.texte }}</div>
           }

@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere.compte;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -8,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import com.example.gestionfinanciere.compte.ConnexionController.CodeRenvoye;
 import com.example.gestionfinanciere.compte.ConnexionController.CodeRequest;
 import com.example.gestionfinanciere.compte.ConnexionController.ErreurCode;
 import com.example.gestionfinanciere.compte.ConnexionController.RenvoiRequest;
@@ -24,7 +24,7 @@ class ConnexionControllerTest {
 	private final ConnexionController controller = new ConnexionController(connexion, codes, sessions);
 	private final Compte jean = new Compte("jean.dupont@cabinet-test.fr", "x", Role.COLLABORATEUR, true,
 			"Jean Dupont");
-	private final DefiCode defi = new DefiCode("defi", "j•••••@cabinet-test.fr", "482917");
+	private final DefiCode defi = new DefiCode("defi", "j•••••@cabinet-test.fr");
 
 	private ResponseEntity<Object> connexion(String motDePasse) {
 		return controller.seConnecter(new ConnexionRequest("jean.dupont@cabinet-test.fr", motDePasse));
@@ -36,7 +36,7 @@ class ConnexionControllerTest {
 		when(codes.demarrer(jean)).thenReturn(defi);
 		ResponseEntity<Object> reponse = connexion("bon");
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
-		assertEquals(new ConnexionResponse("CODE_EMAIL", "defi", "j•••••@cabinet-test.fr", "482917"), reponse.getBody());
+		assertEquals(new ConnexionResponse("CODE_EMAIL", "defi", "j•••••@cabinet-test.fr"), reponse.getBody());
 	}
 
 	@Test
@@ -109,10 +109,10 @@ class ConnexionControllerTest {
 
 	@Test
 	void us04Rg2Renvoi() {
-		when(codes.renvoyer("defi")).thenReturn(ResultatRenvoi.renvoye("123456"));
+		when(codes.renvoyer("defi")).thenReturn(ResultatRenvoi.renvoye());
 		ResponseEntity<Object> reponse = controller.renvoyerCode(new RenvoiRequest("defi"));
 		assertEquals(HttpStatus.OK, reponse.getStatusCode());
-		assertEquals(new CodeRenvoye("123456"), reponse.getBody());
+		assertNull(reponse.getBody());
 	}
 
 	@Test

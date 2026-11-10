@@ -41,8 +41,8 @@ applications:
           qualif: https://frontend.formation-ba-gestion-financiere.qualif.check-consulting.net
           preprod: https://frontend.formation-ba-gestion-financiere.preprod.check-consulting.net
           prod: https://frontend.formation-ba-gestion-financiere.prod.check-consulting.net
-      # Mode test : code reçu par email et liens des emails aussi affichés à l'écran
-      # (les emails eux-mêmes arrivent dans Mailpit, voir SMTP_HOST). Jamais en preprod/prod.
+      # Mode test : bouton « factures d'exemple » des dossiers. Les codes et liens des emails ne
+      # s'affichent jamais à l'écran : ils arrivent dans Mailpit (voir SMTP_HOST). Jamais en preprod/prod.
       - key: POINTEO_MODE_TEST
         value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
       # Contrat d'interface des API (Swagger) : .../backend/swagger-ui.html. Jamais en preprod/prod.

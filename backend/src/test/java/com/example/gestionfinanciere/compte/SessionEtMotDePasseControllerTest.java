@@ -7,7 +7,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -69,12 +68,12 @@ class SessionEtMotDePasseControllerTest {
 
 	@Test
 	void us06Rg2MemeReponseQueLeCompteExisteOuNon() {
-		when(reinitialisation.demander("jean.dupont@cabinet-test.fr")).thenReturn(Optional.of("jeton"));
-		when(reinitialisation.demander("inconnu@test.fr")).thenReturn(Optional.empty());
-		assertEquals(new DemandeEnvoyee("Si un compte existe, un email vous a été envoyé", "jeton"),
+		assertEquals(new DemandeEnvoyee("Si un compte existe, un email vous a été envoyé"),
 				motDePasse.demander(new DemandeRequest("jean.dupont@cabinet-test.fr")));
-		assertEquals(new DemandeEnvoyee("Si un compte existe, un email vous a été envoyé", null),
+		assertEquals(new DemandeEnvoyee("Si un compte existe, un email vous a été envoyé"),
 				motDePasse.demander(new DemandeRequest("inconnu@test.fr")));
+		verify(reinitialisation).demander("jean.dupont@cabinet-test.fr");
+		verify(reinitialisation).demander("inconnu@test.fr");
 	}
 
 	@Test

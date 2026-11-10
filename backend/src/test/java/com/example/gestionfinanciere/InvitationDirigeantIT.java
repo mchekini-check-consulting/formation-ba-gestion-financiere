@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -30,10 +31,12 @@ import com.example.gestionfinanciere.compte.Jetons;
 import com.example.gestionfinanciere.compte.SessionService;
 import com.example.gestionfinanciere.equipe.Invitation;
 import com.example.gestionfinanciere.equipe.InvitationRepository;
+import com.example.gestionfinanciere.notification.EmailsRecus;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
 
 // US-14 Inviter le dirigeant : vrai serveur HTTP, migrations Flyway et PostgreSQL 16 jetable, en
 // mode test (lien d'invitation renvoyé à l'écran, aucune API d'envoi d'emails branchée).
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "pointeo.mode-test=true")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class InvitationDirigeantIT {
 
@@ -42,7 +45,10 @@ class InvitationDirigeantIT {
 	static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16");
 
 	private static final Pattern ID = Pattern.compile("\"id\":(\\d+)");
-	private static final Pattern JETON = Pattern.compile("\"jetonDeTest\":\"([^\"]+)\"");
+
+	// Emails simulés : le code ou le lien est lu dans l'email envoyé, jamais dans la réponse.
+	@MockitoBean
+	private EnvoiEmail envoiEmail;
 
 	@Value("${local.server.port}")
 	private int port;
@@ -89,10 +95,10 @@ class InvitationDirigeantIT {
 		return Long.valueOf(id.group(1));
 	}
 
-	private static String jeton(HttpResponse<String> reponse) {
-		Matcher jeton = JETON.matcher(reponse.body());
-		assertThat(jeton.find()).isTrue();
-		return jeton.group(1);
+	// Invitation envoyée : jeton lu dans le lien de l'email, jamais dans la réponse.
+	private String jeton(HttpResponse<String> reponse) {
+		assertThat(reponse.body()).contains("INVITE").doesNotContain("jeton");
+		return EmailsRecus.dernierJeton(envoiEmail);
 	}
 
 	private static String sophie(String email) {

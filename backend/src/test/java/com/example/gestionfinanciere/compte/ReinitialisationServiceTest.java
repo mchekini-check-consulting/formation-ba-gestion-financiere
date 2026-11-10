@@ -26,6 +26,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.gestionfinanciere.compte.ResultatReinitialisation.Statut;
+import com.example.gestionfinanciere.notification.EmailsRecus;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 
 class ReinitialisationServiceTest {
@@ -54,44 +55,41 @@ class ReinitialisationServiceTest {
 				.thenAnswer(appel -> Optional.ofNullable(base.get(appel.<String>getArgument(0))));
 	}
 
-	private ReinitialisationService service(boolean modeTest) {
+	private ReinitialisationService service() {
 		return new ReinitialisationService(comptes, jetons, sessions, encodeur, horloge, emails,
-				"https://frontend.test", modeTest);
+				"https://frontend.test");
 	}
 
+	// Jeton lu dans le lien du dernier email reçu par Jean.
 	private String demanderUnLien() {
-		return service(true).demander(EMAIL).orElseThrow();
+		service().demander(EMAIL);
+		return EmailsRecus.dernierJeton(emails, EMAIL);
 	}
 
 	@Test
 	void rg1DemanderEnvoieUnLienValableUneHeure() {
-		String jeton = service(true).demander(" Jean.Dupont@Cabinet-Test.fr ").orElseThrow();
+		service().demander(" Jean.Dupont@Cabinet-Test.fr ");
+		String jeton = EmailsRecus.dernierJeton(emails, EMAIL);
 		verify(emails).envoyer(eq(EMAIL), anyString(),
 				contains("https://frontend.test/reinitialiser-mot-de-passe?jeton=" + jeton));
 		assertEquals(Instant.parse("2026-11-04T10:00:00Z"), base.get(Jetons.empreinte(jeton)).getExpireLe());
 	}
 
 	@Test
-	void horsModeTestLeJetonNEstPasRenvoye() {
-		assertTrue(service(false).demander(EMAIL).isEmpty());
-		verify(emails).envoyer(eq(EMAIL), anyString(), anyString());
-	}
-
-	@Test
 	void rg2EmailInconnuOuVideRienNEstEnvoye() {
 		when(comptes.findByEmail("inconnu@test.fr")).thenReturn(Optional.empty());
-		assertTrue(service(true).demander("inconnu@test.fr").isEmpty());
-		assertTrue(service(true).demander("").isEmpty());
+		service().demander("inconnu@test.fr");
+		service().demander("");
 		verify(emails, never()).envoyer(anyString(), anyString(), anyString());
 	}
 
 	@Test
 	void ca1NouveauMotDePasseValideChangeLeMotDePasseEtFermeLesSessions() {
 		String jeton = demanderUnLien();
-		assertTrue(service(true).lienValable(jeton));
+		assertTrue(service().lienValable(jeton));
 		jean.enregistrerEchec(horloge.instant(), 1, Duration.ofMinutes(15));
 
-		assertEquals(Statut.CHANGE, service(true).reinitialiser(jeton, NOUVEAU).statut());
+		assertEquals(Statut.CHANGE, service().reinitialiser(jeton, NOUVEAU).statut());
 		assertTrue(encodeur.matches(NOUVEAU, jean.getMotDePasseHash()));
 		assertNull(jean.getBloqueJusqua());
 		verify(sessions).fermerToutes(jean);
@@ -100,34 +98,34 @@ class ReinitialisationServiceTest {
 	@Test
 	void rg1LeLienNeSertQuUneFois() {
 		String jeton = demanderUnLien();
-		service(true).reinitialiser(jeton, NOUVEAU);
-		assertFalse(service(true).lienValable(jeton));
-		assertEquals(Statut.LIEN_EXPIRE, service(true).reinitialiser(jeton, NOUVEAU).statut());
+		service().reinitialiser(jeton, NOUVEAU);
+		assertFalse(service().lienValable(jeton));
+		assertEquals(Statut.LIEN_EXPIRE, service().reinitialiser(jeton, NOUVEAU).statut());
 	}
 
 	@Test
 	void ca2LienEnvoyeIlYADeuxHeuresExpire() {
 		String jeton = demanderUnLien();
 		horloge.avancer(Duration.ofHours(2));
-		assertFalse(service(true).lienValable(jeton));
-		assertEquals(Statut.LIEN_EXPIRE, service(true).reinitialiser(jeton, NOUVEAU).statut());
+		assertFalse(service().lienValable(jeton));
+		assertEquals(Statut.LIEN_EXPIRE, service().reinitialiser(jeton, NOUVEAU).statut());
 	}
 
 	@Test
 	void ca3MotDePasseTropFaibleRienNEstChange() {
 		String jeton = demanderUnLien();
-		ResultatReinitialisation resultat = service(true).reinitialiser(jeton, "bonjour");
+		ResultatReinitialisation resultat = service().reinitialiser(jeton, "bonjour");
 		assertEquals(Statut.TROP_FAIBLE, resultat.statut());
 		assertEquals(List.of(RegleMotDePasse.LONGUEUR, RegleMotDePasse.MAJUSCULE, RegleMotDePasse.CHIFFRE,
 				RegleMotDePasse.SPECIAL), resultat.reglesNonRespectees());
 		assertEquals("ancienne-empreinte", jean.getMotDePasseHash());
-		assertTrue(service(true).lienValable(jeton));
+		assertTrue(service().lienValable(jeton));
 	}
 
 	@Test
 	void lienInconnuOuVide() {
-		assertFalse(service(true).lienValable(null));
-		assertEquals(Statut.LIEN_EXPIRE, service(true).reinitialiser("inconnu", NOUVEAU).statut());
+		assertFalse(service().lienValable(null));
+		assertEquals(Statut.LIEN_EXPIRE, service().reinitialiser("inconnu", NOUVEAU).statut());
 	}
 
 }

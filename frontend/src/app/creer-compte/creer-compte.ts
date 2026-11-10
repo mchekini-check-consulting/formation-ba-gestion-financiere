@@ -69,7 +69,6 @@ export class CreerCompte implements OnDestroy {
   private defi: string | null = null;
   /** Email saisi à l'étape 1, rappelé à l'étape 2 « Confirmez votre email ». */
   protected readonly emailSaisi = signal('');
-  protected readonly codeDeTest = signal<string | null>(null);
   protected readonly secondesAvantRenvoi = signal(0);
   private minuteur: ReturnType<typeof setInterval> | undefined;
 
@@ -124,7 +123,6 @@ export class CreerCompte implements OnDestroy {
         this.enCours.set(false);
         this.defi = reponse.defi;
         this.emailSaisi.set(this.valeur().email.trim());
-        this.codeDeTest.set(reponse.codeDeTest);
         this.code.reset();
         this.allerA('code');
         this.demarrerMinuteur(DELAI_RENVOI_S);
@@ -183,8 +181,7 @@ export class CreerCompte implements OnDestroy {
       return;
     }
     this.inscription.renvoyerCode(this.defi).subscribe({
-      next: (renvoi) => {
-        this.codeDeTest.set(renvoi.codeDeTest);
+      next: () => {
         this.alerte.set({ ton: 'succes', texte: 'Un nouveau code vous a été envoyé.' });
         this.code.reset();
         this.demarrerMinuteur(DELAI_RENVOI_S);
@@ -206,7 +203,6 @@ export class CreerCompte implements OnDestroy {
   protected revenirAuFormulaire(message: Message | null = null): void {
     clearInterval(this.minuteur);
     this.defi = null;
-    this.codeDeTest.set(null);
     this.alerte.set(message);
     this.allerA('informations');
   }

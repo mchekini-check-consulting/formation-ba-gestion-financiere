@@ -12,10 +12,9 @@ export interface DemandeInvitationDirigeant {
   email: string;
 }
 
-/** Réponse d'un envoi : nouvel état de l'espace client ; jetonDeTest en mode test seulement. */
+/** Réponse d'un envoi : nouvel état de l'espace client. */
 export interface InvitationEnvoyee {
   etatEspaceClient: EtatEspaceClient;
-  jetonDeTest: string | null;
 }
 
 type Champ = keyof DemandeInvitationDirigeant;
@@ -79,13 +78,11 @@ export class InvitationDirigeant {
   protected readonly erreurs = signal<Partial<Record<Champ, string>>>({});
   protected readonly alerte = signal<string | null>(null);
   protected readonly succes = signal<string | null>(null);
-  protected readonly lienDeTest = signal<string | null>(null);
   protected readonly enCours = signal(false);
 
   ouvrir(): void {
     this.ouvert.set(true);
     this.succes.set(null);
-    this.lienDeTest.set(null);
   }
 
   annuler(): void {
@@ -119,12 +116,11 @@ export class InvitationDirigeant {
     this.enCours.set(true);
     this.alerte.set(null);
     appel.subscribe({
-      next: ({ etatEspaceClient, jetonDeTest }) => {
+      next: ({ etatEspaceClient }) => {
         this.enCours.set(false);
         this.ouvert.set(false);
         this.formulaire.reset();
         this.succes.set(message);
-        this.lienDeTest.set(jetonDeTest ? `/activer-compte?jeton=${jetonDeTest}` : null);
         this.invite.emit(etatEspaceClient);
       },
       error: (err: HttpErrorResponse) => {

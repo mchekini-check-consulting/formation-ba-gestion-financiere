@@ -38,13 +38,14 @@ import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.compte.Role;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
+import com.example.gestionfinanciere.notification.EmailsRecus;
 
 // US-04 code reçu par email, US-05 blocage, US-06 mot de passe oublié, US-07 session : vrai serveur HTTP,
 // migrations Flyway et PostgreSQL 16 jetable. L'horloge est avancée à la main (15 min, 5 min, 1 h,
 // 30 min) ; le mode test renvoie le code et le lien. Le service d'envoi d'emails est remplacé
 // par un bouchon (mock), qui permet aussi de simuler un envoi impossible.
 // Chaque test crée son propre compte : aucun test ne dépend d'un autre.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "pointeo.mode-test=true")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class AuthentificationIT {
 
@@ -130,7 +131,7 @@ class AuthentificationIT {
 	private String seConnecter(String email, String motDePasse) throws IOException, InterruptedException {
 		HttpResponse<String> etape1 = connexion(email, motDePasse);
 		assertThat(etape1.statusCode()).isEqualTo(200);
-		HttpResponse<String> etape2 = code(champ(etape1, "defi"), champ(etape1, "codeDeTest"));
+		HttpResponse<String> etape2 = code(champ(etape1, "defi"), EmailsRecus.dernierCode(envoiEmail));
 		assertThat(etape2.statusCode()).isEqualTo(200);
 		return champ(etape2, "jeton");
 	}
@@ -145,9 +146,10 @@ class AuthentificationIT {
 	void us04Ca1BonCodeOuvreLaSessionDuCollaborateur() throws Exception {
 		HttpResponse<String> etape1 = connexion("jean.dupont@cabinet-test.fr", MOT_DE_PASSE);
 		assertThat(champ(etape1, "emailMasque")).isEqualTo("j•••••@cabinet-test.fr");
-		verify(envoiEmail).envoyer(eq("jean.dupont@cabinet-test.fr"), anyString(),
-				contains(champ(etape1, "codeDeTest")));
-		HttpResponse<String> etape2 = code(champ(etape1, "defi"), champ(etape1, "codeDeTest"));
+		String recu = EmailsRecus.dernierCode(envoiEmail);
+		verify(envoiEmail).envoyer(eq("jean.dupont@cabinet-test.fr"), anyString(), contains(recu));
+		assertThat(etape1.body()).doesNotContain(recu);
+		HttpResponse<String> etape2 = code(champ(etape1, "defi"), recu);
 		assertThat(etape2.statusCode()).isEqualTo(200);
 		assertThat(etape2.body()).contains("\"role\":\"COLLABORATEUR\"").contains("\"nomAffiche\":\"Jean Dupont\"");
 
@@ -170,7 +172,7 @@ class AuthentificationIT {
 	void us04Ca2CodeFauxPuisRg3RetourALaConnexion() throws Exception {
 		HttpResponse<String> etape1 = connexion(nouveauCompte(Role.DIRIGEANT), MOT_DE_PASSE);
 		String defi = champ(etape1, "defi");
-		String faux = autreCode(champ(etape1, "codeDeTest"));
+		String faux = autreCode(EmailsRecus.dernierCode(envoiEmail));
 
 		HttpResponse<String> premier = code(defi, faux);
 		assertThat(premier.statusCode()).isEqualTo(401);
@@ -178,14 +180,14 @@ class AuthentificationIT {
 		code(defi, faux);
 		HttpResponse<String> troisieme = code(defi, faux);
 		assertThat(troisieme.body()).contains("\"retourConnexion\":true");
-		assertThat(code(defi, champ(etape1, "codeDeTest")).statusCode()).isEqualTo(401);
+		assertThat(code(defi, EmailsRecus.dernierCode(envoiEmail)).statusCode()).isEqualTo(401);
 	}
 
 	@Test
 	void us04Ca3CodeRecuIlYASixMinutes() throws Exception {
 		HttpResponse<String> etape1 = connexion(nouveauCompte(Role.COLLABORATEUR), MOT_DE_PASSE);
 		horloge.avancer(Duration.ofMinutes(6));
-		HttpResponse<String> reponse = code(champ(etape1, "defi"), champ(etape1, "codeDeTest"));
+		HttpResponse<String> reponse = code(champ(etape1, "defi"), EmailsRecus.dernierCode(envoiEmail));
 		assertThat(reponse.statusCode()).isEqualTo(410);
 		assertThat(champ(reponse, "message")).isEqualTo("Ce code a expiré. Demandez un nouveau code.");
 	}
@@ -198,7 +200,7 @@ class AuthentificationIT {
 		horloge.avancer(Duration.ofSeconds(61));
 		HttpResponse<String> renvoi = post("/auth/code/renvoyer", "{\"defi\":\"" + defi + "\"}");
 		assertThat(renvoi.statusCode()).isEqualTo(200);
-		assertThat(code(defi, champ(renvoi, "codeDeTest")).statusCode()).isEqualTo(200);
+		assertThat(code(defi, EmailsRecus.dernierCode(envoiEmail)).statusCode()).isEqualTo(200);
 	}
 
 	// --- US-05 Blocage après 3 échecs --------------------------------------------------
@@ -233,7 +235,7 @@ class AuthentificationIT {
 		HttpResponse<String> reponse = post("/auth/mot-de-passe-oublie", "{\"email\":\"" + email + "\"}");
 		assertThat(reponse.statusCode()).isEqualTo(200);
 		assertThat(champ(reponse, "message")).isEqualTo("Si un compte existe, un email vous a été envoyé");
-		return champ(reponse, "jetonDeTest");
+		return EmailsRecus.dernierJeton(envoiEmail);
 	}
 
 	private HttpResponse<String> reinitialiser(String jeton, String motDePasse)

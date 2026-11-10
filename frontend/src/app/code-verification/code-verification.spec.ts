@@ -53,7 +53,8 @@ describe('CodeVerification (US-04)', () => {
         'Pensez à regarder vos courriers indésirables.',
     );
     expect(cases().length).toBe(6);
-    expect(page.querySelector('[data-testid=code-de-test]')?.textContent).toContain('482917');
+    // Le code arrive par email (Mailpit en dev/qualif) : jamais affiché, même si le backend le renvoie.
+    expect(page.textContent).not.toContain('482917');
     expect(page.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(true);
   });
 
@@ -164,7 +165,7 @@ describe('CodeVerification (US-04)', () => {
     requete.flush({ codeDeTest: '123456' });
     await fixture.whenStable();
     expect(page.querySelector('[role=status]')?.textContent).toContain('Un nouveau code vous a été envoyé.');
-    expect(page.querySelector('[data-testid=code-de-test]')?.textContent).toContain('123456');
+    expect(page.textContent).not.toContain('123456');
     expect(page.textContent).toContain('Renvoyer un code dans 60 s');
   });
 

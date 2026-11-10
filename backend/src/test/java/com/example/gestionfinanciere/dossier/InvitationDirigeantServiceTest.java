@@ -3,7 +3,6 @@ package com.example.gestionfinanciere.dossier;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,6 +36,7 @@ import com.example.gestionfinanciere.equipe.Invitation;
 import com.example.gestionfinanciere.equipe.InvitationRepository;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.JournalCapture;
+import com.example.gestionfinanciere.notification.EmailsRecus;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
@@ -56,9 +56,14 @@ class InvitationDirigeantServiceTest {
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean.dupont@cabinet-test.fr", "x", "Jean Dupont");
 	private final Dossier boulangerie = new Dossier(cabinet, "Boulangerie Leroy SARL", "812345678", jean, MAINTENANT);
 
-	private InvitationDirigeantService service(boolean modeTest) {
+	private InvitationDirigeantService service() {
 		return new InvitationDirigeantService(dossiers, comptes, invitations, new BCryptPasswordEncoder(4),
-				new HorlogeReglable(MAINTENANT), emails, "https://frontend.test", modeTest);
+				new HorlogeReglable(MAINTENANT), emails, "https://frontend.test");
+	}
+
+	// Jeton lu dans le lien du dernier email reçu par Sophie.
+	private String jetonRecu() {
+		return EmailsRecus.dernierJeton(emails, "sophie.martin@boulangerie-test.fr");
 	}
 
 	// RG1 : Jean invite Sophie Martin, dirigeante de la Boulangerie Leroy.
@@ -83,7 +88,7 @@ class InvitationDirigeantServiceTest {
 
 	@Test
 	void rg1Rg3InvitationEnvoyeeAuNomDuCabinet() {
-		ResultatInvitationDirigeant resultat = service(true).inviter(jean, 42L, sophie());
+		ResultatInvitationDirigeant resultat = service().inviter(jean, 42L, sophie());
 
 		assertEquals(ResultatInvitationDirigeant.Statut.ENVOYEE, resultat.statut());
 		ArgumentCaptor<Compte> compte = ArgumentCaptor.forClass(Compte.class);
@@ -99,26 +104,22 @@ class InvitationDirigeantServiceTest {
 		ArgumentCaptor<Invitation> invitation = ArgumentCaptor.forClass(Invitation.class);
 		verify(invitations).save(invitation.capture());
 		assertEquals(MAINTENANT.plusSeconds(7 * 24 * 3600), invitation.getValue().getExpireLe());
-		assertEquals(Jetons.empreinte(resultat.jetonDeTest()), invitation.getValue().getEmpreinteJeton());
-		assertNotEquals(resultat.jetonDeTest(), invitation.getValue().getEmpreinteJeton());
+		assertEquals(Jetons.empreinte(jetonRecu()), invitation.getValue().getEmpreinteJeton());
+		assertNotEquals(jetonRecu(), invitation.getValue().getEmpreinteJeton());
 
 		ArgumentCaptor<String> corps = ArgumentCaptor.forClass(String.class);
 		verify(emails).envoyer(eq("sophie.martin@boulangerie-test.fr"),
 				eq("Cabinet Test vous invite sur votre espace client Pointéo"), corps.capture());
 		assertTrue(corps.getValue().contains("Le cabinet Cabinet Test vous invite"));
 		assertTrue(corps.getValue().contains("Boulangerie Leroy SARL"));
-		assertTrue(corps.getValue().contains("https://frontend.test/activer-compte?jeton=" + resultat.jetonDeTest()));
+		assertTrue(corps.getValue().contains("https://frontend.test/activer-compte?jeton=" + jetonRecu()));
 		assertTrue(corps.getValue().contains("valable 7 jours"));
-
-		// Hors mode test, le lien ne revient jamais à l'écran.
-		when(comptes.existsByDossierId(42L)).thenReturn(false);
-		assertNull(service(false).inviter(jean, 42L, sophie()).jetonDeTest());
 	}
 
 	// CA erreur : « Saisissez une adresse email valide » ; prénom et nom obligatoires.
 	@Test
 	void caErreurEmailInvalide() {
-		ResultatInvitationDirigeant resultat = service(true).inviter(jean, 42L,
+		ResultatInvitationDirigeant resultat = service().inviter(jean, 42L,
 				new DemandeInvitationDirigeant("", "Martin", "sophie@"));
 
 		assertEquals(ResultatInvitationDirigeant.Statut.INVALIDE, resultat.statut());
@@ -134,13 +135,13 @@ class InvitationDirigeantServiceTest {
 	@Test
 	void refus() {
 		assertEquals(ResultatInvitationDirigeant.Statut.INTROUVABLE,
-				service(true).inviter(jean, 99L, sophie()).statut());
+				service().inviter(jean, 99L, sophie()).statut());
 		when(comptes.findByEmail("sophie.martin@boulangerie-test.fr")).thenReturn(Optional.of(jean));
 		assertEquals(ResultatInvitationDirigeant.Statut.EMAIL_DEJA_UTILISE,
-				service(true).inviter(jean, 42L, sophie()).statut());
+				service().inviter(jean, 42L, sophie()).statut());
 		when(comptes.existsByDossierId(42L)).thenReturn(true);
 		assertEquals(ResultatInvitationDirigeant.Statut.ETAT_INCOMPATIBLE,
-				service(true).inviter(jean, 42L, sophie()).statut());
+				service().inviter(jean, 42L, sophie()).statut());
 		verify(comptes, never()).save(any());
 	}
 
@@ -153,13 +154,13 @@ class InvitationDirigeantServiceTest {
 		when(comptes.findFirstByDossierIdOrderByIdDesc(42L)).thenReturn(Optional.of(sophie));
 		when(invitations.findByCompteIdAndUtiliseeLeIsNullAndAnnuleeLeIsNull(50L)).thenReturn(List.of(ancienne));
 
-		ResultatInvitationDirigeant resultat = service(true).renvoyer(jean, 42L);
+		ResultatInvitationDirigeant resultat = service().renvoyer(jean, 42L);
 
 		assertEquals(ResultatInvitationDirigeant.Statut.ENVOYEE, resultat.statut());
 		assertEquals(MAINTENANT, ancienne.getAnnuleeLe());
 		ArgumentCaptor<Invitation> nouvelle = ArgumentCaptor.forClass(Invitation.class);
 		verify(invitations).save(nouvelle.capture());
-		assertEquals(Jetons.empreinte(resultat.jetonDeTest()), nouvelle.getValue().getEmpreinteJeton());
+		assertEquals(Jetons.empreinte(jetonRecu()), nouvelle.getValue().getEmpreinteJeton());
 		verify(emails).envoyer(eq("sophie.martin@boulangerie-test.fr"), anyString(), anyString());
 
 		// Annuler deux fois ne change pas la date.
@@ -169,14 +170,14 @@ class InvitationDirigeantServiceTest {
 
 	@Test
 	void renvoiImpossibleSansInvitationEnAttente() {
-		assertEquals(ResultatInvitationDirigeant.Statut.INTROUVABLE, service(true).renvoyer(jean, 99L).statut());
+		assertEquals(ResultatInvitationDirigeant.Statut.INTROUVABLE, service().renvoyer(jean, 99L).statut());
 		// Non invité : aucun compte dirigeant.
-		assertEquals(ResultatInvitationDirigeant.Statut.ETAT_INCOMPATIBLE, service(true).renvoyer(jean, 42L).statut());
+		assertEquals(ResultatInvitationDirigeant.Statut.ETAT_INCOMPATIBLE, service().renvoyer(jean, 42L).statut());
 		// Actif : l'espace est déjà activé.
 		Compte active = Compte.dirigeantInvite(42L, "s@test.fr", "x", "Sophie");
 		ReflectionTestUtils.setField(active, "actif", true);
 		when(comptes.findFirstByDossierIdOrderByIdDesc(42L)).thenReturn(Optional.of(active));
-		assertEquals(ResultatInvitationDirigeant.Statut.ETAT_INCOMPATIBLE, service(true).renvoyer(jean, 42L).statut());
+		assertEquals(ResultatInvitationDirigeant.Statut.ETAT_INCOMPATIBLE, service().renvoyer(jean, 42L).statut());
 		verify(invitations, never()).save(any());
 	}
 
@@ -184,11 +185,11 @@ class InvitationDirigeantServiceTest {
 	@Test
 	void logs() {
 		try (JournalCapture journal = JournalCapture.de(EvenementMetier.class)) {
-			ResultatInvitationDirigeant resultat = service(true).inviter(jean, 42L, sophie());
-			service(true).inviter(jean, 42L, new DemandeInvitationDirigeant("Sophie", "Martin", "x"));
+			ResultatInvitationDirigeant resultat = service().inviter(jean, 42L, sophie());
+			service().inviter(jean, 42L, new DemandeInvitationDirigeant("Sophie", "Martin", "x"));
 			doThrow(new EnvoiImpossibleException("panne", null)).when(emails).envoyer(anyString(), anyString(),
 					anyString());
-			assertThrows(EnvoiImpossibleException.class, () -> service(true).inviter(jean, 42L, sophie()));
+			assertThrows(EnvoiImpossibleException.class, () -> service().inviter(jean, 42L, sophie()));
 
 			ILoggingEvent envoi = journal.seule(Level.INFO);
 			assertEquals("dossier.invitation_dirigeant", envoi.getMDCPropertyMap().get("event"));
@@ -198,7 +199,7 @@ class InvitationDirigeantServiceTest {
 			assertEquals("email_impossible", journal.seule(Level.ERROR).getMDCPropertyMap().get("outcome"));
 			for (ILoggingEvent ligne : journal.lignes()) {
 				String texte = ligne.getFormattedMessage() + ligne.getMDCPropertyMap();
-				assertFalse(texte.contains(resultat.jetonDeTest()));
+				assertFalse(texte.contains(jetonRecu()));
 				assertFalse(texte.toLowerCase().contains("sophie"));
 			}
 		}

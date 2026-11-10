@@ -2,15 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiBase } from '../api';
-import { CodeRenvoye, Role } from '../connexion/auth.service';
+import { Role } from '../connexion/auth.service';
 import { Formulaire } from './validation';
 
 /** Étape 1 réussie : le code est parti vers l'email saisi. */
 export interface CodeEnvoye {
   defi: string;
   emailMasque: string;
-  /** Mode test uniquement (aucune API d'envoi d'emails branchée). */
-  codeDeTest: string | null;
 }
 
 /** Étape 2 réussie : cabinet créé, son administrateur est connecté (US-07). */
@@ -35,7 +33,7 @@ export class InscriptionService {
     return this.http.post<CabinetCree>(`${this.url}/code`, { defi, code });
   }
 
-  renvoyerCode(defi: string): Observable<CodeRenvoye> {
-    return this.http.post<CodeRenvoye>(`${this.url}/code/renvoyer`, { defi });
+  renvoyerCode(defi: string): Observable<void> {
+    return this.http.post<void>(`${this.url}/code/renvoyer`, { defi });
   }
 }

@@ -2,8 +2,8 @@ package com.example.gestionfinanciere.equipe;
 
 import java.util.Map;
 
-// Issue d'une invitation (US-19). jetonDeTest : lien d'invitation, en mode test uniquement.
-public record ResultatInvitation(Statut statut, Map<String, String> erreurs, Membre membre, String jetonDeTest) {
+// Issue d'une invitation (US-19).
+public record ResultatInvitation(Statut statut, Map<String, String> erreurs, Membre membre) {
 
 	public enum Statut {
 		ENVOYEE,
@@ -11,16 +11,16 @@ public record ResultatInvitation(Statut statut, Map<String, String> erreurs, Mem
 		EMAIL_DEJA_UTILISE
 	}
 
-	static ResultatInvitation envoyee(Membre membre, String jetonDeTest) {
-		return new ResultatInvitation(Statut.ENVOYEE, Map.of(), membre, jetonDeTest);
+	static ResultatInvitation envoyee(Membre membre) {
+		return new ResultatInvitation(Statut.ENVOYEE, Map.of(), membre);
 	}
 
 	static ResultatInvitation invalide(Map<String, String> erreurs) {
-		return new ResultatInvitation(Statut.INVALIDE, Map.copyOf(erreurs), null, null);
+		return new ResultatInvitation(Statut.INVALIDE, Map.copyOf(erreurs), null);
 	}
 
 	static ResultatInvitation emailDejaUtilise() {
-		return new ResultatInvitation(Statut.EMAIL_DEJA_UTILISE, Map.of(), null, null);
+		return new ResultatInvitation(Statut.EMAIL_DEJA_UTILISE, Map.of(), null);
 	}
 
 }

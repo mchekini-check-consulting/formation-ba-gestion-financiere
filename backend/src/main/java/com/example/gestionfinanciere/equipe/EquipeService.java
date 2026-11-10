@@ -36,18 +36,15 @@ public class EquipeService {
 	private final Clock horloge;
 	private final EnvoiEmail emails;
 	private final String frontendUrl;
-	private final boolean modeTest;
 
 	public EquipeService(CompteRepository comptes, InvitationRepository invitations, PasswordEncoder encodeur,
-			Clock horloge, EnvoiEmail emails, @Value("${pointeo.frontend-url}") String frontendUrl,
-			@Value("${pointeo.mode-test:false}") boolean modeTest) {
+			Clock horloge, EnvoiEmail emails, @Value("${pointeo.frontend-url}") String frontendUrl) {
 		this.comptes = comptes;
 		this.invitations = invitations;
 		this.encodeur = encodeur;
 		this.horloge = horloge;
 		this.emails = emails;
 		this.frontendUrl = frontendUrl;
-		this.modeTest = modeTest;
 	}
 
 	// Collaborateurs du cabinet de l'administrateur, actifs ou invités.
@@ -93,7 +90,7 @@ public class EquipeService {
 		invitations.save(new Invitation(invite, administrateur, Jetons.empreinte(jeton), maintenant,
 				maintenant.plus(VALIDITE_INVITATION)));
 		envoyerEmail(administrateur, invite, jeton);
-		return ResultatInvitation.envoyee(Membre.de(invite), modeTest ? jeton : null);
+		return ResultatInvitation.envoyee(Membre.de(invite));
 	}
 
 	private void envoyerEmail(Compte administrateur, Compte invite, String jeton) {

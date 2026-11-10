@@ -54,9 +54,6 @@ public class InscriptionController {
 	public record ErreurCode(String message, int tentativesRestantes, boolean retourFormulaire) {
 	}
 
-	public record CodeRenvoye(String codeDeTest) {
-	}
-
 	public record RenvoiTropTot(String message, long secondesRestantes) {
 	}
 
@@ -106,7 +103,7 @@ public class InscriptionController {
 		try {
 			ResultatRenvoi resultat = inscription.renvoyer(demande.defi());
 			return switch (resultat.statut()) {
-				case RENVOYE -> ResponseEntity.ok(new CodeRenvoye(resultat.codeDeTest()));
+				case RENVOYE -> ResponseEntity.ok().build();
 				case TROP_TOT -> ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
 						.body(new RenvoiTropTot("Vous pourrez demander un nouveau code dans "
 								+ resultat.secondesRestantes() + " s.", resultat.secondesRestantes()));

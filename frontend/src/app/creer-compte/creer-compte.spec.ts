@@ -166,7 +166,8 @@ describe('Créer un compte (US-36)', () => {
     expect(texte('label[for=code]')).toBe('Code reçu par email');
     expect(TestBed.inject(Title).getTitle()).toBe(TITRE_CONFIRMATION);
     expect(TITRE_CONFIRMATION).toBe('Pointéo – Confirmer l’email');
-    expect(texte('[data-testid=code-de-test] strong')).toBe('482917');
+    // Le code arrive par email (Mailpit en dev/qualif) : jamais affiché, même si le backend le renvoie.
+    expect(page.textContent).not.toContain('482917');
     expect(page.querySelector('.steps__num--actif')?.textContent).toBe('2');
     expect(texte('.renvoi')).toBe('Renvoyer un code dans 60 s');
   });
@@ -281,7 +282,7 @@ describe('Créer un compte (US-36)', () => {
     page.querySelector<HTMLButtonElement>('.renvoi button')!.click();
     http.expectOne('/api/inscription/code/renvoyer').flush({ codeDeTest: '555666' });
     await stable();
-    expect(texte('[data-testid=code-de-test] strong')).toBe('555666');
+    expect(page.textContent).not.toContain('555666');
     expect(texte('[data-testid=alerte]')).toBe('Un nouveau code vous a été envoyé.');
 
     vi.advanceTimersByTime(60_000);

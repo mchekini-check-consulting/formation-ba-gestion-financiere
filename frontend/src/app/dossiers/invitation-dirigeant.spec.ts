@@ -71,7 +71,8 @@ describe('US-14 Inviter le dirigeant', () => {
     expect(page.querySelector('[role=status]')?.textContent).toContain(
       'Invitation envoyée à sophie.martin@boulangerie-test.fr',
     );
-    expect(page.querySelector('.lien-test')?.getAttribute('href')).toBe('/activer-compte?jeton=abc');
+    // Le lien arrive par email (Mailpit en dev/qualif) : jamais affiché, même si le backend le renvoie.
+    expect(page.querySelector('a[href*="activer-compte"]')).toBeNull();
   });
 
   it('CA erreur : « Saisissez une adresse email valide », rien n’est envoyé', async () => {
@@ -117,7 +118,7 @@ describe('US-14 Inviter le dirigeant', () => {
     http.expectOne('/api/dossiers/42/invitation/renvoi').flush({ etatEspaceClient: 'INVITE', jetonDeTest: null });
     await fixture.whenStable();
     expect(page.querySelector('[role=status]')?.textContent?.trim()).toBe(MESSAGE_RENVOI);
-    expect(page.querySelector('.lien-test')).toBeNull();
+    expect(page.querySelector('a[href*="activer-compte"]')).toBeNull();
     expect(etats).toEqual(['INVITE']);
   });
 

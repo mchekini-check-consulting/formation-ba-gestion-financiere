@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,15 +29,13 @@ public class CodeConnexionService {
 	private final PasswordEncoder encodeur;
 	private final Clock horloge;
 	private final EnvoiEmail email;
-	private final boolean modeTest;
 
 	public CodeConnexionService(CodeConnexionRepository codes, PasswordEncoder encodeur, Clock horloge,
-			EnvoiEmail email, @Value("${pointeo.mode-test:false}") boolean modeTest) {
+			EnvoiEmail email) {
 		this.codes = codes;
 		this.encodeur = encodeur;
 		this.horloge = horloge;
 		this.email = email;
-		this.modeTest = modeTest;
 	}
 
 	// Après le bon mot de passe : crée un code (RG1 : 6 chiffres, 5 minutes) et l'envoie par email.
@@ -89,7 +86,7 @@ public class CodeConnexionService {
 		codes.save(new CodeConnexion(compte, Jetons.empreinte(defi), encodeur.encode(code), maintenant,
 				maintenant.plus(VALIDITE_CODE)));
 		envoyer(compte, code);
-		return new DefiCode(defi, compte.emailMasque(), codeDeTest(code));
+		return new DefiCode(defi, compte.emailMasque());
 	}
 
 	private ResultatCode verifierCode(String defi, String code) {
@@ -128,7 +125,7 @@ public class CodeConnexionService {
 		String code = Jetons.codeSixChiffres();
 		demande.remplacerCode(encodeur.encode(code), maintenant, maintenant.plus(VALIDITE_CODE));
 		envoyer(demande.getCompte(), code);
-		return ResultatRenvoi.renvoye(codeDeTest(code));
+		return ResultatRenvoi.renvoye();
 	}
 
 	private Optional<CodeConnexion> trouver(String defi) {
@@ -142,10 +139,6 @@ public class CodeConnexionService {
 		email.envoyer(compte.getEmail(), SUJET, "Bonjour,\n\nVotre code de connexion Pointéo est " + code
 				+ ". Il est valable 5 minutes.\n\nSi vous n'êtes pas à l'origine de cette connexion, "
 				+ "changez votre mot de passe.\n");
-	}
-
-	private String codeDeTest(String code) {
-		return modeTest ? code : null;
 	}
 
 	private static boolean estUnCode(String code) {

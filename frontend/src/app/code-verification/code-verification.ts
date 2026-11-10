@@ -9,7 +9,6 @@ import { SessionService, accueil } from '../session/session.service';
 interface EtatCode {
   defi: string;
   emailMasque: string;
-  codeDeTest: string | null;
 }
 
 interface ErreurCode {
@@ -40,7 +39,6 @@ export class CodeVerification implements OnDestroy {
   protected readonly chiffres = signal<string[]>(Array(NB_CHIFFRES).fill(''));
   protected readonly complet = computed(() => this.chiffres().every((c) => /^\d$/.test(c)));
   protected readonly emailMasque = signal('');
-  protected readonly codeDeTest = signal<string | null>(null);
   protected readonly message = signal<Message | null>(null);
   protected readonly enCours = signal(false);
   protected readonly secondesAvantRenvoi = signal(DELAI_RENVOI_S);
@@ -55,7 +53,6 @@ export class CodeVerification implements OnDestroy {
       return;
     }
     this.emailMasque.set(etat.emailMasque ?? '');
-    this.codeDeTest.set(etat.codeDeTest ?? null);
     this.demarrerMinuteur(DELAI_RENVOI_S);
   }
 
@@ -122,8 +119,7 @@ export class CodeVerification implements OnDestroy {
       return;
     }
     this.auth.renvoyerCode(this.defi).subscribe({
-      next: (renvoi) => {
-        this.codeDeTest.set(renvoi.codeDeTest);
+      next: () => {
         this.message.set({ ton: 'succes', texte: 'Un nouveau code vous a été envoyé.' });
         this.remplir('');
         this.demarrerMinuteur(DELAI_RENVOI_S);

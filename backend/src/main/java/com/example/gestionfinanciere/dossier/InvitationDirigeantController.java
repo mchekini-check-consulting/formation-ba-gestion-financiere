@@ -33,8 +33,8 @@ public class InvitationDirigeantController {
 	static final String MESSAGE_AUCUNE_INVITATION = "Aucune invitation en attente pour ce dossier";
 	static final String MESSAGE_EMAIL_IMPOSSIBLE = "L'email d'invitation n'a pas pu être envoyé. Réessayez.";
 
-	// Réponse d'un envoi : nouvel état de l'espace client ; jetonDeTest en mode test seulement.
-	public record InvitationEnvoyee(EtatEspaceClient etatEspaceClient, String jetonDeTest) {
+	// Réponse d'un envoi : nouvel état de l'espace client.
+	public record InvitationEnvoyee(EtatEspaceClient etatEspaceClient) {
 	}
 
 	private final InvitationDirigeantService invitations;
@@ -91,7 +91,7 @@ public class InvitationDirigeantController {
 			HttpStatus envoyee) {
 		return switch (resultat.statut()) {
 			case ENVOYEE -> ResponseEntity.status(envoyee)
-					.body(new InvitationEnvoyee(EtatEspaceClient.INVITE, resultat.jetonDeTest()));
+					.body(new InvitationEnvoyee(EtatEspaceClient.INVITE));
 			case INVALIDE -> ResponseEntity.badRequest()
 					.body(new ErreursFormulaire(DossierController.MESSAGE_FORMULAIRE, resultat.erreurs()));
 			case INTROUVABLE -> DossierController.introuvable();

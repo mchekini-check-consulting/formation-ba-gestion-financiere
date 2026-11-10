@@ -43,6 +43,7 @@ import com.example.gestionfinanciere.compte.Jetons;
 import com.example.gestionfinanciere.compte.ResultatRenvoi;
 import com.example.gestionfinanciere.compte.Role;
 import com.example.gestionfinanciere.logging.EvenementMetier;
+import com.example.gestionfinanciere.notification.EmailsRecus;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 
@@ -58,7 +59,12 @@ class InscriptionServiceTest {
 	private final EnvoiEmail email = mock(EnvoiEmail.class);
 	private final HorlogeReglable horloge = new HorlogeReglable(DEPART);
 	private final InscriptionService service = new InscriptionService(inscriptions, cabinets, comptes, encodeur,
-			horloge, email, true);
+			horloge, email);
+
+	// Code lu dans le dernier email reçu par Claire.
+	private String codeRecu() {
+		return EmailsRecus.dernierCode(email, "claire.martin@cabinet-test.fr");
+	}
 
 	// Inscription enregistrée par demarrer(), retrouvée ensuite par son défi.
 	private final AtomicReference<Inscription> enregistree = new AtomicReference<>();
@@ -89,7 +95,7 @@ class InscriptionServiceTest {
 		ResultatInscription resultat = demarrer();
 		assertEquals(ResultatInscription.Statut.CODE_ENVOYE, resultat.statut());
 		assertEquals("c•••••@cabinet-test.fr", resultat.defi().emailMasque());
-		String code = resultat.defi().codeDeTest();
+		String code = codeRecu();
 		assertTrue(code.matches("\\d{6}"));
 		verify(email).envoyer(eq("claire.martin@cabinet-test.fr"), eq(InscriptionService.SUJET), contains(code));
 
@@ -121,7 +127,7 @@ class InscriptionServiceTest {
 			when(cabinets.existsBySiren("123456789")).thenReturn(false);
 			ResultatInscription etape1 = demarrer();
 			service.validerCode(etape1.defi().defi(), "000000");
-			service.validerCode(etape1.defi().defi(), etape1.defi().codeDeTest());
+			service.validerCode(etape1.defi().defi(), codeRecu());
 
 			List<String> resultats = logs.list.stream()
 					.map(e -> e.getMDCPropertyMap().get("event") + "=" + e.getMDCPropertyMap().get("outcome")).toList();
@@ -135,7 +141,7 @@ class InscriptionServiceTest {
 			assertEquals(Level.INFO, logs.list.get(4).getLevel());
 
 			List<String> interdits = List.of("claire", "Claire", "Martin", "123456789", "123 456 789", "Pointeo2026",
-					etape1.defi().codeDeTest(), etape1.defi().defi());
+					codeRecu(), etape1.defi().defi());
 			for (ILoggingEvent log : logs.list) {
 				String ligne = log.getFormattedMessage() + " " + log.getMDCPropertyMap();
 				interdits.forEach(mot -> assertFalse(ligne.contains(mot), () -> "donnée personnelle dans : " + ligne));
@@ -149,13 +155,6 @@ class InscriptionServiceTest {
 	void emailImpossibleRemonteLErreur() {
 		doThrow(new EnvoiImpossibleException("api", null)).when(email).envoyer(anyString(), anyString(), anyString());
 		assertThrows(EnvoiImpossibleException.class, this::demarrer);
-	}
-
-	@Test
-	void horsModeTestLeCodeNEstPasRenvoye() {
-		InscriptionService production = new InscriptionService(inscriptions, cabinets, comptes, encodeur, horloge,
-				email, false);
-		assertNull(production.demarrer(ValidationInscriptionTest.claire()).defi().codeDeTest());
 	}
 
 	@Test
@@ -187,7 +186,7 @@ class InscriptionServiceTest {
 	void ca1BonCodeCreeLeCabinetEtSonAdministratrice() {
 		ResultatInscription etape1 = demarrer();
 		horloge.avancer(Duration.ofMinutes(2));
-		ResultatCodeInscription resultat = service.validerCode(etape1.defi().defi(), etape1.defi().codeDeTest());
+		ResultatCodeInscription resultat = service.validerCode(etape1.defi().defi(), codeRecu());
 
 		assertEquals(Statut.CABINET_CREE, resultat.statut());
 		Compte claire = resultat.compte();
@@ -210,7 +209,7 @@ class InscriptionServiceTest {
 
 		// Le code ne sert qu'une fois.
 		assertEquals(Statut.DEMANDE_INVALIDE,
-				service.validerCode(etape1.defi().defi(), etape1.defi().codeDeTest()).statut());
+				service.validerCode(etape1.defi().defi(), codeRecu()).statut());
 	}
 
 	@Test
@@ -231,7 +230,7 @@ class InscriptionServiceTest {
 	void codeExpireApres5Minutes() {
 		ResultatInscription etape1 = demarrer();
 		horloge.avancer(Duration.ofMinutes(5));
-		ResultatCodeInscription resultat = service.validerCode(etape1.defi().defi(), etape1.defi().codeDeTest());
+		ResultatCodeInscription resultat = service.validerCode(etape1.defi().defi(), codeRecu());
 		assertEquals(Statut.EXPIRE, resultat.statut());
 		assertEquals(3, resultat.tentativesRestantes());
 	}
@@ -247,7 +246,7 @@ class InscriptionServiceTest {
 		ResultatInscription etape1 = demarrer();
 		when(cabinets.existsBySiren("123456789")).thenReturn(true);
 		assertEquals(Statut.SIREN_DEJA_UTILISE,
-				service.validerCode(etape1.defi().defi(), etape1.defi().codeDeTest()).statut());
+				service.validerCode(etape1.defi().defi(), codeRecu()).statut());
 		verify(cabinets, never()).save(any());
 	}
 
@@ -256,7 +255,7 @@ class InscriptionServiceTest {
 		ResultatInscription etape1 = demarrer();
 		when(comptes.findByEmail("claire.martin@cabinet-test.fr")).thenReturn(Optional.of(mock(Compte.class)));
 		assertEquals(Statut.EMAIL_DEJA_UTILISE,
-				service.validerCode(etape1.defi().defi(), etape1.defi().codeDeTest()).statut());
+				service.validerCode(etape1.defi().defi(), codeRecu()).statut());
 		verify(comptes, never()).save(any());
 	}
 
@@ -272,13 +271,14 @@ class InscriptionServiceTest {
 	@Test
 	void renvoiApres60SecondesRemplaceLeCode() {
 		ResultatInscription etape1 = demarrer();
-		String ancien = etape1.defi().codeDeTest();
+		String ancien = codeRecu();
 		horloge.avancer(Duration.ofSeconds(60));
 		ResultatRenvoi resultat = service.renvoyer(etape1.defi().defi());
 		assertEquals(ResultatRenvoi.Statut.RENVOYE, resultat.statut());
 		assertEquals(DEPART.plus(Duration.ofMinutes(6)), enregistree.get().getExpireLe());
-		assertTrue(encodeur.matches(resultat.codeDeTest(), enregistree.get().getEmpreinteCode()));
-		if (!ancien.equals(resultat.codeDeTest())) {
+		String nouveau = codeRecu();
+		assertTrue(encodeur.matches(nouveau, enregistree.get().getEmpreinteCode()));
+		if (!ancien.equals(nouveau)) {
 			assertFalse(encodeur.matches(ancien, enregistree.get().getEmpreinteCode()));
 		}
 	}

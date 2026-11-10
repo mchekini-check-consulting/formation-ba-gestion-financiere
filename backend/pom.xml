@@ -102,7 +102,7 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<!-- Lancement local uniquement (./mvnw spring-boot:run), jamais dans l'image :
-					     code reçu par email et liens des emails affichés à l'écran (application.yaml). -->
+					     factures d'exemple (mode test), Swagger, emails dans le Mailpit local (application.yaml). -->
 					<environmentVariables>
 						<POINTEO_MODE_TEST>true</POINTEO_MODE_TEST>
 						<POINTEO_SWAGGER>true</POINTEO_SWAGGER>

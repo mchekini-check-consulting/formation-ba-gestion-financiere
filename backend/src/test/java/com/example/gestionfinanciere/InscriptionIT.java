@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -23,11 +24,13 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import com.example.gestionfinanciere.cabinet.CabinetRepository;
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
+import com.example.gestionfinanciere.notification.EmailsRecus;
+import com.example.gestionfinanciere.notification.EnvoiEmail;
 
 // US-36 Créer le compte de son cabinet (PTO-61) : vrai serveur HTTP, migrations Flyway et
-// PostgreSQL 16 jetable ; le mode test renvoie le code faute d'API d'envoi d'emails branchée.
+// PostgreSQL 16 jetable ; le code de confirmation est lu dans l'email envoyé (simulé).
 // Chaque test utilise son propre SIREN et son propre email : aucun test ne dépend d'un autre.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "pointeo.mode-test=true")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class InscriptionIT {
 
@@ -36,6 +39,10 @@ class InscriptionIT {
 	static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16");
 
 	private static final String MOT_DE_PASSE = "Pointeo2026!!";
+
+	// Emails simulés : le code ou le lien est lu dans l'email envoyé, jamais dans la réponse.
+	@MockitoBean
+	private EnvoiEmail envoiEmail;
 
 	@Value("${local.server.port}")
 	private int port;
@@ -83,7 +90,7 @@ class InscriptionIT {
 		String enregistre = email.toLowerCase(java.util.Locale.ROOT);
 		assertThat(champ(etape1, "emailMasque"))
 				.isEqualTo(enregistre.charAt(0) + "•••••" + enregistre.substring(enregistre.indexOf('@')));
-		return code(champ(etape1, "defi"), champ(etape1, "codeDeTest"));
+		return code(champ(etape1, "defi"), EmailsRecus.dernierCode(envoiEmail));
 	}
 
 	@Test
@@ -150,7 +157,7 @@ class InscriptionIT {
 		String siren = nouveauSiren();
 		HttpResponse<String> etape1 = formulaire(siren, "faux+" + siren + "@test.fr");
 		String defi = champ(etape1, "defi");
-		String faux = champ(etape1, "codeDeTest").equals("000000") ? "111111" : "000000";
+		String faux = EmailsRecus.dernierCode(envoiEmail).equals("000000") ? "111111" : "000000";
 
 		HttpResponse<String> reponse = code(defi, faux);
 		assertThat(reponse.statusCode()).isEqualTo(401);

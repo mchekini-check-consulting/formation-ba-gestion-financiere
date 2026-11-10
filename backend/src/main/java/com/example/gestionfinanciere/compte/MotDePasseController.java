@@ -25,8 +25,7 @@ public class MotDePasseController {
 	public record DemandeRequest(String email) {
 	}
 
-	// jetonDeTest : uniquement en mode test (aucune API d'email branchée).
-	public record DemandeEnvoyee(String message, String jetonDeTest) {
+	public record DemandeEnvoyee(String message) {
 	}
 
 	public record LienRequest(String jeton) {
@@ -46,7 +45,8 @@ public class MotDePasseController {
 
 	@PostMapping("/mot-de-passe-oublie")
 	public DemandeEnvoyee demander(@RequestBody DemandeRequest demande) {
-		return new DemandeEnvoyee(MESSAGE_DEMANDE, reinitialisation.demander(demande.email()).orElse(null));
+		reinitialisation.demander(demande.email());
+		return new DemandeEnvoyee(MESSAGE_DEMANDE);
 	}
 
 	@PostMapping("/reinitialisation/verifier")

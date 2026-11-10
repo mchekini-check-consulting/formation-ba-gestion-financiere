@@ -61,10 +61,10 @@ class EquipeControllerTest {
 	@Test
 	void ca1InvitationEnvoyee() {
 		connecte(claire);
-		when(equipe.inviter(claire, demande)).thenReturn(ResultatInvitation.envoyee(lucie, "jeton-lien"));
+		when(equipe.inviter(claire, demande)).thenReturn(ResultatInvitation.envoyee(lucie));
 		ResponseEntity<Object> reponse = inviter();
 		assertEquals(HttpStatus.CREATED, reponse.getStatusCode());
-		assertEquals(new InvitationEnvoyee(lucie, "jeton-lien"), reponse.getBody());
+		assertEquals(new InvitationEnvoyee(lucie), reponse.getBody());
 	}
 
 	@Test

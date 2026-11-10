@@ -69,7 +69,7 @@ describe('Connexion (US-03, US-05)', () => {
     requete.flush({ etapeSuivante: 'CODE_EMAIL', defi: 'd', emailMasque: 'j•••••@cabinet-test.fr', codeDeTest: null });
 
     expect(navigate).toHaveBeenCalledWith(['/verification-code'], {
-      state: { defi: 'd', emailMasque: 'j•••••@cabinet-test.fr', codeDeTest: null },
+      state: { defi: 'd', emailMasque: 'j•••••@cabinet-test.fr' },
     });
   });
 

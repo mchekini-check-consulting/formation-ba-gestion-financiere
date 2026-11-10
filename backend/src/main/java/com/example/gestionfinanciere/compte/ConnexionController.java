@@ -38,9 +38,6 @@ public class ConnexionController {
 	public record ErreurCode(String message, int tentativesRestantes, boolean retourConnexion) {
 	}
 
-	public record CodeRenvoye(String codeDeTest) {
-	}
-
 	public record RenvoiTropTot(String message, long secondesRestantes) {
 	}
 
@@ -85,7 +82,7 @@ public class ConnexionController {
 		try {
 			ResultatRenvoi resultat = codes.renvoyer(demande.defi());
 			return switch (resultat.statut()) {
-				case RENVOYE -> ResponseEntity.ok(new CodeRenvoye(resultat.codeDeTest()));
+				case RENVOYE -> ResponseEntity.ok().build();
 				case TROP_TOT -> ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
 						.body(new RenvoiTropTot("Vous pourrez demander un nouveau code dans "
 								+ resultat.secondesRestantes() + " s.", resultat.secondesRestantes()));
