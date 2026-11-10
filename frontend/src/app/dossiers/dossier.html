@@ -50,7 +50,8 @@
         <app-factures-dossier [dossierId]="d.id" sens="VENTE" />
       }
       @case ('modules') {
-        <p class="muted">Les modules du dossier s'afficheront ici.</p>
+        <!-- US-18 : modules à venir -->
+        <app-modules-dossier [dossierId]="d.id" />
       }
     }
   </section>
