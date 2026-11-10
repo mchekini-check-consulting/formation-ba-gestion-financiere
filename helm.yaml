@@ -13,7 +13,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: af0c77a
-      qualif: "0414451"
+      qualif: af0c77a
       preprod: ""
       prod: ""
     containerPort: 8080
@@ -95,7 +95,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: af0c77a
-      qualif: fbad85f
+      qualif: af0c77a
       preprod: ""
       prod: ""
     containerPort: 8080
