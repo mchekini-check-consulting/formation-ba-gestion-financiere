@@ -26,8 +26,19 @@ pointeo:
   # Adresse de l'écran, pour les liens envoyés par email (mot de passe oublié).
   # Sur le cluster : POINTEO_FRONTEND_URL (helm.yaml).
   frontend-url: http://localhost:4200
-  # Aucune API d'envoi d'emails n'est encore branchée. En mode test, le code reçu par email
-  # et les liens des emails sont renvoyés à l'écran pour pouvoir se connecter.
+  # Envoi des emails (notification/EnvoiEmailConfiguration). Sans serveur SMTP (smtp-host vide) :
+  # emails seulement tracés dans les logs. En local (./mvnw spring-boot:run, pom.xml) : Mailpit de
+  # compose.yaml, emails lisibles sur http://localhost:8025. En dev/qualif (helm.yaml) : Mailpit
+  # de la plateforme, https://mailpit.dev.check-consulting.net, étiquette <env>-formation-ba-gestion-financiere.
+  email:
+    smtp-host: ${SMTP_HOST:}
+    smtp-port: ${SMTP_PORT:1025}
+    smtp-tls: ${SMTP_TLS:false}
+    smtp-user: ${SMTP_USER:}
+    smtp-password: ${SMTP_PASSWORD:}
+    expediteur: ${MAIL_FROM:noreply@pointeo.fr}
+  # En mode test, le code reçu par email et les liens des emails sont aussi renvoyés à l'écran
+  # pour pouvoir se connecter sans ouvrir Mailpit.
   # Jamais en preprod/prod. Activé en local par ./mvnw spring-boot:run (pom.xml) et en
   # dev/qualif par POINTEO_MODE_TEST (helm.yaml).
   mode-test: false

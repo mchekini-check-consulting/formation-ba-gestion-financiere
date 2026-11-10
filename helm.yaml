@@ -41,13 +41,39 @@ applications:
           qualif: https://frontend.formation-ba-gestion-financiere.qualif.check-consulting.net
           preprod: https://frontend.formation-ba-gestion-financiere.preprod.check-consulting.net
           prod: https://frontend.formation-ba-gestion-financiere.prod.check-consulting.net
-      # Mode test : code reçu par email et liens des emails affichés à l'écran, faute
-      # d'API d'envoi d'emails branchée. Jamais en preprod/prod.
+      # Mode test : code reçu par email et liens des emails aussi affichés à l'écran
+      # (les emails eux-mêmes arrivent dans Mailpit, voir SMTP_HOST). Jamais en preprod/prod.
       - key: POINTEO_MODE_TEST
         value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
       # Contrat d'interface des API (Swagger) : .../backend/swagger-ui.html. Jamais en preprod/prod.
       - key: POINTEO_SWAGGER
         value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
+      # Envoi des emails au Mailpit central de la plateforme (dev/qualif : garde les emails,
+      # rien n'est envoyé à l'extérieur), lus sur https://mailpit.dev.check-consulting.net,
+      # filtre tag:<env>-formation-ba-gestion-financiere.
+      # preprod/prod : vide = emails seulement tracés dans les logs, en attendant un vrai service d'envoi.
+      - key: SMTP_HOST
+        value:
+          dev: mailpit.mailpit.svc.cluster.local
+          qualif: mailpit.mailpit.svc.cluster.local
+          preprod: ""
+          prod: ""
+      - key: SMTP_PORT
+        value: "1025"
+      - key: SMTP_TLS
+        value: "false"
+      # Identifiant SMTP = étiquette des emails dans Mailpit (sépare dev, qualif et les autres projets).
+      # Mot de passe non vérifié par Mailpit : ce n'est pas un secret.
+      - key: SMTP_USER
+        value:
+          dev: dev-formation-ba-gestion-financiere
+          qualif: qualif-formation-ba-gestion-financiere
+          preprod: ""
+          prod: ""
+      - key: SMTP_PASSWORD
+        value: {dev: mailpit, qualif: mailpit, preprod: "", prod: ""}
+      - key: MAIL_FROM
+        value: noreply@pointeo.fr
   - name: gateway
     type: gateway
     # Pas d'image/tag : fourni par la plateforme (petit Traefik autonome),
