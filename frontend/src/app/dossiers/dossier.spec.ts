@@ -103,7 +103,13 @@ describe('US-11 Ouvrir un dossier', () => {
 
     onglets(page)[2].click();
     await fixture.whenStable();
+    // US-18 : l'onglet Modules charge les modules réglés côté serveur.
+    http
+      .expectOne('/api/dossiers/2/modules')
+      .flush([{ code: 'CRM', nom: 'CRM', description: null, statut: 'BIENTOT_DISPONIBLE' }]);
+    await fixture.whenStable();
     expect(page.querySelector('[role=tabpanel]')?.id).toBe('panneau-modules');
+    expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Bientôt disponible');
   });
 
   it('RG3 : dossier d\'un autre cabinet ou adresse tapée à la main', async () => {
@@ -131,6 +137,8 @@ describe('US-11 Ouvrir un dossier', () => {
   it('autre dossier ouvert : rechargé, onglet par défaut', async () => {
     const { fixture, page } = await ouvrir();
     onglets(page)[2].click();
+    await fixture.whenStable();
+    http.expectOne('/api/dossiers/2/modules').flush([]);
     await fixture.whenStable();
 
     adresse.next(convertToParamMap({ id: 'abc' }));

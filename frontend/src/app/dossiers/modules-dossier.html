@@ -1,0 +1,22 @@
+@if (liste(); as modules) {
+  <!-- RG1 : une tuile par module réglé côté serveur (RG3), badge « Bientôt disponible » -->
+  <div class="tuiles">
+    @for (m of modules; track m.code) {
+      <button type="button" class="tuile" [attr.aria-pressed]="choisi()?.code === m.code" (click)="ouvrir(m)">
+        <span class="nom">{{ m.nom }}</span>
+        @if (m.description) {
+          <span class="description">{{ m.description }}</span>
+        }
+        <span class="badge">{{ libelle(m) }}</span>
+      </button>
+    }
+  </div>
+  <!-- RG2 : clic sur une tuile -->
+  @if (choisi(); as m) {
+    <p class="message" role="status">{{ m.nom }} : {{ messageProchainement }}</p>
+  }
+} @else if (erreur(); as e) {
+  <p class="alerte" role="alert">{{ e }}</p>
+} @else {
+  <p class="muted">Chargement…</p>
+}
