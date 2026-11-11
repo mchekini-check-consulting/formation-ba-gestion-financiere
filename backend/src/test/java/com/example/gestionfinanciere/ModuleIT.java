@@ -25,7 +25,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.SessionService;
 
-// US-18 Modules à venir du menu de gauche : vrai serveur HTTP, migrations V14 et V15 et PostgreSQL 16 jetable.
+// US-18 Modules à venir du menu de gauche : vrai serveur HTTP, migrations V14 et V16 et PostgreSQL 16 jetable.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class ModuleIT {
