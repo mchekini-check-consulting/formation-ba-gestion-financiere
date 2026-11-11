@@ -22,11 +22,19 @@ public interface DossierRepository extends JpaRepository<Dossier, Long> {
 	@Query("select count(c) from Compte c where c.dossierId = :dossierId and c.actif = true")
 	long compterComptesDirigeantActifs(@Param("dossierId") Long dossierId);
 
+	// US-20 RG2 : dossier attribué à ce comptable ?
+	@Query("""
+			select case when count(a) > 0 then true else false end from AttributionDossier a
+			where a.dossier.id = :dossierId and a.comptable.id = :comptableId
+			""")
+	boolean estAttribue(@Param("dossierId") Long dossierId, @Param("comptableId") Long comptableId);
+
 	/**
 	 * US-09 : dossiers du cabinet, triés par raison sociale, avec le nombre de factures et les
 	 * comptes du dirigeant (état de l'espace client). RG2 : {@code motif} filtre la raison
 	 * sociale (« % » = tout), {@code motifSiren} le SIREN (« - » = jamais : un SIREN n'a que des chiffres).
-	 * RG3 : toujours limité au cabinet ; le filtre par comptable (US-20) s'ajoutera ici.
+	 * RG3 : toujours limité au cabinet. US-20 RG2 : sans {@code tous}, seulement les dossiers
+	 * attribués au comptable {@code compteId}.
 	 */
 	@Query("""
 			select new com.example.gestionfinanciere.dossier.LigneDossier(d.id, d.raisonSociale, d.siren,
@@ -36,9 +44,11 @@ public interface DossierRepository extends JpaRepository<Dossier, Long> {
 			from Dossier d
 			where d.cabinet.id = :cabinetId
 			  and (lower(d.raisonSociale) like :motif or d.siren like :motifSiren)
+			  and (:tous = true or exists (select a from AttributionDossier a
+			                               where a.dossier = d and a.comptable.id = :compteId))
 			order by lower(d.raisonSociale), d.id
 			""")
 	List<LigneDossier> lister(@Param("cabinetId") Long cabinetId, @Param("motif") String motif,
-			@Param("motifSiren") String motifSiren);
+			@Param("motifSiren") String motifSiren, @Param("tous") boolean tous, @Param("compteId") Long compteId);
 
 }

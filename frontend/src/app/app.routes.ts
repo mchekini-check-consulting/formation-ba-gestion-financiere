@@ -10,7 +10,7 @@ import { Equipe } from './equipe/equipe';
 import { Espace } from './espace/espace';
 import { ListeDossiers } from './dossiers/liste-dossiers';
 import { Dossier } from './dossiers/dossier';
-import { EspaceClient } from './espace/pages';
+import { EspaceClient } from './espace/espace-client';
 import { ItemsPage } from './items-page/items-page';
 import { Landing } from './landing/landing';
 import { PageLegale } from './legal/page-legale';

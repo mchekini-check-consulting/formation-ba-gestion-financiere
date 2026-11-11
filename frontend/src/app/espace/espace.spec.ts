@@ -5,7 +5,7 @@ import { Router, provideRouter } from '@angular/router';
 import { InactiviteService } from '../session/inactivite.service';
 import { SessionService } from '../session/session.service';
 import { Espace } from './espace';
-import { EspaceClient } from './pages';
+import { EspaceClient } from './espace-client';
 
 describe('Espace connecté (US-07)', () => {
   let http: HttpTestingController;
@@ -104,5 +104,6 @@ describe('Espace connecté (US-07)', () => {
     const client = TestBed.createComponent(EspaceClient);
     await client.whenStable();
     expect((client.nativeElement as HTMLElement).querySelector('h1')?.textContent).toBe('Bonjour Sophie Martin');
+    http.expectOne('/api/espace-client/factures?sens=ACHAT').flush([]);
   });
 });

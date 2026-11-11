@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.gestionfinanciere.compte.Compte;
+import com.example.gestionfinanciere.dossier.AccesDossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
@@ -31,7 +32,7 @@ public class ModuleService {
 	// RG1 et RG3 : modules réglés en base ; vide si le dossier n'existe pas ou est d'un autre cabinet.
 	@Transactional(readOnly = true)
 	public Optional<List<VueModule>> lister(Compte collaborateur, Long dossierId) {
-		if (dossiers.findByIdAndCabinetId(dossierId, collaborateur.getCabinet().getId()).isEmpty()) {
+		if (AccesDossier.dossierAccessible(dossiers, collaborateur, dossierId).isEmpty()) {
 			EvenementMetier.de(EVENEMENT, "introuvable").avec(collaborateur.identifiantsPourLogs())
 					.avec(CHAMP_DOSSIER, dossierId).warn();
 			return Optional.empty();

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.dossier.Dossier;
+import com.example.gestionfinanciere.dossier.AccesDossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
@@ -130,7 +131,7 @@ public class FactureService {
 	}
 
 	private Optional<Dossier> dossierDuCabinet(Compte collaborateur, Long dossierId) {
-		return dossiers.findByIdAndCabinetId(dossierId, collaborateur.getCabinet().getId());
+		return AccesDossier.dossierAccessible(dossiers, collaborateur, dossierId);
 	}
 
 	private Optional<Facture> factureDuCabinet(Compte collaborateur, Long dossierId, Long factureId) {

@@ -1,0 +1,30 @@
+@if (vue(); as v) {
+  <div class="ligne">
+    <span class="comptables">Comptables : {{ noms(v) }}</span>
+    @if (v.modifiable && !edition()) {
+      <button type="button" class="lien attribuer" (click)="ouvrir(v)">Attribuer</button>
+    }
+  </div>
+
+  @if (edition()) {
+    <fieldset class="choix">
+      <legend>Comptables qui suivent ce dossier</legend>
+      @if (v.comptables.length === 0) {
+        <p class="muted">Aucun comptable dans le cabinet. Invitez-en un depuis l'écran Équipe.</p>
+      }
+      @for (c of v.comptables; track c.id) {
+        <label>
+          <input type="checkbox" [checked]="choisis().has(c.id)" (change)="basculer(c.id)" />
+          {{ c.nomAffiche }}
+        </label>
+      }
+      <div class="actions">
+        <button type="button" class="bouton" [disabled]="enCours()" (click)="enregistrer()">Enregistrer</button>
+        <button type="button" class="lien" (click)="annuler()">Annuler</button>
+      </div>
+    </fieldset>
+  }
+}
+@if (erreur(); as e) {
+  <p class="alerte" role="alert">{{ e }}</p>
+}
