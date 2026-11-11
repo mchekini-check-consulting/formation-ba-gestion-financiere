@@ -4,15 +4,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DossierClient, DossierService, EtatEspaceClient, LIBELLES_ETAT, formaterSiren } from './dossier.service';
 import { FacturesDossier } from './factures-dossier';
 import { InvitationDirigeant } from './invitation-dirigeant';
-import { ModulesDossier } from './modules-dossier';
 
 /** US-11 RG2 : onglets du dossier, « Factures fournisseurs » ouvert par défaut. */
-export type Onglet = 'fournisseurs' | 'clients' | 'modules';
+export type Onglet = 'fournisseurs' | 'clients';
 
 export const ONGLETS: { id: Onglet; libelle: string }[] = [
   { id: 'fournisseurs', libelle: 'Factures fournisseurs' },
   { id: 'clients', libelle: 'Factures clients' },
-  { id: 'modules', libelle: 'Modules' },
 ];
 
 /** US-11 RG3 : dossier inexistant, d'un autre cabinet ou adresse tapée à la main. */
@@ -21,7 +19,7 @@ const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réess
 
 /** US-11 Ouvrir un dossier (US-10 RG3 : le dossier créé s'ouvre ici). */
 @Component({
-  imports: [RouterLink, FacturesDossier, InvitationDirigeant, ModulesDossier],
+  imports: [RouterLink, FacturesDossier, InvitationDirigeant],
   selector: 'app-dossier',
   templateUrl: './dossier.html',
   styleUrl: './dossier.scss',

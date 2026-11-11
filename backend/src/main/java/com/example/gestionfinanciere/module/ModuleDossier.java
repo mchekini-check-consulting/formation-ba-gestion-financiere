@@ -9,7 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-// US-18 Module proposé dans les dossiers (table créée par db/migration/V14__module.sql).
+// US-18 Module à venir, affiché dans le menu de gauche (table créée par db/migration/V14__module.sql).
 // RG3 : la liste est réglée en base ; un nouveau module s'ajoute par une migration.
 @Entity
 @Table(name = "module")
