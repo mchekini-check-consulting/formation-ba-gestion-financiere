@@ -8,7 +8,6 @@ const MODULES: Module[] = [
   { code: 'SYNCHRONISATION_BANCAIRE', nom: 'Synchronisation bancaire', description: null, statut: 'BIENTOT_DISPONIBLE' },
   { code: 'RAPPROCHEMENT_AUTOMATIQUE', nom: 'Rapprochement automatique', description: null, statut: 'BIENTOT_DISPONIBLE' },
   { code: 'CRM', nom: 'CRM', description: 'Relation client', statut: 'BIENTOT_DISPONIBLE' },
-  { code: 'SUIVI_TEMPS', nom: 'Suivi des temps', description: null, statut: 'BIENTOT_DISPONIBLE' },
 ];
 
 describe('US-18 Modules à venir dans le menu de gauche', () => {
@@ -34,22 +33,21 @@ describe('US-18 Modules à venir dans le menu de gauche', () => {
     return Array.from(page.querySelectorAll<HTMLButtonElement>('.module'));
   }
 
-  it('CA1 / RG1 / RG3 : les 4 modules envoyés par le serveur, avec « Bientôt »', async () => {
+  it('CA1 / RG1 / RG3 : les 3 modules envoyés par le serveur, avec « Bientôt »', async () => {
     const { fixture, page } = await ouvrir();
     http.expectOne('/api/modules').flush(MODULES);
     await fixture.whenStable();
 
     expect(page.querySelector('.titre')?.textContent?.trim()).toBe('Modules');
-    expect(page.querySelector('.compteur')?.textContent).toBe('4');
+    expect(page.querySelector('.compteur')?.textContent).toBe('3');
     // Une icône par module ; un module inconnu de l'écran a l'icône par défaut (RG3).
-    expect(page.querySelectorAll('.module .icone svg').length).toBe(4);
+    expect(page.querySelectorAll('.module .icone svg').length).toBe(3);
     expect(modules(page).map((m) => m.querySelector('.nom')?.textContent)).toEqual([
       'Synchronisation bancaire',
       'Rapprochement automatique',
       'CRM',
-      'Suivi des temps',
     ]);
-    expect(modules(page).map((m) => m.querySelector('.badge')?.textContent)).toEqual(Array(4).fill('Bientôt'));
+    expect(modules(page).map((m) => m.querySelector('.badge')?.textContent)).toEqual(Array(3).fill('Bientôt'));
     expect(page.querySelector('[role=status]')).toBeNull();
   });
 

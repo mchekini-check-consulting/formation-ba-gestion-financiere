@@ -25,7 +25,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.SessionService;
 
-// US-18 Modules à venir du menu de gauche : vrai serveur HTTP, migrations V14 et V16 et PostgreSQL 16 jetable.
+// US-18 Modules à venir du menu de gauche : vrai serveur HTTP, migrations V14, V16 et V17 et PostgreSQL 16 jetable.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class ModuleIT {
@@ -69,7 +69,7 @@ class ModuleIT {
 		return http.send(requete.build(), HttpResponse.BodyHandlers.ofString());
 	}
 
-	// CA1 : menu de gauche -> les 4 modules de la page d'accueil, dans l'ordre, « Bientôt disponible ».
+	// CA1 : menu de gauche -> 3 modules dans l'ordre, « Bientôt disponible » ; plus de Suivi des temps (V17).
 	@Test
 	void ca1ModulesDuMenu() throws Exception {
 		HttpResponse<String> modules = appel("GET", "/modules", null, jeanConnecte());
@@ -78,8 +78,8 @@ class ModuleIT {
 				"\"code\":\"SYNCHRONISATION_BANCAIRE\",\"nom\":\"Synchronisation bancaire\"",
 				"\"code\":\"RAPPROCHEMENT_AUTOMATIQUE\",\"nom\":\"Rapprochement automatique\"",
 				"\"code\":\"CRM\",\"nom\":\"CRM\"",
-				"\"code\":\"SUIVI_TEMPS\",\"nom\":\"Suivi des temps\"",
 				"\"statut\":\"BIENTOT_DISPONIBLE\"");
+		assertThat(modules.body()).doesNotContain("SUIVI_TEMPS");
 
 		// Sans connexion -> 401.
 		assertThat(appel("GET", "/modules", null, null).statusCode()).isEqualTo(401);
