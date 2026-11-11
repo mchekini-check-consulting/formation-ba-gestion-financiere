@@ -6,6 +6,8 @@
     <div>
       <h1>{{ d.raisonSociale }}</h1>
       <p class="sous-titre">SIREN {{ siren(d) }}</p>
+      <!-- US-20 : comptables qui suivent le dossier, attribués par l'administrateur ou un associé -->
+      <app-comptables-dossier [dossierId]="d.id" />
     </div>
     <div class="espace-client">
       <span

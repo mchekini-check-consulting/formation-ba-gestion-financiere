@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ComptablesDossierComponent } from './comptables-dossier';
 import { DossierClient, DossierService, EtatEspaceClient, LIBELLES_ETAT, formaterSiren } from './dossier.service';
 import { FacturesDossier } from './factures-dossier';
 import { InvitationDirigeant } from './invitation-dirigeant';
@@ -19,7 +20,7 @@ const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réess
 
 /** US-11 Ouvrir un dossier (US-10 RG3 : le dossier créé s'ouvre ici). */
 @Component({
-  imports: [RouterLink, FacturesDossier, InvitationDirigeant],
+  imports: [RouterLink, ComptablesDossierComponent, FacturesDossier, InvitationDirigeant],
   selector: 'app-dossier',
   templateUrl: './dossier.html',
   styleUrl: './dossier.scss',

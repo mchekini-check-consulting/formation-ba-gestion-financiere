@@ -37,6 +37,7 @@
             <tr>
               <th scope="col">Raison sociale</th>
               <th scope="col">SIREN</th>
+              <th scope="col">Comptables</th>
               <th scope="col">Factures</th>
               <th scope="col">Espace client</th>
             </tr>
@@ -46,6 +47,7 @@
               <tr>
                 <td><a class="nom" [routerLink]="['/dossiers', ligne.id]">{{ ligne.raisonSociale }}</a></td>
                 <td>{{ siren(ligne) }}</td>
+                <td>{{ comptables(ligne) }}</td>
                 <td>{{ factures(ligne.nombreFactures) }}</td>
                 <td>
                   <span

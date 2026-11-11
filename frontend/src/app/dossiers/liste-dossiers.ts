@@ -12,6 +12,7 @@ import {
   switchMap,
 } from 'rxjs';
 import { SessionService } from '../session/session.service';
+import { nomsComptables } from './comptables-dossier';
 import { DossierService, EtatEspaceClient, LIBELLES_ETAT, LigneDossier, formaterSiren } from './dossier.service';
 
 const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réessayez.';
@@ -82,6 +83,11 @@ export class ListeDossiers implements OnInit, OnDestroy {
 
   protected libelleEtat(etat: EtatEspaceClient): string {
     return LIBELLES_ETAT[etat];
+  }
+
+  /** US-20 : colonne « Comptables ». */
+  protected comptables(ligne: LigneDossier): string {
+    return nomsComptables(ligne.comptables ?? []);
   }
 
   protected factures(nombre: number): string {

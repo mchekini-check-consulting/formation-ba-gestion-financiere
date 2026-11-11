@@ -1,0 +1,114 @@
+<h1>Bonjour {{ nom() }}</h1>
+<p class="sous-titre">Déposez vos factures : votre cabinet les reçoit aussitôt, sans email.</p>
+
+<!-- US-38 RG1 : choix de l'espace avant le dépôt -->
+<div class="onglets" role="tablist" aria-label="Mes factures">
+  @for (o of onglets; track o.sens) {
+    <button
+      type="button"
+      role="tab"
+      class="onglet"
+      [id]="'onglet-' + o.sens"
+      [attr.aria-selected]="sens() === o.sens"
+      aria-controls="panneau-factures"
+      (click)="choisir(o.sens)"
+    >
+      {{ o.libelle }}
+    </button>
+  }
+</div>
+
+<section class="carte" role="tabpanel" id="panneau-factures" [attr.aria-labelledby]="'onglet-' + sens()">
+  <!-- US-15 RG1 : glisser-déposer ou « Choisir des fichiers » -->
+  <div
+    class="zone"
+    [class.zone--survol]="survol()"
+    (dragover)="survoler($event, true)"
+    (dragleave)="survoler($event, false)"
+    (drop)="lacher($event)"
+  >
+    <p class="zone__texte">Glissez vos factures ici</p>
+    <label class="bouton" [class.bouton--inactif]="envoiEnCours()">
+      Choisir des fichiers
+      <input
+        #champ
+        type="file"
+        multiple
+        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+        [disabled]="envoiEnCours()"
+        (change)="choisirFichiers(champ)"
+      />
+    </label>
+    <p class="zone__aide">PDF, JPG ou PNG · 10 Mo maximum par fichier · 20 fichiers par dépôt</p>
+  </div>
+
+  @if (envoiEnCours()) {
+    <p class="muted" role="status">Dépôt en cours…</p>
+  }
+  @if (resultat(); as r) {
+    <div class="resultat" [class.resultat--refus]="r.refus.length > 0" role="status">
+      <p class="resultat__message">{{ r.message }}</p>
+      @if (r.refus.length > 1 || (r.refus.length === 1 && r.message !== r.refus[0].motif)) {
+        <ul>
+          @for (f of r.refus; track $index) {
+            <li>{{ f.nom }} : {{ f.motif }}</li>
+          }
+        </ul>
+      } @else if (r.refus.length === 1) {
+        <p class="resultat__fichier">{{ r.refus[0].nom }}</p>
+      }
+    </div>
+  }
+
+  @if (messageSuppression(); as m) {
+    <p class="info" role="status">{{ m }}</p>
+  }
+
+  <!-- US-16 RG1 : mes dépôts de l'onglet, avec la date -->
+  <h2>Mes dépôts</h2>
+  @if (erreur(); as e) {
+    <p class="alerte" role="alert">{{ e }}</p>
+  } @else if (factures(); as liste) {
+    @if (liste.length === 0) {
+      <p class="vide">{{ vide() }}</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Fichier</th>
+            <th scope="col">Déposée le</th>
+            <th scope="col"><span class="invisible">Action</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of liste; track f.id) {
+            <tr>
+              <td class="fichier">{{ f.nomFichier }}</td>
+              <td>{{ depot(f) }}</td>
+              <td class="action">
+                @if (!f.supprimable) {
+                  <!-- US-16 RG3 / CA2 : déjà ouverte par le cabinet, plus de « Supprimer » -->
+                  <span class="badge">Ouverte par le cabinet</span>
+                } @else if (aConfirmer() === f.id) {
+                  <span class="confirmation">
+                    Supprimer cette facture ?
+                    <button type="button" class="lien lien--danger" (click)="confirmerSuppression(f)">
+                      Oui, supprimer
+                    </button>
+                    <button type="button" class="lien" (click)="annulerSuppression()">Annuler</button>
+                  </span>
+                } @else {
+                  <button type="button" class="lien lien--danger supprimer" (click)="demanderSuppression(f)">
+                    Supprimer
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  } @else {
+    <p class="muted">Chargement…</p>
+  }
+</section>

@@ -34,6 +34,8 @@ export interface LigneDossier {
   siren: string;
   nombreFactures: number;
   etatEspaceClient: EtatEspaceClient;
+  /** US-20 : comptables qui suivent le dossier. */
+  comptables: string[];
 }
 
 /** US-10 Créer un dossier client : appels au backend (via le gateway). */

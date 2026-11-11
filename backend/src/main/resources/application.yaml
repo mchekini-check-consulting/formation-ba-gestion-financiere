@@ -17,6 +17,12 @@ spring:
     url: jdbc:postgresql://localhost:5432/gestion_financiere
     username: app
     password: app
+  # US-15 RG1 : factures de 10 Mo maximum, vérifié par l'application (message clair) ; la limite
+  # du serveur est un peu au-dessus pour laisser passer l'enveloppe de l'envoi.
+  servlet:
+    multipart:
+      max-file-size: 11MB
+      max-request-size: 11MB
   jpa:
     open-in-view: false
     hibernate:
