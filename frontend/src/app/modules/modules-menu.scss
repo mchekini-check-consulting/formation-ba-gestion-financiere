@@ -1,0 +1,155 @@
+// US-18 Modules à venir : un titre de rubrique bien visible, puis les modules en retrait, grisés.
+$creme: #fffdf9;
+$or: #8c6b36;
+$or-clair: #c9a96e;
+$gris: #8a7f6d;
+$fond-survol: #1f1b16;
+$filet: #2c261e;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid $filet;
+  font-size: 14px;
+}
+
+// Titre de la rubrique : comme « Dossiers » / « Équipe » (icône + texte), en capitales, avec le nombre.
+.entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 6px;
+}
+
+.titre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e6dccb;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.compteur {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: $filet;
+  color: #cfc3ad;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+// Modules : en retrait sous le titre, reliés par un filet vertical.
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 19px;
+  padding-left: 8px;
+  border-left: 1px solid $filet;
+}
+
+.module {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: $gris;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+
+  &:hover {
+    background: $fond-survol;
+    color: #cfc3ad;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $or-clair;
+    outline-offset: 1px;
+  }
+
+  // Module choisi : repère doré sur le filet vertical.
+  &[aria-pressed='true'] {
+    background: $fond-survol;
+    color: $creme;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 8px;
+      bottom: 8px;
+      left: -10px;
+      width: 3px;
+      border-radius: 2px;
+      background: $or-clair;
+    }
+
+    .icone {
+      color: $or-clair;
+    }
+  }
+}
+
+.icone {
+  display: flex;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.nom {
+  flex: 1;
+  line-height: 1.3;
+}
+
+// Badge discret : contour fin, pas de fond plein.
+.badge {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border: 1px solid #5a4a30;
+  border-radius: 999px;
+  color: $or-clair;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+// Message au clic (RG2) : carte avec un repère doré.
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid $or;
+  border-radius: 8px;
+  background: #26211a;
+  color: #e6dccb;
+  font-size: 13px;
+  line-height: 1.4;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: $or-clair;
+  }
+
+  strong {
+    color: $creme;
+  }
+}

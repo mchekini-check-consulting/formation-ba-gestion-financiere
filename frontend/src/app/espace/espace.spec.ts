@@ -31,12 +31,21 @@ describe('Espace connecté (US-07)', () => {
     TestBed.inject(SessionService).ouvrir({ jeton: 'jeton', role, nomAffiche });
   }
 
+  /** US-18 : le menu d'un collaborateur charge les modules à venir. */
+  function modules(liste: unknown[] = []) {
+    http.expectOne('/api/modules').flush(liste);
+  }
+
   it('collaborateur : menu « Dossiers », nom et initiales', async () => {
     connecter('COLLABORATEUR', 'Jean Dupont');
     const fixture = TestBed.createComponent(Espace);
     await fixture.whenStable();
+    modules([{ code: 'CRM', nom: 'CRM', description: null, statut: 'BIENTOT_DISPONIBLE' }]);
+    await fixture.whenStable();
     const page = fixture.nativeElement as HTMLElement;
     expect(page.querySelector('.menu__liens')?.textContent).toContain('Dossiers');
+    // US-18 : rubrique Modules sous Dossiers.
+    expect(page.querySelector('.menu__liens app-modules-menu')?.textContent).toContain('CRM');
     expect(page.querySelector('[data-testid=nom-utilisateur]')?.textContent).toBe('Jean Dupont');
     expect(page.querySelector('.avatar')?.textContent).toBe('JD');
     expect(page.textContent).toContain('Collaborateur');
@@ -47,6 +56,7 @@ describe('Espace connecté (US-07)', () => {
     connecter('COLLABORATEUR', 'Jean Dupont');
     const fixture = TestBed.createComponent(Espace);
     await fixture.whenStable();
+    modules();
     const menu = () => (fixture.nativeElement as HTMLElement).querySelector('.menu__liens')?.textContent;
     expect(menu()).not.toContain('Équipe');
     TestBed.inject(SessionService).ouvrir({
@@ -64,7 +74,9 @@ describe('Espace connecté (US-07)', () => {
     connecter('DIRIGEANT', 'Sophie Martin');
     const fixture = TestBed.createComponent(Espace);
     await fixture.whenStable();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.menu__liens')?.textContent).toContain('Mon espace');
+    const page = fixture.nativeElement as HTMLElement;
+    expect(page.querySelector('.menu__liens')?.textContent).toContain('Mon espace');
+    expect(page.querySelector('app-modules-menu')).toBeNull();
     fixture.destroy();
   });
 
@@ -72,6 +84,7 @@ describe('Espace connecté (US-07)', () => {
     connecter('COLLABORATEUR', 'Jean Dupont');
     const fixture = TestBed.createComponent(Espace);
     await fixture.whenStable();
+    modules();
     (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.menu__deconnexion')!.click();
     const requete = http.expectOne('/api/auth/deconnexion');
     expect(requete.request.headers.get('Authorization')).toBe('Bearer jeton');
@@ -84,6 +97,7 @@ describe('Espace connecté (US-07)', () => {
     connecter('COLLABORATEUR', 'Jean Dupont');
     const fixture = TestBed.createComponent(Espace);
     await fixture.whenStable();
+    modules();
     const inactivite = TestBed.inject(InactiviteService);
     inactivite.secondesRestantes.set(120);
     await fixture.whenStable();

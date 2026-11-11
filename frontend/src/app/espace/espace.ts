@@ -3,13 +3,14 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../connexion/auth.service';
 import { InactiviteService } from '../session/inactivite.service';
 import { SessionService } from '../session/session.service';
+import { ModulesMenu } from '../modules/modules-menu';
 
 /**
  * Cadre des pages connectées (maquette « Liste des dossiers ») : menu, « Se déconnecter »
  * (US-07 RG1) et avertissement 2 minutes avant l'expiration (US-07 RG2, maquette « Session expirée »).
  */
 @Component({
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ModulesMenu],
   selector: 'app-espace',
   styleUrl: './espace.scss',
   templateUrl: './espace.html',

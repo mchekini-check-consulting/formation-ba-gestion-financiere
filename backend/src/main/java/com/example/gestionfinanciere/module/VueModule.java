@@ -1,6 +1,6 @@
 package com.example.gestionfinanciere.module;
 
-// US-18 : une tuile de l'onglet Modules du dossier.
+// US-18 : un module du menu de gauche.
 public record VueModule(String code, String nom, String description, ModuleDossier.Statut statut) {
 
 	public static VueModule de(ModuleDossier module) {

@@ -92,14 +92,13 @@ describe('US-11 Ouvrir un dossier', () => {
     expect(actif.page.querySelector('.etat')?.classList).toContain('etat--actif');
   });
 
-  it('RG2 : trois onglets, Factures fournisseurs ouvert par défaut', async () => {
+  it('RG2 : deux onglets (les modules sont dans le menu de gauche, US-18), Factures fournisseurs ouvert par défaut', async () => {
     const { fixture, page } = await ouvrir();
     expect(onglets(page).map((o) => o.textContent?.trim())).toEqual([
       'Factures fournisseurs',
       'Factures clients',
-      'Modules',
     ]);
-    expect(onglets(page).map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
+    expect(onglets(page).map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false']);
     expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune facture fournisseur pour le moment');
 
     onglets(page)[1].click();
@@ -109,15 +108,6 @@ describe('US-11 Ouvrir un dossier', () => {
     expect(onglets(page)[1].getAttribute('aria-selected')).toBe('true');
     expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune facture client pour le moment');
 
-    onglets(page)[2].click();
-    await fixture.whenStable();
-    // US-18 : l'onglet Modules charge les modules réglés côté serveur.
-    http
-      .expectOne('/api/dossiers/2/modules')
-      .flush([{ code: 'CRM', nom: 'CRM', description: null, statut: 'BIENTOT_DISPONIBLE' }]);
-    await fixture.whenStable();
-    expect(page.querySelector('[role=tabpanel]')?.id).toBe('panneau-modules');
-    expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Bientôt disponible');
   });
 
   it('RG3 : dossier d\'un autre cabinet ou adresse tapée à la main', async () => {
@@ -144,9 +134,9 @@ describe('US-11 Ouvrir un dossier', () => {
 
   it('autre dossier ouvert : rechargé, onglet par défaut', async () => {
     const { fixture, page } = await ouvrir();
-    onglets(page)[2].click();
+    onglets(page)[1].click();
     await fixture.whenStable();
-    http.expectOne('/api/dossiers/2/modules').flush([]);
+    factures('VENTE');
     await fixture.whenStable();
 
     adresse.next(convertToParamMap({ id: 'abc' }));

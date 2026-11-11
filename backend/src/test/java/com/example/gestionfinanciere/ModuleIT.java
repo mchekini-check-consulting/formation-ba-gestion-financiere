@@ -9,8 +9,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +25,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.SessionService;
 
-// US-18 Modules à venir d'un dossier : vrai serveur HTTP, migration V14 et PostgreSQL 16 jetable.
+// US-18 Modules à venir du menu de gauche : vrai serveur HTTP, migrations V14 et V16 et PostgreSQL 16 jetable.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class ModuleIT {
@@ -35,8 +33,6 @@ class ModuleIT {
 	@Container
 	@ServiceConnection
 	static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16");
-
-	private static final Pattern ID = Pattern.compile("\"id\":(\\d+)");
 
 	@Value("${local.server.port}")
 	private int port;
@@ -73,25 +69,20 @@ class ModuleIT {
 		return http.send(requete.build(), HttpResponse.BodyHandlers.ofString());
 	}
 
-	// CA1 : Boulangerie Leroy SARL, onglet Modules -> CRM puis Suivi des temps, « Bientôt disponible ».
+	// CA1 : menu de gauche -> les 4 modules de la page d'accueil, dans l'ordre, « Bientôt disponible ».
 	@Test
-	void ca1ModulesDuDossier() throws Exception {
-		String jeton = jeanConnecte();
-		Matcher id = ID.matcher(appel("POST", "/dossiers",
-				"{\"raisonSociale\":\"Boulangerie Leroy SARL\",\"siren\":\"812345679\"}", jeton).body());
-		assertThat(id.find()).isTrue();
-		String chemin = "/dossiers/" + id.group(1) + "/modules";
-
-		HttpResponse<String> modules = appel("GET", chemin, null, jeton);
+	void ca1ModulesDuMenu() throws Exception {
+		HttpResponse<String> modules = appel("GET", "/modules", null, jeanConnecte());
 		assertThat(modules.statusCode()).isEqualTo(200);
-		assertThat(modules.body()).containsSubsequence("\"code\":\"CRM\",\"nom\":\"CRM\"",
-				"\"statut\":\"BIENTOT_DISPONIBLE\"", "\"code\":\"SUIVI_TEMPS\",\"nom\":\"Suivi des temps\"",
+		assertThat(modules.body()).containsSubsequence(
+				"\"code\":\"SYNCHRONISATION_BANCAIRE\",\"nom\":\"Synchronisation bancaire\"",
+				"\"code\":\"RAPPROCHEMENT_AUTOMATIQUE\",\"nom\":\"Rapprochement automatique\"",
+				"\"code\":\"CRM\",\"nom\":\"CRM\"",
+				"\"code\":\"SUIVI_TEMPS\",\"nom\":\"Suivi des temps\"",
 				"\"statut\":\"BIENTOT_DISPONIBLE\"");
 
-		// Droits du dossier : autre cabinet, adresse tapée à la main, sans connexion.
-		assertThat(appel("GET", chemin, null, jeanConnecte()).statusCode()).isEqualTo(404);
-		assertThat(appel("GET", "/dossiers/abc/modules", null, jeton).statusCode()).isEqualTo(404);
-		assertThat(appel("GET", chemin, null, null).statusCode()).isEqualTo(401);
+		// Sans connexion -> 401.
+		assertThat(appel("GET", "/modules", null, null).statusCode()).isEqualTo(401);
 	}
 
 }

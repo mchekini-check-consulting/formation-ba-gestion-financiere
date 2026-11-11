@@ -51,10 +51,6 @@
       @case ('clients') {
         <app-factures-dossier [dossierId]="d.id" sens="VENTE" />
       }
-      @case ('modules') {
-        <!-- US-18 : modules à venir -->
-        <app-modules-dossier [dossierId]="d.id" />
-      }
     }
   </section>
 } @else if (erreur(); as e) {

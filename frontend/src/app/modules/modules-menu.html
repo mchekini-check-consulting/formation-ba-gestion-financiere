@@ -1,0 +1,45 @@
+@if (liste().length > 0) {
+  <!-- RG1 : un module par ligne, réglé côté serveur (RG3), badge « Bientôt » -->
+  <div class="entete">
+    <span class="titre">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>
+      Modules
+    </span>
+    <span class="compteur" [attr.aria-label]="liste().length + ' modules à venir'">{{ liste().length }}</span>
+  </div>
+  <div class="liste">
+    @for (m of liste(); track m.code) {
+      <button type="button" class="module" [attr.aria-pressed]="choisi()?.code === m.code" (click)="ouvrir(m)">
+        <span class="icone" aria-hidden="true">
+          @switch (m.code) {
+            @case ('SYNCHRONISATION_BANCAIRE') {
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 21h18"></path></svg>
+            }
+            @case ('RAPPROCHEMENT_AUTOMATIQUE') {
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"></path></svg>
+            }
+            @case ('CRM') {
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20v-1a4 4 0 00-4-4H6a4 4 0 00-4 4v1M9 11a4 4 0 100-8 4 4 0 000 8M22 20v-1a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"></path></svg>
+            }
+            @case ('SUIVI_TEMPS') {
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+            }
+            @default {
+              <!-- RG3 : module ajouté côté serveur, sans icône prévue dans l'écran -->
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"></rect></svg>
+            }
+          }
+        </span>
+        <span class="nom">{{ m.nom }}</span>
+        <span class="badge">{{ libelle(m) }}</span>
+      </button>
+    }
+  </div>
+  <!-- RG2 : clic sur un module -->
+  @if (choisi(); as m) {
+    <p class="message" role="status">
+      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+      <span><strong>{{ m.nom }}</strong> : {{ messageProchainement }}</span>
+    </p>
+  }
+}
