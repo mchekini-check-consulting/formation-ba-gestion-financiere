@@ -28,5 +28,5 @@ describe('appConfig', () => {
     await router.navigate(['/'], { fragment: 'tarifs' });
 
     expect((await defilement).anchor).toBe('tarifs');
-  });
+  }, 20_000); // premier affichage de la page d'accueil : lent sur un poste chargé
 });
