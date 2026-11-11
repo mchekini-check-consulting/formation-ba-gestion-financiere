@@ -25,6 +25,7 @@ import com.example.gestionfinanciere.cabinet.Cabinet;
 import com.example.gestionfinanciere.cabinet.ValidationInscription;
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.HorlogeReglable;
+import com.example.gestionfinanciere.compte.RoleCabinet;
 import com.example.gestionfinanciere.logging.JournalCapture;
 
 import ch.qos.logback.classic.Level;
@@ -35,7 +36,9 @@ class DossierServiceTest {
 	private static final Instant MAINTENANT = Instant.parse("2026-11-08T09:00:00Z");
 
 	private final DossierRepository dossiers = mock(DossierRepository.class);
-	private final DossierService service = new DossierService(dossiers, new HorlogeReglable(MAINTENANT));
+	private final AttributionDossierRepository attributions = mock(AttributionDossierRepository.class);
+	private final DossierService service = new DossierService(dossiers, attributions,
+			new HorlogeReglable(MAINTENANT));
 
 	private final Cabinet cabinetTest = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
 	private final Compte jean = Compte.administrateurDe(cabinetTest, "jean.dupont@cabinet-test.fr", "x",
@@ -128,7 +131,7 @@ class DossierServiceTest {
 	void us09ListeDuCabinetSansRecherche() {
 		List<LigneDossier> lignes = List.of(
 				new LigneDossier(42L, "Fleurs Martin EURL", "812345679", 0, EtatEspaceClient.NON_INVITE));
-		when(dossiers.lister(7L, "%", "-")).thenReturn(lignes);
+		when(dossiers.lister(7L, "%", "-", true, null)).thenReturn(lignes);
 
 		assertEquals(lignes, service.lister(jean, null));
 		assertEquals(lignes, service.lister(jean, "   "));
@@ -138,23 +141,23 @@ class DossierServiceTest {
 	@Test
 	void us09RechercheParRaisonSocialeOuSiren() {
 		service.lister(jean, " Fleurs ");
-		verify(dossiers).lister(7L, "%fleurs%", "-");
+		verify(dossiers).lister(7L, "%fleurs%", "-", true, null);
 
 		service.lister(jean, "812 345");
-		verify(dossiers).lister(7L, "%812 345%", "%812345%");
+		verify(dossiers).lister(7L, "%812 345%", "%812345%", true, null);
 	}
 
 	// « % » et « _ » saisis sont cherchés tels quels.
 	@Test
 	void us09RechercheSansJoker() {
 		service.lister(jean, "50%_a\\b");
-		verify(dossiers).lister(7L, "%50\\%\\_a\\\\b%", "-");
+		verify(dossiers).lister(7L, "%50\\%\\_a\\\\b%", "-", true, null);
 	}
 
 	// Logs : consultation de la liste (info), avec le nombre de dossiers, sans le texte cherché.
 	@Test
 	void us09LogConsultationDeLaListe() {
-		when(dossiers.lister(7L, "%leroy%", "-")).thenReturn(List.of(
+		when(dossiers.lister(7L, "%leroy%", "-", true, null)).thenReturn(List.of(
 				new LigneDossier(1L, "Boulangerie Leroy SARL", "812345678", 2, EtatEspaceClient.ACTIF)));
 		try (JournalCapture journal = JournalCapture.de(DossierService.class)) {
 			service.lister(jean, "Leroy");
@@ -212,6 +215,57 @@ class DossierServiceTest {
 			assertEquals("accès refusé : dossier introuvable ou d'un autre cabinet", refus.getFormattedMessage());
 			assertEquals(Map.of("dossier", "99"), JournalCapture.champs(refus));
 		}
+	}
+
+	// US-20 RG3 : un dossier créé par un comptable lui est attribué ; pas pour l'administrateur.
+	@Test
+	void us20Rg3DossierCreeParUnComptableLuiEstAttribue() {
+		Compte lucie = Compte.invite(cabinetTest, "lucie@cabinet-test.fr", "x", "Lucie Bernard", RoleCabinet.COMPTABLE);
+
+		service.creer(lucie, fleursMartin());
+
+		ArgumentCaptor<AttributionDossier> attribution = ArgumentCaptor.forClass(AttributionDossier.class);
+		verify(attributions).save(attribution.capture());
+		assertSame(lucie, attribution.getValue().getComptable());
+		assertEquals(42L, attribution.getValue().getDossier().getId());
+		assertEquals(MAINTENANT, attribution.getValue().getAttribueLe());
+
+		service.creer(jean, fleursMartin());
+		verify(attributions).save(any());
+	}
+
+	// US-20 RG2 : un comptable ne voit que ses dossiers (liste et adresse tapée à la main).
+	@Test
+	void us20Rg2LeComptableNeVoitQueSesDossiers() {
+		Compte lucie = Compte.invite(cabinetTest, "lucie@cabinet-test.fr", "x", "Lucie Bernard", RoleCabinet.COMPTABLE);
+		ReflectionTestUtils.setField(lucie, "id", 5L);
+		Dossier garage = new Dossier(cabinetTest, "Garage Morel SAS", "812345679", jean, MAINTENANT);
+		ReflectionTestUtils.setField(garage, "id", 42L);
+		when(dossiers.findByIdAndCabinetId(42L, 7L)).thenReturn(Optional.of(garage));
+
+		assertTrue(service.consulter(lucie, 42L).isEmpty());
+		when(dossiers.estAttribue(42L, 5L)).thenReturn(true);
+		assertTrue(service.consulter(lucie, 42L).isPresent());
+
+		service.lister(lucie, null);
+		verify(dossiers).lister(7L, "%", "-", false, 5L);
+	}
+
+	// US-20 : colonne « Comptables » de la liste.
+	@Test
+	void us20ComptablesDeChaqueDossier() {
+		Compte lucie = Compte.invite(cabinetTest, "lucie@cabinet-test.fr", "x", "Lucie Bernard", RoleCabinet.COMPTABLE);
+		Dossier garage = new Dossier(cabinetTest, "Garage Morel SAS", "812345679", jean, MAINTENANT);
+		ReflectionTestUtils.setField(garage, "id", 42L);
+		when(dossiers.lister(7L, "%", "-", true, null)).thenReturn(List.of(
+				new LigneDossier(42L, "Garage Morel SAS", "812345679", 0, EtatEspaceClient.NON_INVITE),
+				new LigneDossier(43L, "Fleurs Martin EURL", "812345678", 0, EtatEspaceClient.NON_INVITE)));
+		when(attributions.findByCabinetId(7L)).thenReturn(List.of(new AttributionDossier(garage, lucie, MAINTENANT)));
+
+		List<LigneDossier> lignes = service.lister(jean, null);
+
+		assertEquals(List.of("Lucie Bernard"), lignes.get(0).comptables());
+		assertEquals(List.of(), lignes.get(1).comptables());
 	}
 
 }

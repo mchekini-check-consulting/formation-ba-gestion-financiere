@@ -174,11 +174,11 @@ class DossierIT {
 		assertThat(liste.statusCode()).isEqualTo(200);
 		assertThat(liste.body()).isEqualTo("""
 				[{"id":%d,"raisonSociale":"Boulangerie Leroy SARL","siren":"812345678","nombreFactures":2,\
-				"etatEspaceClient":"ACTIF"},\
+				"etatEspaceClient":"ACTIF","comptables":[]},\
 				{"id":%d,"raisonSociale":"Fleurs Martin EURL","siren":"812345679","nombreFactures":0,\
-				"etatEspaceClient":"NON_INVITE"},\
+				"etatEspaceClient":"NON_INVITE","comptables":[]},\
 				{"id":%d,"raisonSociale":"Garage Morel SAS","siren":"798654321","nombreFactures":0,\
-				"etatEspaceClient":"INVITE"}]""".formatted(boulangerie, fleurs, garage));
+				"etatEspaceClient":"INVITE","comptables":[]}]""".formatted(boulangerie, fleurs, garage));
 	}
 
 	// US-09 RG2 : recherche par raison sociale ou par SIREN ; CA vide.

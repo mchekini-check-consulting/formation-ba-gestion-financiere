@@ -1,6 +1,8 @@
 package com.example.gestionfinanciere.dossier;
 
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.gestionfinanciere.cabinet.ValidationInscription;
 import com.example.gestionfinanciere.compte.Compte;
+import com.example.gestionfinanciere.compte.RoleCabinet;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 
@@ -30,10 +33,12 @@ public class DossierService {
 	private static final String CHAMP_DOSSIER = "dossier";
 
 	private final DossierRepository dossiers;
+	private final AttributionDossierRepository attributions;
 	private final Clock horloge;
 
-	public DossierService(DossierRepository dossiers, Clock horloge) {
+	public DossierService(DossierRepository dossiers, AttributionDossierRepository attributions, Clock horloge) {
 		this.dossiers = dossiers;
+		this.attributions = attributions;
 		this.horloge = horloge;
 	}
 
@@ -64,6 +69,10 @@ public class DossierService {
 		try {
 			Dossier dossier = dossiers.save(new Dossier(collaborateur.getCabinet(), demande.raisonSociale().trim(),
 					siren, collaborateur, horloge.instant()));
+			// US-20 RG3 : un dossier créé par un comptable lui est attribué automatiquement.
+			if (collaborateur.getRoleCabinet() == RoleCabinet.COMPTABLE) {
+				attributions.save(new AttributionDossier(dossier, collaborateur, dossier.getCreeLe()));
+			}
 			log.atInfo().addKeyValue(CHAMP_DOSSIER, dossier.getId()).log("dossier créé");
 			return ResultatCreationDossier.cree(VueDossier.de(dossier));
 		} catch (DataIntegrityViolationException e) {
@@ -72,10 +81,11 @@ public class DossierService {
 	}
 
 	// US-10 RG3 : le dossier s'ouvre après sa création. US-11 : en-tête avec l'état de l'espace
-	// client (RG1) ; vide s'il n'existe pas ou appartient à un autre cabinet (RG3).
+	// client (RG1) ; vide s'il n'existe pas ou appartient à un autre cabinet (RG3), ou s'il n'est
+	// pas attribué au comptable connecté (US-20 RG2).
 	@Transactional(readOnly = true)
 	public Optional<VueDossier> consulter(Compte collaborateur, Long id) {
-		Optional<VueDossier> dossier = dossiers.findByIdAndCabinetId(id, collaborateur.getCabinet().getId())
+		Optional<VueDossier> dossier = AccesDossier.dossierAccessible(dossiers, collaborateur, id)
 				.map(trouve -> VueDossier.de(trouve, EtatEspaceClient.de(dossiers.compterComptesDirigeant(id),
 						dossiers.compterComptesDirigeantActifs(id))));
 		EvenementMetier.de("dossier.consultation", dossier.isPresent() ? "trouve" : "introuvable")
@@ -91,7 +101,7 @@ public class DossierService {
 	/**
 	 * US-09 Liste des dossiers du cabinet du collaborateur (RG3 : jamais ceux d'un autre cabinet),
 	 * filtrée par raison sociale ou SIREN si {@code recherche} est rempli (RG2).
-	 * US-20 : le filtre « dossiers du comptable » s'ajoutera ici, selon son rôle dans le cabinet.
+	 * US-20 : avec les comptables de chaque dossier ; un comptable ne voit que ses dossiers (RG2).
 	 */
 	@Transactional(readOnly = true)
 	public List<LigneDossier> lister(Compte collaborateur, String recherche) {
@@ -106,10 +116,22 @@ public class DossierService {
 				motifSiren = "%" + chiffres + "%";
 			}
 		}
-		List<LigneDossier> lignes = dossiers.lister(collaborateur.getCabinet().getId(), motif, motifSiren);
+		Long cabinetId = collaborateur.getCabinet().getId();
+		List<LigneDossier> lignes = avecComptables(cabinetId, dossiers.lister(cabinetId, motif, motifSiren,
+				AccesDossier.voitTousLesDossiers(collaborateur), collaborateur.getId()));
 		log.atInfo().addKeyValue("nombre", lignes.size()).addKeyValue("recherche", filtre)
 				.log("liste des dossiers consultée");
 		return lignes;
+	}
+
+	// US-20 : noms des comptables de chaque dossier (colonne « Comptables »).
+	private List<LigneDossier> avecComptables(Long cabinetId, List<LigneDossier> lignes) {
+		Map<Long, List<String>> noms = new LinkedHashMap<>();
+		for (AttributionDossier attribution : attributions.findByCabinetId(cabinetId)) {
+			noms.computeIfAbsent(attribution.getDossier().getId(), id -> new ArrayList<>())
+					.add(attribution.getComptable().getNomAffiche());
+		}
+		return lignes.stream().map(ligne -> ligne.avecComptables(noms.getOrDefault(ligne.id(), List.of()))).toList();
 	}
 
 	// Un « % » ou « _ » saisi est cherché tel quel, pas comme joker.

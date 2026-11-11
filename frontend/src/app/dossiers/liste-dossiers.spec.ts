@@ -12,6 +12,7 @@ const BOULANGERIE: LigneDossier = {
   siren: '812345678',
   nombreFactures: 2,
   etatEspaceClient: 'ACTIF',
+  comptables: ['Lucie Bernard', 'Marc Petit'],
 };
 const GARAGE: LigneDossier = {
   id: 2,
@@ -19,6 +20,7 @@ const GARAGE: LigneDossier = {
   siren: '798654321',
   nombreFactures: 1,
   etatEspaceClient: 'INVITE',
+  comptables: ['Lucie Bernard'],
 };
 const FLEURS: LigneDossier = {
   id: 3,
@@ -26,6 +28,7 @@ const FLEURS: LigneDossier = {
   siren: '812345679',
   nombreFactures: 0,
   etatEspaceClient: 'NON_INVITE',
+  comptables: [],
 };
 
 describe('US-09 Liste des dossiers du cabinet', () => {
@@ -65,9 +68,10 @@ describe('US-09 Liste des dossiers du cabinet', () => {
       [...tr.querySelectorAll('td')].map((td) => td.textContent?.trim()),
     );
     expect(lignes).toEqual([
-      ['Boulangerie Leroy SARL', '812 345 678', '2 factures', 'Actif'],
-      ['Garage Morel SAS', '798 654 321', '1 facture', 'Invité'],
-      ['Fleurs Martin EURL', '812 345 679', '0 facture', 'Non invité'],
+      // US-20 : colonne « Comptables ».
+      ['Boulangerie Leroy SARL', '812 345 678', 'Lucie Bernard, Marc Petit', '2 factures', 'Actif'],
+      ['Garage Morel SAS', '798 654 321', 'Lucie Bernard', '1 facture', 'Invité'],
+      ['Fleurs Martin EURL', '812 345 679', 'Aucun comptable', '0 facture', 'Non invité'],
     ]);
     // Chaque dossier s'ouvre depuis la liste (US-11).
     expect(page.querySelector('tbody a')?.getAttribute('href')).toBe('/dossiers/1');

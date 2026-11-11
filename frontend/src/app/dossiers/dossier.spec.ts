@@ -44,10 +44,18 @@ describe('US-11 Ouvrir un dossier', () => {
     expect(page.textContent).toContain('Chargement…');
     http.expectOne('/api/dossiers/2').flush(reponse);
     await fixture.whenStable();
-    // US-12 : l'onglet Factures fournisseurs charge ses factures.
+    // US-12 : l'onglet Factures fournisseurs charge ses factures ; US-20 : comptables du dossier.
     factures('ACHAT');
+    comptables();
     await fixture.whenStable();
     return { fixture, page };
+  }
+
+  function comptables() {
+    http.expectOne('/api/dossiers/2/comptables').flush({
+      comptables: [{ id: 5, nomAffiche: 'Lucie Bernard', attribue: true }],
+      modifiable: false,
+    });
   }
 
   function factures(sens: 'ACHAT' | 'VENTE') {
@@ -152,6 +160,7 @@ describe('US-11 Ouvrir un dossier', () => {
     http.expectOne('/api/dossiers/').flush(FLEURS);
     await fixture.whenStable();
     factures('ACHAT');
+    comptables();
     await fixture.whenStable();
     expect(onglets(page)[0].getAttribute('aria-selected')).toBe('true');
   });

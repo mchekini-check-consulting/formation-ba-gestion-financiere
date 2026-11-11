@@ -63,7 +63,7 @@ public class InvitationDirigeantService {
 	public ResultatInvitationDirigeant inviter(Compte collaborateur, Long dossierId,
 			DemandeInvitationDirigeant demande) {
 		return journaliser(EVENEMENT_INVITATION, collaborateur, dossierId, () -> {
-			Optional<Dossier> dossier = dossiers.findByIdAndCabinetId(dossierId, collaborateur.getCabinet().getId());
+			Optional<Dossier> dossier = AccesDossier.dossierAccessible(dossiers, collaborateur, dossierId);
 			if (dossier.isEmpty()) {
 				return ResultatInvitationDirigeant.refus(ResultatInvitationDirigeant.Statut.INTROUVABLE);
 			}
@@ -89,7 +89,7 @@ public class InvitationDirigeantService {
 	@Transactional
 	public ResultatInvitationDirigeant renvoyer(Compte collaborateur, Long dossierId) {
 		return journaliser(EVENEMENT_RENVOI, collaborateur, dossierId, () -> {
-			Optional<Dossier> dossier = dossiers.findByIdAndCabinetId(dossierId, collaborateur.getCabinet().getId());
+			Optional<Dossier> dossier = AccesDossier.dossierAccessible(dossiers, collaborateur, dossierId);
 			if (dossier.isEmpty()) {
 				return ResultatInvitationDirigeant.refus(ResultatInvitationDirigeant.Statut.INTROUVABLE);
 			}

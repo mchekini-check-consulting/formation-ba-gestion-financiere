@@ -1,0 +1,99 @@
+// US-20 Comptables du dossier : mêmes couleurs que l'en-tête du dossier.
+$encre: #16130f;
+$creme: #fffdf9;
+$or: #8c6b36;
+$bord: #e7dfd0;
+$gris: #6e6456;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.comptables {
+  font-size: 14px;
+  color: $gris;
+}
+
+.choix {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+  margin: 0;
+  padding: 14px;
+  background: $creme;
+  border: 1px solid $bord;
+  border-radius: 12px;
+
+  legend {
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.bouton {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: $encre;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.lien {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $or;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.muted {
+  margin: 0;
+  font-size: 13px;
+  color: $gris;
+}
+
+.alerte {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #8c1d18;
+  font-size: 13px;
+}

@@ -1,0 +1,246 @@
+// Espace client du dirigeant (US-15, US-38, US-16) : mêmes couleurs que le dossier côté cabinet.
+$encre: #16130f;
+$creme: #fffdf9;
+$or: #8c6b36;
+$bord: #e7dfd0;
+$gris: #6e6456;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 960px;
+}
+
+h1 {
+  margin: 0;
+  font-family: 'Playfair Display', Inter, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 8px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sous-titre {
+  margin: -8px 0 8px;
+  font-size: 14px;
+  color: $gris;
+}
+
+.onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid $bord;
+}
+
+.onglet {
+  padding: 10px 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: $gris;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &[aria-selected='true'] {
+    border-bottom-color: $or;
+    color: $encre;
+  }
+
+  &:hover {
+    color: $encre;
+  }
+}
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: $creme;
+  border: 1px solid $bord;
+  border-radius: 16px;
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 16px;
+  border: 2px dashed $bord;
+  border-radius: 14px;
+  text-align: center;
+
+  &--survol {
+    border-color: $or;
+    background: #fbf6ec;
+  }
+
+  &__texte {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  &__aide {
+    margin: 0;
+    font-size: 13px;
+    color: $gris;
+  }
+}
+
+.bouton {
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: $encre;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &--inactif {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.resultat {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #e8f3ea;
+  color: #1e5b2c;
+  font-size: 14px;
+
+  &--refus {
+    background: #fff1db;
+    color: #8a4b00;
+  }
+
+  &__message {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  &__fichier {
+    margin: 4px 0 0;
+  }
+
+  ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+  }
+}
+
+.info {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f1ebe0;
+  font-size: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  border-top: 1px solid #f1ebe0;
+  text-align: left;
+}
+
+th {
+  border-top: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: $gris;
+}
+
+.fichier {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.action {
+  text-align: right;
+}
+
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.confirmation {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.lien {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $or;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--danger {
+    color: #8c1d18;
+  }
+}
+
+.badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #f1ebe0;
+  color: #3a332a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vide {
+  margin: 0;
+  padding: 16px 0;
+  text-align: center;
+  color: $gris;
+}
+
+.muted {
+  margin: 0;
+  color: $gris;
+}
+
+.alerte {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #8c1d18;
+  font-size: 14px;
+}
