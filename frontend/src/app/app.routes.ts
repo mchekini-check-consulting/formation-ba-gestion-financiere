@@ -13,7 +13,7 @@ import { Dossier } from './dossiers/dossier';
 import { EspaceClient } from './espace/pages';
 import { ItemsPage } from './items-page/items-page';
 import { Landing } from './landing/landing';
-import { PageAVenir } from './landing/page-a-venir';
+import { PageLegale } from './legal/page-legale';
 import { MotDePasseOublie } from './mot-de-passe/mot-de-passe-oublie';
 import { NouveauMotDePasse } from './mot-de-passe/nouveau-mot-de-passe';
 import { sessionGuard } from './session/session.guard';
@@ -50,7 +50,8 @@ export const routes: Routes = [
   },
   // Lien de l'email d'invitation (US-19) : activation du compte avec l'US-08.
   { path: 'activer-compte', component: ActiverCompte },
-  { path: 'mentions-legales', component: PageAVenir },
-  { path: 'cgu', component: PageAVenir },
-  { path: 'confidentialite', component: PageAVenir },
+  // US-34 : pages légales du pied de page, publiques (sans connexion).
+  { path: 'mentions-legales', component: PageLegale, data: { page: 'mentions-legales' } },
+  { path: 'cgu', component: PageLegale, data: { page: 'cgu' } },
+  { path: 'confidentialite', component: PageLegale, data: { page: 'confidentialite' } },
 ];

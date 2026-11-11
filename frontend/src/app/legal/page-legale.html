@@ -1,0 +1,61 @@
+<header class="entete">
+  <div class="conteneur entete__inner">
+    <a routerLink="/" class="marque" aria-label="Pointéo, retour à l'accueil">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+        <rect width="30" height="30" rx="9" fill="#8C6B36"></rect>
+        <path d="M9 15.5l4.2 4.2L21.5 11" fill="none" stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span>Pointéo</span>
+    </a>
+    <a routerLink="/connexion" class="entete__connexion">Se connecter</a>
+  </div>
+</header>
+
+@if (contenu(); as page) {
+  <main class="conteneur">
+    <nav class="onglets" aria-label="Informations légales">
+      @for (onglet of onglets; track onglet.id) {
+        <a
+          [routerLink]="'/' + onglet.id"
+          class="onglet"
+          [class.onglet--actif]="onglet.id === pageId()"
+          [attr.aria-current]="onglet.id === pageId() ? 'page' : null"
+          >{{ onglet.libelle }}</a
+        >
+      }
+    </nav>
+
+    <article class="carte">
+      <span class="surtitre">Informations légales</span>
+      <h1>{{ page.titre }}</h1>
+      <span class="sous-titre">{{ page.sousTitre }}</span>
+
+      <ol class="sommaire" aria-label="Sommaire">
+        @for (rubrique of page.rubriques; track rubrique.titre; let i = $index) {
+          <li><a [href]="'#rubrique-' + (i + 1)" (click)="allerA($event, i + 1)">{{ rubrique.titre }}</a></li>
+        }
+      </ol>
+
+      <div class="rubriques">
+        @for (rubrique of page.rubriques; track rubrique.titre; let i = $index) {
+          <section class="rubrique" [id]="'rubrique-' + (i + 1)">
+            <span class="rubrique__numero" aria-hidden="true">{{ i + 1 }}</span>
+            <div>
+              <h2>{{ rubrique.titre }}</h2>
+              <p>{{ rubrique.texte }}</p>
+            </div>
+          </section>
+        }
+      </div>
+
+      <a routerLink="/" class="retour">← Retour à l'accueil</a>
+    </article>
+  </main>
+}
+
+<footer class="pied">
+  <div class="conteneur pied__inner">
+    <span>© 2026 Pointéo</span>
+    <span>Données hébergées dans l'Union européenne</span>
+  </div>
+</footer>
