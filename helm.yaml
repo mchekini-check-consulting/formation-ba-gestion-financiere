@@ -95,7 +95,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: 8a3ba23
-      qualif: a7c3fc7
+      qualif: 8a3ba23
       preprod: ""
       prod: ""
     containerPort: 8080
