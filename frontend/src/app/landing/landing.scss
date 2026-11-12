@@ -1,20 +1,20 @@
-$ink: #16130f;
-$ink-2: #1a1612;
-$ink-3: #221e18;
-$ink-line: #2e2820;
-$paper: #fffdf9;
-$sand: #f6f2ea;
-$sand-2: #f3ebdd;
-$line: #e7dfd0;
-$line-2: #d9cebb;
-$line-3: #f1ebe0;
-$gold: #8c6b36;
-$gold-dark: #6e5226;
-$gold-light: #d9be86;
-$text-2: #5a5145;
-$text-3: #6e6456;
-$text-nav: #3a332a;
-$on-dark: #cfc3ad;
+$ink: #0b1b3a;
+$ink-2: #0e1f42;
+$ink-3: #132850;
+$ink-line: #1a3364;
+$paper: #fcfdff;
+$sand: #f1f5fb;
+$sand-2: #ebf1f9;
+$line: #dbe4f0;
+$line-2: #cbd6e6;
+$line-3: #e8eef8;
+$gold: #2563eb;
+$gold-dark: #1e40af;
+$gold-light: #93c5fd;
+$text-2: #3b4a63;
+$text-3: #52627a;
+$text-nav: #1e293b;
+$on-dark: #b8c6da;
 $serif: 'Playfair Display', Inter, sans-serif;
 
 :host {
@@ -322,7 +322,7 @@ h3 {
   background: $paper;
   border: 1px solid $line;
   border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(28, 22, 15, 0.14);
+  box-shadow: 0 24px 60px rgba(11, 27, 58, 0.14);
   overflow: hidden;
 
   &__bar {
@@ -331,7 +331,7 @@ h3 {
     gap: 6px;
     padding: 12px 16px;
     border-bottom: 1px solid $line;
-    background: #fbf8f2;
+    background: #f7f9fd;
 
     span {
       width: 10px;
@@ -372,7 +372,7 @@ h3 {
 .bar {
   height: 8px;
   border-radius: 4px;
-  background: #2a251e;
+  background: #172f5c;
 
   &--60 {
     width: 60px;
@@ -389,7 +389,7 @@ h3 {
   &--active {
     height: 26px;
     border-radius: 6px;
-    background: #1f1b16;
+    background: #11244a;
     margin-top: 10px;
   }
 }
@@ -453,7 +453,7 @@ h3 {
   &__active {
     background: $paper;
     border-radius: 6px;
-    box-shadow: 0 1px 2px rgba(28, 22, 15, 0.08);
+    box-shadow: 0 1px 2px rgba(11, 27, 58, 0.08);
 
     .folder-tabs & {
       color: $ink;
@@ -583,7 +583,7 @@ h3 {
     &--active {
       background: $paper;
       color: $ink;
-      box-shadow: 0 1px 3px rgba(28, 22, 15, 0.12);
+      box-shadow: 0 1px 3px rgba(11, 27, 58, 0.12);
     }
   }
 }
@@ -1090,7 +1090,7 @@ h3 {
   background: $paper;
   border: 1px solid $line;
   border-radius: 16px;
-  box-shadow: 0 16px 40px rgba(28, 22, 15, 0.18);
+  box-shadow: 0 16px 40px rgba(11, 27, 58, 0.18);
   padding: 20px;
   display: flex;
   flex-direction: column;

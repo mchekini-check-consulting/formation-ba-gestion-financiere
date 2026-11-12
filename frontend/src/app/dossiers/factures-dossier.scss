@@ -1,7 +1,7 @@
 // US-12 Factures d'un dossier : mêmes couleurs que la liste des dossiers.
-$encre: #16130f;
-$or: #8c6b36;
-$gris: #6e6456;
+$encre: #0b1b3a;
+$or: #2563eb;
+$gris: #52627a;
 
 :host {
   display: flex;
@@ -18,7 +18,7 @@ table {
 th,
 td {
   padding: 12px 10px;
-  border-top: 1px solid #f1ebe0;
+  border-top: 1px solid #e8eef8;
   text-align: left;
 }
 
@@ -44,8 +44,8 @@ th {
 .badge {
   padding: 3px 10px;
   border-radius: 999px;
-  background: #f1ebe0;
-  color: #3a332a;
+  background: #e8eef8;
+  color: #1e293b;
   font-size: 12px;
   font-weight: 600;
 

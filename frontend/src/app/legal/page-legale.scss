@@ -1,11 +1,11 @@
-$ink: #16130f;
-$muted: #6e6456;
-$or: #8c6b36;
-$or-fonce: #6e5226;
-$fond: #f6f2ea;
-$carte: #fffdf9;
-$bordure: #e7dfd0;
-$filet: #f1ebe0;
+$ink: #0b1b3a;
+$muted: #52627a;
+$or: #2563eb;
+$or-fonce: #1e40af;
+$fond: #f1f5fb;
+$carte: #fcfdff;
+$bordure: #dbe4f0;
+$filet: #e8eef8;
 $serif: 'Playfair Display', Georgia, serif;
 
 :host {
@@ -117,7 +117,7 @@ main {
   background: $carte;
   border: 1px solid $bordure;
   border-radius: 18px;
-  box-shadow: 0 10px 30px rgba(22, 19, 15, 0.05);
+  box-shadow: 0 10px 30px rgba(11, 27, 58, 0.05);
 
   @media (max-width: 600px) {
     padding: 24px 20px;
@@ -191,7 +191,7 @@ h1 {
     width: 28px;
     height: 28px;
     border-radius: 8px;
-    background: #f3eadb;
+    background: #eaf0f9;
     color: $or;
     font-size: 13px;
     font-weight: 700;

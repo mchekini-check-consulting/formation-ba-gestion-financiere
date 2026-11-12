@@ -1,9 +1,9 @@
 // Espace client du dirigeant (US-15, US-38, US-16) : mêmes couleurs que le dossier côté cabinet.
-$encre: #16130f;
-$creme: #fffdf9;
-$or: #8c6b36;
-$bord: #e7dfd0;
-$gris: #6e6456;
+$encre: #0b1b3a;
+$creme: #fcfdff;
+$or: #2563eb;
+$bord: #dbe4f0;
+$gris: #52627a;
 
 :host {
   display: flex;
@@ -82,7 +82,7 @@ h2 {
 
   &--survol {
     border-color: $or;
-    background: #fbf6ec;
+    background: #f5f8fd;
   }
 
   &__texte {
@@ -151,7 +151,7 @@ h2 {
   margin: 0;
   padding: 10px 14px;
   border-radius: 10px;
-  background: #f1ebe0;
+  background: #e8eef8;
   font-size: 14px;
 }
 
@@ -164,7 +164,7 @@ table {
 th,
 td {
   padding: 12px 10px;
-  border-top: 1px solid #f1ebe0;
+  border-top: 1px solid #e8eef8;
   text-align: left;
 }
 
@@ -218,8 +218,8 @@ th {
 .badge {
   padding: 3px 10px;
   border-radius: 999px;
-  background: #f1ebe0;
-  color: #3a332a;
+  background: #e8eef8;
+  color: #1e293b;
   font-size: 12px;
   font-weight: 600;
 }

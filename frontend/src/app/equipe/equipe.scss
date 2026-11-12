@@ -1,8 +1,8 @@
 // US-19 Équipe du cabinet : mêmes couleurs que l'espace connecté.
-$encre: #16130f;
-$creme: #fffdf9;
-$or: #8c6b36;
-$bord: #e7dfd0;
+$encre: #0b1b3a;
+$creme: #fcfdff;
+$or: #2563eb;
+$bord: #dbe4f0;
 
 :host {
   display: flex;
@@ -27,7 +27,7 @@ h2 {
 .sous-titre {
   margin: -12px 0 0;
   font-size: 14px;
-  color: #6e6456;
+  color: #52627a;
 }
 
 .carte {
@@ -57,7 +57,7 @@ h2 {
   input,
   select {
     padding: 11px 12px;
-    border: 1px solid #d9cebb;
+    border: 1px solid #cbd6e6;
     border-radius: 10px;
     background: #fff;
     font: inherit;
@@ -121,7 +121,7 @@ table {
 th,
 td {
   padding: 12px 10px;
-  border-top: 1px solid #f1ebe0;
+  border-top: 1px solid #e8eef8;
   text-align: left;
 }
 
@@ -130,7 +130,7 @@ th {
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  color: #6e6456;
+  color: #52627a;
 }
 
 .statut {
@@ -148,7 +148,7 @@ th {
 }
 
 .muted {
-  color: #6e6456;
+  color: #52627a;
 }
 
 .retour {

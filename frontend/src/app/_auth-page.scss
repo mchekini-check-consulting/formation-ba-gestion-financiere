@@ -1,10 +1,10 @@
 // Maquette « Pointéo – Connexion ».
-$encre: #16130f;
-$creme: #fffdf9;
-$or: #8c6b36;
-$or-fonce: #6e5226;
-$gris: #6e6456;
-$bordure: #d9cebb;
+$encre: #0b1b3a;
+$creme: #fcfdff;
+$or: #2563eb;
+$or-fonce: #1e40af;
+$gris: #52627a;
+$bordure: #cbd6e6;
 $rouge: #b42318;
 
 :host {
@@ -63,7 +63,7 @@ a {
       padding: 0;
       list-style: none;
       font-size: 15px;
-      color: #cfc3ad;
+      color: #b8c6da;
     }
 
     li {
@@ -71,14 +71,14 @@ a {
       gap: 10px;
 
       span {
-        color: #d9be86;
+        color: #93c5fd;
       }
     }
   }
 
   &__note {
     font-size: 13px;
-    color: #a89c88;
+    color: #94a3b8;
   }
 }
 
@@ -152,7 +152,7 @@ a {
   label {
     font-size: 14px;
     font-weight: 600;
-    color: #3a332a;
+    color: #1e293b;
   }
 
   &__label-row {
@@ -237,7 +237,7 @@ a {
   }
 
   &:disabled {
-    background: #d8c9ae;
+    background: #c3d0e2;
     cursor: wait;
   }
 }
@@ -267,7 +267,7 @@ a {
   }
 
   &--neutre {
-    background: #f1ebe0;
+    background: #e8eef8;
     color: $encre;
   }
 
@@ -320,7 +320,7 @@ a {
     &:focus {
       outline: none;
       border: 2px solid $or;
-      box-shadow: 0 0 0 4px #f3ebdd;
+      box-shadow: 0 0 0 4px #ebf1f9;
     }
   }
 }
@@ -365,9 +365,9 @@ a {
     justify-content: center;
     width: 32px;
     height: 32px;
-    border: 1px solid #2a251e;
+    border: 1px solid #172f5c;
     border-radius: 50%;
-    background: #1a1612;
+    background: #0e1f42;
     font-weight: 700;
 
     &--actif {
@@ -388,7 +388,7 @@ a {
     span {
       font-size: 14px;
       line-height: 1.5;
-      color: #cfc3ad;
+      color: #b8c6da;
     }
   }
 }
@@ -401,7 +401,7 @@ a {
     flex: 1;
     height: 5px;
     border-radius: 3px;
-    background: #e7dfd0;
+    background: #dbe4f0;
 
     &.on {
       background: $or;

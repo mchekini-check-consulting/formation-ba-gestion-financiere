@@ -1,10 +1,10 @@
 // US-18 Modules à venir : un titre de rubrique bien visible, puis les modules en retrait, grisés.
-$creme: #fffdf9;
-$or: #8c6b36;
-$or-clair: #c9a96e;
-$gris: #8a7f6d;
-$fond-survol: #1f1b16;
-$filet: #2c261e;
+$creme: #fcfdff;
+$or: #2563eb;
+$or-clair: #60a5fa;
+$gris: #6b7a90;
+$fond-survol: #11244a;
+$filet: #183160;
 
 :host {
   display: flex;
@@ -28,7 +28,7 @@ $filet: #2c261e;
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #e6dccb;
+  color: #d9e3f0;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -40,7 +40,7 @@ $filet: #2c261e;
   padding: 1px 6px;
   border-radius: 999px;
   background: $filet;
-  color: #cfc3ad;
+  color: #b8c6da;
   font-size: 11px;
   font-weight: 700;
   text-align: center;
@@ -76,7 +76,7 @@ $filet: #2c261e;
 
   &:hover {
     background: $fond-survol;
-    color: #cfc3ad;
+    color: #b8c6da;
   }
 
   &:focus-visible {
@@ -121,7 +121,7 @@ $filet: #2c261e;
 .badge {
   flex-shrink: 0;
   padding: 1px 7px;
-  border: 1px solid #5a4a30;
+  border: 1px solid #2a4370;
   border-radius: 999px;
   color: $or-clair;
   font-size: 10px;
@@ -138,8 +138,8 @@ $filet: #2c261e;
   padding: 10px 12px;
   border-left: 3px solid $or;
   border-radius: 8px;
-  background: #26211a;
-  color: #e6dccb;
+  background: #152b56;
+  color: #d9e3f0;
   font-size: 13px;
   line-height: 1.4;
 
