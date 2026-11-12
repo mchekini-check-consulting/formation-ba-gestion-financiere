@@ -1,9 +1,9 @@
 // US-14 Inviter le dirigeant : mêmes couleurs et champs que l'écran Équipe.
-$encre: #16130f;
-$creme: #fffdf9;
-$or: #8c6b36;
-$bord: #e7dfd0;
-$gris: #6e6456;
+$encre: #0b1b3a;
+$creme: #fcfdff;
+$or: #2563eb;
+$bord: #dbe4f0;
+$gris: #52627a;
 
 :host {
   display: flex;
@@ -72,7 +72,7 @@ h2 {
 
   input {
     padding: 11px 12px;
-    border: 1px solid #d9cebb;
+    border: 1px solid #cbd6e6;
     border-radius: 10px;
     background: #fff;
     font: inherit;

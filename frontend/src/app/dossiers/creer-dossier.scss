@@ -1,8 +1,8 @@
 // US-10 Créer un dossier : mêmes couleurs que l'espace connecté et l'écran Équipe.
-$encre: #16130f;
-$creme: #fffdf9;
-$or: #8c6b36;
-$bord: #e7dfd0;
+$encre: #0b1b3a;
+$creme: #fcfdff;
+$or: #2563eb;
+$bord: #dbe4f0;
 
 :host {
   display: flex;
@@ -27,7 +27,7 @@ h2 {
 .sous-titre {
   margin: -12px 0 0;
   font-size: 14px;
-  color: #6e6456;
+  color: #52627a;
 }
 
 .retour {
@@ -61,7 +61,7 @@ h2 {
 
   input {
     padding: 11px 12px;
-    border: 1px solid #d9cebb;
+    border: 1px solid #cbd6e6;
     border-radius: 10px;
     background: #fff;
     font: inherit;

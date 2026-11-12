@@ -1,7 +1,7 @@
 // Maquettes « Liste des dossiers » et « Session expirée ».
-$encre: #16130f;
-$creme: #fffdf9;
-$or: #8c6b36;
+$encre: #0b1b3a;
+$creme: #fcfdff;
+$or: #2563eb;
 
 :host {
   display: block;
@@ -13,7 +13,7 @@ $or: #8c6b36;
   display: flex;
   flex-wrap: wrap;
   min-height: 100vh;
-  background: #f6f2ea;
+  background: #f1f5fb;
 }
 
 .menu {
@@ -48,7 +48,7 @@ $or: #8c6b36;
       gap: 10px;
       padding: 10px 12px;
       border-radius: 10px;
-      color: #cfc3ad;
+      color: #b8c6da;
       text-decoration: none;
 
       &.actif {
@@ -65,7 +65,7 @@ $or: #8c6b36;
     gap: 10px;
     margin-top: auto;
     padding-top: 16px;
-    border-top: 1px solid #26211a;
+    border-top: 1px solid #152b56;
   }
 
   &__utilisateur {
@@ -82,7 +82,7 @@ $or: #8c6b36;
   }
 
   &__role {
-    color: #a89c88;
+    color: #94a3b8;
   }
 
   &__deconnexion {
@@ -93,14 +93,14 @@ $or: #8c6b36;
     border: 0;
     border-radius: 10px;
     background: none;
-    color: #cfc3ad;
+    color: #b8c6da;
     font: inherit;
     font-size: 14px;
     text-align: left;
     cursor: pointer;
 
     &:hover {
-      background: #1f1b16;
+      background: #11244a;
       color: $creme;
     }
   }
@@ -113,8 +113,8 @@ $or: #8c6b36;
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: #f3ebdd;
-  color: #6e5226;
+  background: #ebf1f9;
+  color: #1e40af;
   font-size: 13px;
   font-weight: 700;
 }
@@ -132,7 +132,7 @@ $or: #8c6b36;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(28, 22, 15, 0.55);
+  background: rgba(11, 27, 58, 0.55);
 }
 
 .dialogue {
@@ -145,7 +145,7 @@ $or: #8c6b36;
   padding: 32px;
   border-radius: 20px;
   background: $creme;
-  box-shadow: 0 24px 64px rgba(28, 22, 15, 0.3);
+  box-shadow: 0 24px 64px rgba(11, 27, 58, 0.3);
   text-align: center;
 
   &__minuteur {
@@ -173,7 +173,7 @@ $or: #8c6b36;
     margin: 0;
     font-size: 15px;
     line-height: 1.6;
-    color: #5a5145;
+    color: #3b4a63;
   }
 
   &__actions {
@@ -198,7 +198,7 @@ $or: #8c6b36;
   cursor: pointer;
 
   &--clair {
-    border: 1px solid #d9cebb;
+    border: 1px solid #cbd6e6;
     background: transparent;
     color: $encre;
   }

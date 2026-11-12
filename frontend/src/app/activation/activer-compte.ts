@@ -52,8 +52,8 @@ type Etat = 'verification' | 'formulaire' | 'expiree' | 'deja-active';
       <aside class="aside aside--top">
         <a routerLink="/" class="brand">
           <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
-            <rect width="30" height="30" rx="9" fill="#8C6B36"></rect>
-            <path d="M9 15.5l4.2 4.2L21.5 11" fill="none" stroke="#FFFDF9" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            <rect width="30" height="30" rx="9" fill="#2563eb"></rect>
+            <path d="M9 15.5l4.2 4.2L21.5 11" fill="none" stroke="#fcfdff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"></path>
           </svg>
           <span>Pointéo</span>
         </a>
