@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { SessionService } from '../session/session.service';
 import { Connexion } from './connexion';
 
 describe('Connexion (US-03, US-05)', () => {
@@ -25,7 +26,6 @@ describe('Connexion (US-03, US-05)', () => {
     router = TestBed.inject(Router);
   }
 
-  beforeEach(() => history.replaceState(null, ''));
   afterEach(() => http.verify());
 
   async function ouvrir() {
@@ -59,18 +59,28 @@ describe('Connexion (US-03, US-05)', () => {
     expect(page.querySelector('[role=alert]')).toBeNull();
   });
 
-  it("US-03 CA1 : bons identifiants -> ouvre l'écran du code reçu par email avec le défi", async () => {
+  it('US-03 CA1 : bons identifiants -> session ouverte et arrivée sur les dossiers, sans code par email', async () => {
     await configurer();
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const ouvrirSession = vi.spyOn(TestBed.inject(SessionService), 'ouvrir').mockImplementation(() => undefined);
     const { seConnecter } = await ouvrir();
     const requete = await seConnecter();
     expect(requete.request.method).toBe('POST');
     expect(requete.request.body).toEqual({ email: 'jean.dupont@cabinet-test.fr', motDePasse: 'Pointeo2026!' });
-    requete.flush({ etapeSuivante: 'CODE_EMAIL', defi: 'd', emailMasque: 'j•••••@cabinet-test.fr', codeDeTest: null });
+    const session = { jeton: 'j', role: 'COLLABORATEUR', nomAffiche: 'Jean Dupont', administrateur: true };
+    requete.flush(session);
 
-    expect(navigate).toHaveBeenCalledWith(['/verification-code'], {
-      state: { defi: 'd', emailMasque: 'j•••••@cabinet-test.fr' },
-    });
+    expect(ouvrirSession).toHaveBeenCalledWith(session);
+    expect(navigate).toHaveBeenCalledWith(['/dossiers']);
+  });
+
+  it("US-03 RG3 : le dirigeant arrive sur son espace client", async () => {
+    await configurer();
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    vi.spyOn(TestBed.inject(SessionService), 'ouvrir').mockImplementation(() => undefined);
+    const { seConnecter } = await ouvrir();
+    (await seConnecter()).flush({ jeton: 'j', role: 'DIRIGEANT', nomAffiche: 'Sophie Morel' });
+    expect(navigate).toHaveBeenCalledWith(['/espace-client']);
   });
 
   it('US-03 CA2 : mauvais mot de passe -> « Email ou mot de passe incorrect »', async () => {
@@ -99,17 +109,6 @@ describe('Connexion (US-03, US-05)', () => {
     const alerte = page.querySelector('[role=alert]')!;
     expect(alerte.textContent).toContain('Compte bloqué 15 minutes');
     expect(alerte.classList).toContain('alert--avertissement');
-  });
-
-  it("US-04 : email impossible -> message du serveur", async () => {
-    await configurer();
-    const { fixture, page, seConnecter } = await ouvrir();
-    (await seConnecter()).flush(
-      { message: 'L’email n’a pas pu être envoyé. Réessayez.' },
-      { status: 503, statusText: 'Unavailable' },
-    );
-    await fixture.whenStable();
-    expect(page.querySelector('[role=alert]')?.textContent).toContain('L’email n’a pas pu être envoyé. Réessayez.');
   });
 
   it('backend injoignable -> message de service indisponible', async () => {
@@ -152,12 +151,5 @@ describe('Connexion (US-03, US-05)', () => {
     await configurer(raison);
     const { page } = await ouvrir();
     expect(page.querySelector('[data-testid=info-connexion]')?.textContent).toContain(texte);
-  });
-
-  it("US-04 RG3 : affiche le message transmis par l'écran du code", async () => {
-    history.replaceState({ message: 'Trop de codes incorrects. Reconnectez-vous.' }, '');
-    await configurer();
-    const { page } = await ouvrir();
-    expect(page.querySelector('[role=alert]')?.textContent).toContain('Trop de codes incorrects');
   });
 });

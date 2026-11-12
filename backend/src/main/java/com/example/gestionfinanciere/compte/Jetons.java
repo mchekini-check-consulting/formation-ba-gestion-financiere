@@ -7,7 +7,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.HexFormat;
 
-// Jetons secrets (défi du code de connexion, lien de réinitialisation, session) : tirés au hasard,
+// Jetons secrets (défi du code d'inscription, lien de réinitialisation, session) : tirés au hasard,
 // donnés une seule fois à l'utilisateur ; le serveur n'en garde que l'empreinte SHA-256.
 public final class Jetons {
 

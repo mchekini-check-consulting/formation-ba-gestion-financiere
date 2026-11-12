@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { ActiverCompte } from './activation/activer-compte';
 import { Clients } from './clients/clients';
 import { ApercuFacture } from './dossiers/apercu-facture';
-import { CodeVerification } from './code-verification/code-verification';
 import { CreerCompte } from './creer-compte/creer-compte';
 import { CreerDossier } from './dossiers/creer-dossier';
 import { Connexion } from './connexion/connexion';
@@ -22,9 +21,10 @@ export const routes: Routes = [
   { path: '', component: Landing, pathMatch: 'full' },
   { path: 'clients', component: Clients },
   { path: 'items', component: ItemsPage },
-  // Authentification (EP-02) : US-03 connexion, US-04 code reçu par email, US-06 mot de passe oublié.
+  // Authentification (EP-02) : US-03 connexion (sans code par email), US-06 mot de passe oublié.
   { path: 'connexion', component: Connexion },
-  { path: 'verification-code', component: CodeVerification },
+  // Ancien écran du code reçu par email (US-04, retiré) : renvoie vers la connexion.
+  { path: 'verification-code', redirectTo: 'connexion' },
   { path: 'mot-de-passe-oublie', component: MotDePasseOublie },
   { path: 'reinitialiser-mot-de-passe', component: NouveauMotDePasse },
   // US-36 : création du compte d'un cabinet (informations, code email, cabinet prêt).

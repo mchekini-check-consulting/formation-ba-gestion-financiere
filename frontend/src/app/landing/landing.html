@@ -24,6 +24,81 @@
 
 <!-- ACCROCHE -->
 <section id="top" class="hero">
+  <!-- Décor : ligne de gratte-ciel en trois plans, du plus lointain (clair) au plus proche (foncé). -->
+  <svg class="hero__skyline" viewBox="0 0 1440 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+    <defs>
+      <pattern id="skyline-fenetres" width="16" height="20" patternUnits="userSpaceOnUse">
+        <rect x="4" y="5" width="7" height="9" rx="1" fill="#bfdbfe" opacity="0.55"></rect>
+      </pattern>
+      <linearGradient id="skyline-proche" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2563eb"></stop>
+        <stop offset="1" stop-color="#1e3a8a"></stop>
+      </linearGradient>
+    </defs>
+    <g fill="#c9dbf8">
+      <rect x="0" y="180" width="80" height="140"></rect>
+      <rect x="70" y="130" width="60" height="190"></rect>
+      <rect x="125" y="170" width="90" height="150"></rect>
+      <rect x="210" y="90" width="50" height="230"></rect>
+      <rect x="255" y="150" width="100" height="170"></rect>
+      <rect x="350" y="110" width="70" height="210"></rect>
+      <rect x="415" y="160" width="120" height="160"></rect>
+      <rect x="530" y="70" width="60" height="250"></rect>
+      <rect x="585" y="140" width="90" height="180"></rect>
+      <rect x="670" y="105" width="110" height="215"></rect>
+      <rect x="775" y="155" width="60" height="165"></rect>
+      <rect x="830" y="80" width="80" height="240"></rect>
+      <rect x="905" y="145" width="120" height="175"></rect>
+      <rect x="1020" y="95" width="60" height="225"></rect>
+      <rect x="1075" y="160" width="100" height="160"></rect>
+      <rect x="1170" y="115" width="70" height="205"></rect>
+      <rect x="1235" y="150" width="110" height="170"></rect>
+      <rect x="1340" y="85" width="50" height="235"></rect>
+      <rect x="1385" y="140" width="60" height="180"></rect>
+    </g>
+    <g fill="#8fb2ec">
+      <rect x="20" y="210" width="60" height="110"></rect>
+      <rect x="90" y="155" width="45" height="165"></rect>
+      <rect x="150" y="195" width="85" height="125"></rect>
+      <rect x="245" y="135" width="55" height="185"></rect>
+      <rect x="310" y="185" width="90" height="135"></rect>
+      <rect x="420" y="120" width="50" height="200"></rect>
+      <rect x="480" y="200" width="95" height="120"></rect>
+      <rect x="600" y="145" width="60" height="175"></rect>
+      <rect x="670" y="90" width="40" height="230"></rect>
+      <rect x="688" y="58" width="4" height="32"></rect>
+      <rect x="720" y="180" width="90" height="140"></rect>
+      <rect x="830" y="130" width="55" height="190"></rect>
+      <rect x="900" y="195" width="100" height="125"></rect>
+      <rect x="1010" y="150" width="45" height="170"></rect>
+      <rect x="1070" y="175" width="90" height="145"></rect>
+      <rect x="1180" y="125" width="60" height="195"></rect>
+      <rect x="1198" y="100" width="24" height="25"></rect>
+      <rect x="1250" y="200" width="95" height="120"></rect>
+      <rect x="1360" y="160" width="80" height="160"></rect>
+    </g>
+    <defs>
+    <g id="skyline-premier-plan">
+      <rect x="0" y="230" width="110" height="90"></rect>
+      <rect x="120" y="190" width="70" height="130"></rect>
+      <rect x="200" y="240" width="95" height="80"></rect>
+      <rect x="330" y="170" width="60" height="150"></rect>
+      <rect x="400" y="225" width="120" height="95"></rect>
+      <rect x="560" y="200" width="80" height="120"></rect>
+      <rect x="650" y="235" width="100" height="85"></rect>
+      <rect x="790" y="180" width="65" height="140"></rect>
+      <rect x="870" y="230" width="115" height="90"></rect>
+      <rect x="1000" y="205" width="75" height="115"></rect>
+      <rect x="1090" y="240" width="110" height="80"></rect>
+      <rect x="1220" y="195" width="70" height="125"></rect>
+      <rect x="1300" y="225" width="140" height="95"></rect>
+      <rect x="0" y="312" width="1440" height="8"></rect>
+    </g>
+    </defs>
+    <use href="#skyline-premier-plan" fill="url(#skyline-proche)"></use>
+    <use href="#skyline-premier-plan" fill="url(#skyline-fenetres)"></use>
+  </svg>
+
   <div class="container hero__inner">
     <div class="hero__text">
       <span class="pill">Pour les cabinets d'expertise comptable</span>

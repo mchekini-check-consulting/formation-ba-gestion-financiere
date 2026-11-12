@@ -57,17 +57,17 @@ class ConnexionIT {
 	}
 
 	@Test
-	void ca1CollaborateurBonMotDePassePasseAuCodeEmail() throws Exception {
+	void ca1CollaborateurBonMotDePasseOuvreLaSession() throws Exception {
 		HttpResponse<String> reponse = seConnecter("jean.dupont@cabinet-test.fr", MOT_DE_PASSE_DEMO);
 		assertThat(reponse.statusCode()).isEqualTo(200);
-		assertThat(reponse.body()).contains("\"etapeSuivante\":\"CODE_EMAIL\"").contains("j•••••@cabinet-test.fr");
+		assertThat(reponse.body()).contains("\"jeton\":").contains("\"role\":\"COLLABORATEUR\"");
 	}
 
 	@Test
 	void dirigeantBonMotDePasse() throws Exception {
 		HttpResponse<String> reponse = seConnecter("sophie.martin@boulangerie-test.fr", MOT_DE_PASSE_DEMO);
 		assertThat(reponse.statusCode()).isEqualTo(200);
-		assertThat(reponse.body()).contains("\"etapeSuivante\":\"CODE_EMAIL\"").contains("s•••••@boulangerie-test.fr");
+		assertThat(reponse.body()).contains("\"jeton\":").contains("\"role\":\"DIRIGEANT\"");
 	}
 
 	@Test

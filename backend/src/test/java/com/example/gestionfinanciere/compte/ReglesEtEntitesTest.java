@@ -70,24 +70,6 @@ class ReglesEtEntitesTest {
 	}
 
 	@Test
-	void codeConnexion() {
-		CodeConnexion code = new CodeConnexion(jean, "defi", "code", T0, T0.plusSeconds(300));
-		assertNull(code.getId());
-		assertEquals(jean, code.getCompte());
-		assertEquals("defi", code.getEmpreinteDefi());
-		assertFalse(code.estExpire(T0.plusSeconds(299)));
-		assertTrue(code.estExpire(T0.plusSeconds(300)));
-		assertEquals(1, code.enregistrerCodeFaux());
-		assertEquals(1, code.getCodesFaux());
-		code.remplacerCode("nouveau", T0.plusSeconds(60), T0.plusSeconds(360));
-		assertEquals("nouveau", code.getEmpreinteCode());
-		assertEquals(T0.plusSeconds(60), code.getEnvoyeLe());
-		assertFalse(code.isTermine());
-		code.terminer();
-		assertTrue(code.isTermine());
-	}
-
-	@Test
 	void sessionEtJetonDeReinitialisation() {
 		SessionUtilisateur session = new SessionUtilisateur(jean, "empreinte", T0);
 		assertNull(session.getId());

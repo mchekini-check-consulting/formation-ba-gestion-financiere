@@ -117,7 +117,7 @@ export class Landing {
     },
     {
       q: 'Comment sont protégées mes données ?',
-      a: 'Chaque cabinet ne voit que ses dossiers, chaque client que son entreprise, et chaque connexion est confirmée par un code reçu par email.',
+      a: 'Chaque cabinet ne voit que ses dossiers, chaque client que son entreprise, et un compte est bloqué après 3 mots de passe incorrects.',
     },
     {
       q: 'Quand arrivent les modules CRM et Suivi des temps ?',

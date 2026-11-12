@@ -14,7 +14,7 @@ export function accueil(role: Role): string {
 }
 
 /**
- * Session de l'onglet (US-07) : jeton reçu après le code envoyé par email, gardé le temps de
+ * Session de l'onglet (US-07) : jeton reçu à la connexion, gardé le temps de
  * l'onglet (sessionStorage) et effacé à la déconnexion ou à l'expiration.
  */
 @Injectable({ providedIn: 'root' })

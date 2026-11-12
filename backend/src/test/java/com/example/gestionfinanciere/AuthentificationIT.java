@@ -2,9 +2,8 @@ package com.example.gestionfinanciere;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
@@ -37,7 +36,6 @@ import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.compte.Role;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
-import com.example.gestionfinanciere.notification.EnvoiImpossibleException;
 import com.example.gestionfinanciere.notification.EmailsRecus;
 
 // US-04 code reçu par email, US-05 blocage, US-06 mot de passe oublié, US-07 session : vrai serveur HTTP,
@@ -117,90 +115,36 @@ class AuthentificationIT {
 		return post("/auth/connexion", "{\"email\":\"" + email + "\",\"motDePasse\":\"" + motDePasse + "\"}");
 	}
 
-	private HttpResponse<String> code(String defi, String code) throws IOException, InterruptedException {
-		return post("/auth/code", "{\"defi\":\"" + defi + "\",\"code\":\"" + code + "\"}");
-	}
-
 	private static String champ(HttpResponse<String> reponse, String nom) {
 		Matcher m = Pattern.compile("\"" + nom + "\":\"([^\"]*)\"").matcher(reponse.body());
 		assertThat(m.find()).as("champ %s dans %s", nom, reponse.body()).isTrue();
 		return m.group(1);
 	}
 
-	// Connexion complète (mot de passe + code reçu par email) : renvoie le jeton de session.
+	// Connexion (email + mot de passe) : renvoie le jeton de session, sans code par email.
 	private String seConnecter(String email, String motDePasse) throws IOException, InterruptedException {
-		HttpResponse<String> etape1 = connexion(email, motDePasse);
-		assertThat(etape1.statusCode()).isEqualTo(200);
-		HttpResponse<String> etape2 = code(champ(etape1, "defi"), EmailsRecus.dernierCode(envoiEmail));
-		assertThat(etape2.statusCode()).isEqualTo(200);
-		return champ(etape2, "jeton");
+		HttpResponse<String> reponse = connexion(email, motDePasse);
+		assertThat(reponse.statusCode()).isEqualTo(200);
+		return champ(reponse, "jeton");
 	}
 
-	private static String autreCode(String code) {
-		return "000000".equals(code) ? "111111" : "000000";
-	}
-
-	// --- US-04 Code reçu par email ------------------------------------------------------
+	// --- US-03 Connexion directe (le code reçu par email, US-04, a été retiré) -----------
 
 	@Test
-	void us04Ca1BonCodeOuvreLaSessionDuCollaborateur() throws Exception {
-		HttpResponse<String> etape1 = connexion("jean.dupont@cabinet-test.fr", MOT_DE_PASSE);
-		assertThat(champ(etape1, "emailMasque")).isEqualTo("j•••••@cabinet-test.fr");
-		String recu = EmailsRecus.dernierCode(envoiEmail);
-		verify(envoiEmail).envoyer(eq("jean.dupont@cabinet-test.fr"), anyString(), contains(recu));
-		assertThat(etape1.body()).doesNotContain(recu);
-		HttpResponse<String> etape2 = code(champ(etape1, "defi"), recu);
-		assertThat(etape2.statusCode()).isEqualTo(200);
-		assertThat(etape2.body()).contains("\"role\":\"COLLABORATEUR\"").contains("\"nomAffiche\":\"Jean Dupont\"");
-
-		HttpResponse<String> moi = session(champ(etape2, "jeton"));
-		assertThat(moi.statusCode()).isEqualTo(200);
-		assertThat(moi.body()).contains("Jean Dupont");
-	}
-
-	@Test
-	void us04EmailImpossibleAfficheLeMessage() throws Exception {
+	void us03BonMotDePasseOuvreDirectementLaSessionSansEnvoyerDeCode() throws Exception {
 		String email = nouveauCompte(Role.COLLABORATEUR);
-		doThrow(new EnvoiImpossibleException("api", null)).when(envoiEmail).envoyer(eq(email), anyString(),
-				anyString());
 		HttpResponse<String> reponse = connexion(email, MOT_DE_PASSE);
-		assertThat(reponse.statusCode()).isEqualTo(503);
-		assertThat(champ(reponse, "message")).isEqualTo("L’email n’a pas pu être envoyé. Réessayez.");
+		assertThat(reponse.statusCode()).isEqualTo(200);
+		assertThat(reponse.body()).contains("\"role\":\"COLLABORATEUR\"").doesNotContain("defi");
+		verify(envoiEmail, never()).envoyer(eq(email), anyString(), anyString());
+
+		HttpResponse<String> moi = session(champ(reponse, "jeton"));
+		assertThat(moi.statusCode()).isEqualTo(200);
 	}
 
 	@Test
-	void us04Ca2CodeFauxPuisRg3RetourALaConnexion() throws Exception {
-		HttpResponse<String> etape1 = connexion(nouveauCompte(Role.DIRIGEANT), MOT_DE_PASSE);
-		String defi = champ(etape1, "defi");
-		String faux = autreCode(EmailsRecus.dernierCode(envoiEmail));
-
-		HttpResponse<String> premier = code(defi, faux);
-		assertThat(premier.statusCode()).isEqualTo(401);
-		assertThat(champ(premier, "message")).isEqualTo("Code incorrect. Il vous reste 2 tentatives.");
-		code(defi, faux);
-		HttpResponse<String> troisieme = code(defi, faux);
-		assertThat(troisieme.body()).contains("\"retourConnexion\":true");
-		assertThat(code(defi, EmailsRecus.dernierCode(envoiEmail)).statusCode()).isEqualTo(401);
-	}
-
-	@Test
-	void us04Ca3CodeRecuIlYASixMinutes() throws Exception {
-		HttpResponse<String> etape1 = connexion(nouveauCompte(Role.COLLABORATEUR), MOT_DE_PASSE);
-		horloge.avancer(Duration.ofMinutes(6));
-		HttpResponse<String> reponse = code(champ(etape1, "defi"), EmailsRecus.dernierCode(envoiEmail));
-		assertThat(reponse.statusCode()).isEqualTo(410);
-		assertThat(champ(reponse, "message")).isEqualTo("Ce code a expiré. Demandez un nouveau code.");
-	}
-
-	@Test
-	void us04Rg2RenvoyerUnCodeApres60Secondes() throws Exception {
-		HttpResponse<String> etape1 = connexion(nouveauCompte(Role.COLLABORATEUR), MOT_DE_PASSE);
-		String defi = champ(etape1, "defi");
-		assertThat(post("/auth/code/renvoyer", "{\"defi\":\"" + defi + "\"}").statusCode()).isEqualTo(429);
-		horloge.avancer(Duration.ofSeconds(61));
-		HttpResponse<String> renvoi = post("/auth/code/renvoyer", "{\"defi\":\"" + defi + "\"}");
-		assertThat(renvoi.statusCode()).isEqualTo(200);
-		assertThat(code(defi, EmailsRecus.dernierCode(envoiEmail)).statusCode()).isEqualTo(200);
+	void us04AncienneRouteDuCodeNExistePlus() throws Exception {
+		assertThat(post("/auth/code", "{\"defi\":\"x\",\"code\":\"123456\"}").statusCode()).isNotEqualTo(200);
 	}
 
 	// --- US-05 Blocage après 3 échecs --------------------------------------------------

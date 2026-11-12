@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { SessionService, accueil } from '../session/session.service';
 import { AuthService } from './auth.service';
 
 /** Message unique, que l'email ou le mot de passe soit faux (US-03 RG2). */
@@ -35,6 +36,7 @@ type Champ = 'email' | 'motDePasse';
 export class Connexion {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly session = inject(SessionService);
 
   protected readonly form = new FormGroup({
     email: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -49,11 +51,7 @@ export class Connexion {
 
   constructor() {
     const raison = inject(ActivatedRoute).snapshot.queryParamMap.get('raison');
-    // Message transmis par l'écran du code reçu par email (US-04 RG3 : trop de codes faux).
-    const messageTransmis = (history.state as { message?: string } | null)?.message;
-    if (messageTransmis) {
-      this.info.set({ ton: 'erreur', texte: messageTransmis });
-    } else if (raison && MESSAGES_DE_RETOUR[raison]) {
+    if (raison && MESSAGES_DE_RETOUR[raison]) {
       this.info.set(MESSAGES_DE_RETOUR[raison]);
     }
   }
@@ -76,12 +74,11 @@ export class Connexion {
     const { email, motDePasse } = this.form.getRawValue();
     this.enCours.set(true);
     this.auth.seConnecter(email, motDePasse).subscribe({
-      next: (reponse) => {
+      next: (session) => {
         this.enCours.set(false);
-        // US-03 CA1 : l'écran du code reçu par email s'affiche (US-04).
-        void this.router.navigate(['/verification-code'], {
-          state: { defi: reponse.defi, emailMasque: reponse.emailMasque },
-        });
+        this.session.ouvrir(session);
+        // US-03 RG3 : le collaborateur arrive sur ses dossiers, le dirigeant sur son espace client.
+        void this.router.navigate([accueil(session.role)]);
       },
       error: (err: HttpErrorResponse) => {
         this.enCours.set(false);
@@ -101,8 +98,6 @@ export class Connexion {
         return { ton: 'erreur', texte: MESSAGE_IDENTIFIANTS_INCORRECTS };
       case 423: // US-05 CA1 : compte bloqué 15 minutes
         return { ton: 'avertissement', texte: texteServeur ?? 'Compte bloqué 15 minutes' };
-      case 503: // US-04 : « L’email n’a pas pu être envoyé. Réessayez. » (message du serveur)
-        return { ton: 'erreur', texte: texteServeur ?? MESSAGE_SERVICE_INDISPONIBLE };
       default:
         return { ton: 'erreur', texte: MESSAGE_SERVICE_INDISPONIBLE };
     }

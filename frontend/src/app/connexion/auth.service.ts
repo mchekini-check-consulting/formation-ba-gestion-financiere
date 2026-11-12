@@ -5,16 +5,7 @@ import { apiBase } from '../api';
 
 export type Role = 'COLLABORATEUR' | 'DIRIGEANT';
 
-/** US-03 : email + mot de passe corrects -> écran du code reçu par email (US-04). */
-export interface ConnexionReponse {
-  etapeSuivante: 'CODE_EMAIL';
-  /** Identifie la tentative de connexion, à renvoyer avec le code. */
-  defi: string;
-  /** Ex. « j•••••@cabinet-test.fr ». */
-  emailMasque: string;
-}
-
-/** US-04 : bon code -> session ouverte (US-07). */
+/** US-03 : email + mot de passe corrects -> session ouverte directement (US-07). */
 export interface SessionOuverte {
   jeton: string;
   role: Role;
@@ -33,22 +24,14 @@ export interface DemandeEnvoyee {
   message: string;
 }
 
-/** Appels d'authentification au backend (via le gateway) : US-03 à US-07. */
+/** Appels d'authentification au backend (via le gateway) : US-03, US-05 à US-07. */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly url = `${apiBase()}/auth`;
 
-  seConnecter(email: string, motDePasse: string): Observable<ConnexionReponse> {
-    return this.http.post<ConnexionReponse>(`${this.url}/connexion`, { email, motDePasse });
-  }
-
-  validerCode(defi: string, code: string): Observable<SessionOuverte> {
-    return this.http.post<SessionOuverte>(`${this.url}/code`, { defi, code });
-  }
-
-  renvoyerCode(defi: string): Observable<void> {
-    return this.http.post<void>(`${this.url}/code/renvoyer`, { defi });
+  seConnecter(email: string, motDePasse: string): Observable<SessionOuverte> {
+    return this.http.post<SessionOuverte>(`${this.url}/connexion`, { email, motDePasse });
   }
 
   /** Session encore active ? Compte aussi comme une activité côté serveur. */
