@@ -1,7 +1,7 @@
 // US-12 Factures d'un dossier : mêmes couleurs que la liste des dossiers.
 $encre: #0b1b3a;
-$or: #2563eb;
-$gris: #52627a;
+$or: #1d4ed8;
+$gris: #42526b;
 
 :host {
   display: flex;
@@ -51,7 +51,7 @@ th {
 
   &--nouvelle {
     background: #fff1db;
-    color: #8a4b00;
+    color: #7a4100;
   }
 }
 

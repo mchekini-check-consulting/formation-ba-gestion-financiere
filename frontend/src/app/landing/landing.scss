@@ -8,11 +8,11 @@ $sand-2: #ebf1f9;
 $line: #dbe4f0;
 $line-2: #cbd6e6;
 $line-3: #e8eef8;
-$gold: #2563eb;
+$gold: #1d4ed8;
 $gold-dark: #1e40af;
 $gold-light: #93c5fd;
 $text-2: #3b4a63;
-$text-3: #52627a;
+$text-3: #42526b;
 $text-nav: #1e293b;
 $on-dark: #b8c6da;
 $serif: 'Playfair Display', Inter, sans-serif;
@@ -118,7 +118,7 @@ h3 {
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
-  color: #8a4b00;
+  color: #7a4100;
   background: #fff1db;
   padding: 4px 10px;
   border-radius: 999px;
@@ -253,34 +253,23 @@ h3 {
 .hero {
   position: relative;
   overflow: hidden;
-  // Ciel : halo lumineux en haut à droite, dégradé bleu vers l'horizon.
+  // Fond : photo de gratte-ciel, éclaircie à gauche par un voile blanc
+  // pour que le texte reste lisible.
   background:
-    radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 32%),
-    linear-gradient(180deg, #e6efff 0%, #f4f8ff 42%, #d6e5fb 100%);
+    linear-gradient(90deg, rgba(244, 248, 255, 0.96) 0%, rgba(244, 248, 255, 0.9) 45%, rgba(244, 248, 255, 0.45) 100%),
+    url('/landing/gratte-ciel.jpg') center / cover no-repeat;
   border-bottom: 1px solid $line;
 
-  // Gratte-ciel en fond, posés en bas de l'accroche, derrière le texte.
-  &__skyline {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    height: 280px;
-    pointer-events: none;
-
-    @media (max-width: 760px) {
-      height: 170px;
-    }
+  @media (max-width: 760px) {
+    background:
+      linear-gradient(180deg, rgba(244, 248, 255, 0.92) 0%, rgba(244, 248, 255, 0.85) 100%),
+      url('/landing/gratte-ciel.jpg') center / cover no-repeat;
   }
 
   &__inner {
     position: relative;
-    padding: 80px 24px 200px;
+    padding: 96px 24px;
     display: flex;
-
-    @media (max-width: 760px) {
-      padding-bottom: 130px;
-    }
     flex-wrap: wrap;
     gap: 56px;
     align-items: center;
@@ -453,7 +442,7 @@ h3 {
   &__status {
     font-size: 11px;
     font-weight: 600;
-    color: #157347;
+    color: #116035;
     background: #e3f5ea;
     padding: 4px 9px;
     border-radius: 999px;
@@ -505,7 +494,7 @@ h3 {
   &__type {
     font-size: 10px;
     font-weight: 700;
-    color: #b42318;
+    color: #a11d13;
     background: #feeceb;
     padding: 3px 5px;
     border-radius: 4px;

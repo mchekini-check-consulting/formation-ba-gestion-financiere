@@ -1,7 +1,7 @@
 // Maquettes « Liste des dossiers » et « Session expirée ».
 $encre: #0b1b3a;
 $creme: #fcfdff;
-$or: #2563eb;
+$or: #1d4ed8;
 
 :host {
   display: block;
@@ -23,7 +23,11 @@ $or: #2563eb;
   gap: 22px;
   max-width: 100%;
   padding: 20px 14px;
-  background: $encre;
+  // Photo de gratte-ciel (même que la page d'accueil) sous un voile bleu
+  // foncé, pour que le texte blanc reste lisible.
+  background:
+    linear-gradient(180deg, rgba(11, 27, 58, 0.82) 0%, rgba(11, 27, 58, 0.9) 100%),
+    url('/landing/gratte-ciel.jpg') center / cover no-repeat;
   color: $creme;
 
   &__brand {
@@ -82,7 +86,7 @@ $or: #2563eb;
   }
 
   &__role {
-    color: #94a3b8;
+    color: #b8c6da;
   }
 
   &__deconnexion {
@@ -156,7 +160,7 @@ $or: #2563eb;
     height: 84px;
     border-radius: 50%;
     background: #fff1db;
-    color: #8a4b00;
+    color: #7a4100;
     font-family: 'Playfair Display', Inter, sans-serif;
     font-size: 24px;
     font-weight: 800;
