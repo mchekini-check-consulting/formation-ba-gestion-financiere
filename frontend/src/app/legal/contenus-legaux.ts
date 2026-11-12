@@ -63,7 +63,7 @@ export const PAGES_LEGALES: Record<PageLegaleId, PageLegaleContenu> = {
         titre: 'Comptes et accès',
         texte:
           "Le compte du cabinet est créé à son inscription ; les collaborateurs et les dirigeants sont invités par le cabinet. " +
-          'Les identifiants sont personnels ; un code de vérification est envoyé par email à la connexion.',
+          'Les identifiants sont personnels et ne doivent pas être partagés.',
       },
       {
         titre: 'Données et confidentialité',

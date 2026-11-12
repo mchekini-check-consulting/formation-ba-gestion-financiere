@@ -1,6 +1,6 @@
 package com.example.gestionfinanciere.notification;
 
-// Envoi d'un email transactionnel : code de connexion (US-04), code de confirmation de la
+// Envoi d'un email transactionnel : code de confirmation de la
 // création de compte (US-36), compte bloqué (US-05), lien de réinitialisation (US-06),
 // invitation (US-19). Envoi SMTP (EnvoiEmailSmtp) si un serveur est configuré, sinon simple
 // trace (EnvoiEmailJournal) : voir EnvoiEmailConfiguration.

@@ -251,12 +251,36 @@ h3 {
 
 // Accroche
 .hero {
-  background: $sand;
+  position: relative;
+  overflow: hidden;
+  // Ciel : halo lumineux en haut à droite, dégradé bleu vers l'horizon.
+  background:
+    radial-gradient(circle at 82% 12%, rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0) 32%),
+    linear-gradient(180deg, #e6efff 0%, #f4f8ff 42%, #d6e5fb 100%);
   border-bottom: 1px solid $line;
 
+  // Gratte-ciel en fond, posés en bas de l'accroche, derrière le texte.
+  &__skyline {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 280px;
+    pointer-events: none;
+
+    @media (max-width: 760px) {
+      height: 170px;
+    }
+  }
+
   &__inner {
-    padding: 80px 24px 88px;
+    position: relative;
+    padding: 80px 24px 200px;
     display: flex;
+
+    @media (max-width: 760px) {
+      padding-bottom: 130px;
+    }
     flex-wrap: wrap;
     gap: 56px;
     align-items: center;
