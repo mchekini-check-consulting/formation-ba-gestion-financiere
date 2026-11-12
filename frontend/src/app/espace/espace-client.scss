@@ -1,9 +1,9 @@
 // Espace client du dirigeant (US-15, US-38, US-16) : mêmes couleurs que le dossier côté cabinet.
 $encre: #0b1b3a;
 $creme: #fcfdff;
-$or: #2563eb;
+$or: #1d4ed8;
 $bord: #dbe4f0;
-$gris: #52627a;
+$gris: #42526b;
 
 :host {
   display: flex;
@@ -129,7 +129,7 @@ h2 {
 
   &--refus {
     background: #fff1db;
-    color: #8a4b00;
+    color: #7a4100;
   }
 
   &__message {

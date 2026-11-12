@@ -1,11 +1,11 @@
 // Maquette « Pointéo – Connexion ».
 $encre: #0b1b3a;
 $creme: #fcfdff;
-$or: #2563eb;
+$or: #1d4ed8;
 $or-fonce: #1e40af;
-$gris: #52627a;
+$gris: #42526b;
 $bordure: #cbd6e6;
-$rouge: #b42318;
+$rouge: #a11d13;
 
 :host {
   display: block;
@@ -37,7 +37,11 @@ a {
   justify-content: space-between;
   gap: 40px;
   padding: 48px;
-  background: $encre;
+  // Photo de gratte-ciel (même que la page d'accueil) sous un voile bleu
+  // foncé, pour que le texte blanc reste lisible.
+  background:
+    linear-gradient(180deg, rgba(11, 27, 58, 0.82) 0%, rgba(11, 27, 58, 0.9) 100%),
+    url('/landing/gratte-ciel.jpg') center / cover no-repeat;
   color: $creme;
 
   &__pitch {
@@ -78,7 +82,7 @@ a {
 
   &__note {
     font-size: 13px;
-    color: #94a3b8;
+    color: #b8c6da;
   }
 }
 
@@ -419,7 +423,7 @@ a {
   font-size: 13px;
 
   .ok {
-    color: #157347;
+    color: #116035;
   }
 
   .ko {
