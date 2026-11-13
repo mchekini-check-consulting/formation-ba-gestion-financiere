@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.io.IOException;
 import java.net.URI;
@@ -24,11 +25,10 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import com.example.gestionfinanciere.cabinet.CabinetRepository;
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
-import com.example.gestionfinanciere.notification.EmailsRecus;
 import com.example.gestionfinanciere.notification.EnvoiEmail;
 
 // US-36 Créer le compte de son cabinet (PTO-61) : vrai serveur HTTP, migrations Flyway et
-// PostgreSQL 16 jetable ; le code de confirmation est lu dans l'email envoyé (simulé).
+// PostgreSQL 16 jetable. Le cabinet est créé dès le formulaire, sans code reçu par email.
 // Chaque test utilise son propre SIREN et son propre email : aucun test ne dépend d'un autre.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -40,7 +40,7 @@ class InscriptionIT {
 
 	private static final String MOT_DE_PASSE = "Pointeo2026!!";
 
-	// Emails simulés : le code ou le lien est lu dans l'email envoyé, jamais dans la réponse.
+	// Emails simulés : on vérifie qu'aucun email n'est envoyé.
 	@MockitoBean
 	private EnvoiEmail envoiEmail;
 
@@ -78,19 +78,9 @@ class InscriptionIT {
 				 "cguAcceptees":true}""".formatted(siren, email, MOT_DE_PASSE));
 	}
 
-	private HttpResponse<String> code(String defi, String code) throws IOException, InterruptedException {
-		return post("/inscription/code", "{\"defi\":\"" + defi + "\",\"code\":\"" + code + "\"}");
-	}
-
-	// Étapes 1 et 2 : renvoie la réponse du code reçu par email.
+	// Le formulaire suffit : le cabinet est créé, sans code reçu par email.
 	private HttpResponse<String> creerCabinet(String siren, String email) throws IOException, InterruptedException {
-		HttpResponse<String> etape1 = formulaire(siren, email);
-		assertThat(etape1.statusCode()).isEqualTo(200);
-		// L'email est enregistré en minuscules (US-03 RG1).
-		String enregistre = email.toLowerCase(java.util.Locale.ROOT);
-		assertThat(champ(etape1, "emailMasque"))
-				.isEqualTo(enregistre.charAt(0) + "•••••" + enregistre.substring(enregistre.indexOf('@')));
-		return code(champ(etape1, "defi"), EmailsRecus.dernierCode(envoiEmail));
+		return formulaire(siren, email);
 	}
 
 	@Test
@@ -108,7 +98,7 @@ class InscriptionIT {
 		Compte claire = comptes.findByEmail(email).orElseThrow();
 		assertThat(claire.isAdministrateur()).isTrue();
 
-		// Étape 3 « Cabinet prêt » : la session ouverte est active (US-07).
+		// Étape 2 « Cabinet prêt » : la session ouverte est active (US-07).
 		HttpRequest session = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/auth/session"))
 				.header("Authorization", "Bearer " + champ(etape2, "jeton")).GET().build();
 		assertThat(http.send(session, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(200);
@@ -131,13 +121,6 @@ class InscriptionIT {
 	}
 
 	@Test
-	void uneInscriptionAbandonneeNeBloquePasLeSiren() throws Exception {
-		String siren = nouveauSiren();
-		assertThat(formulaire(siren, "abandon+" + siren + "@test.fr").statusCode()).isEqualTo(200);
-		assertThat(creerCabinet(siren, "reprise+" + siren + "@test.fr").statusCode()).isEqualTo(200);
-	}
-
-	@Test
 	void emailDejaUtilise() throws Exception {
 		HttpResponse<String> reponse = formulaire(nouveauSiren(), "Jean.Dupont@Cabinet-Test.fr");
 		assertThat(reponse.statusCode()).isEqualTo(409);
@@ -153,19 +136,16 @@ class InscriptionIT {
 	}
 
 	@Test
-	void codeFauxNeCreeRien() throws Exception {
+	void aucunEmailNEstEnvoyeALaCreation() throws Exception {
 		String siren = nouveauSiren();
-		HttpResponse<String> etape1 = formulaire(siren, "faux+" + siren + "@test.fr");
-		String defi = champ(etape1, "defi");
-		String faux = EmailsRecus.dernierCode(envoiEmail).equals("000000") ? "111111" : "000000";
+		assertThat(creerCabinet(siren, "sans-code+" + siren + "@test.fr").statusCode()).isEqualTo(200);
+		verifyNoInteractions(envoiEmail);
+	}
 
-		HttpResponse<String> reponse = code(defi, faux);
-		assertThat(reponse.statusCode()).isEqualTo(401);
-		assertThat(reponse.body()).contains("Code incorrect. Il vous reste 2 tentatives.");
-		assertThat(cabinets.existsBySiren(siren)).isFalse();
-
-		HttpResponse<String> tropTot = post("/inscription/code/renvoyer", "{\"defi\":\"" + defi + "\"}");
-		assertThat(tropTot.statusCode()).isEqualTo(429);
+	@Test
+	void lesRoutesDuCodeNExistentPlus() throws Exception {
+		assertThat(post("/inscription/code", "{\"defi\":\"x\",\"code\":\"123456\"}").statusCode()).isEqualTo(404);
+		assertThat(post("/inscription/code/renvoyer", "{\"defi\":\"x\"}").statusCode()).isEqualTo(404);
 	}
 
 }
