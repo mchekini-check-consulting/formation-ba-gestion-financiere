@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
@@ -40,31 +39,6 @@ class CabinetEtInscriptionTest {
 		Compte jean = new Compte("jean@test.fr", "x", Role.COLLABORATEUR, true, "Jean Dupont");
 		assertFalse(jean.isAdministrateur());
 		assertNull(jean.getCabinet());
-	}
-
-	@Test
-	void inscription() {
-		FormulaireValide f = new FormulaireValide("Cabinet Test", "123456789", "Claire", "Martin", "claire@test.fr",
-				"secret", 120, null);
-		Inscription i = new Inscription(f, "hash", T0, "defi", "code", T0, T0.plus(Duration.ofMinutes(5)));
-		assertNull(i.getId());
-		assertEquals("Cabinet Test", i.getNomCabinet());
-		assertEquals("Claire", i.getPrenom());
-		assertEquals("Martin", i.getNom());
-		assertEquals("Claire Martin", i.nomAffiche());
-		assertEquals("hash", i.getMotDePasseHash());
-		assertNull(i.getCodeParrainageSaisi());
-		assertEquals(T0, i.getEnvoyeLe());
-		assertFalse(i.estExpiree(T0.plus(Duration.ofMinutes(4))));
-		assertTrue(i.estExpiree(T0.plus(Duration.ofMinutes(5))));
-		assertEquals(0, i.getCodesFaux());
-		assertEquals(1, i.enregistrerCodeFaux());
-		assertFalse(i.isTerminee());
-		i.terminer();
-		assertTrue(i.isTerminee());
-		i.remplacerCode("nouveau", T0.plusSeconds(60), T0.plusSeconds(360));
-		assertEquals("nouveau", i.getEmpreinteCode());
-		assertEquals(T0.plusSeconds(360), i.getExpireLe());
 	}
 
 }

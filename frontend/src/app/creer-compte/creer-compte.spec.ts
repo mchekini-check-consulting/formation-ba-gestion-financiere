@@ -1,10 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { SessionService } from '../session/session.service';
-import { CreerCompte, MESSAGE_INDISPONIBLE, TITRE_CONFIRMATION } from './creer-compte';
+import { CreerCompte, MESSAGE_INDISPONIBLE } from './creer-compte';
 import { Formulaire } from './validation';
 
 /** CA1 : formulaire de Claire Martin pour Cabinet Test. */
@@ -84,12 +83,7 @@ describe('Créer un compte (US-36)', () => {
       await envoyer();
       return http.expectOne('/api/inscription');
     };
-    /** Arrivée sur l'étape 2 avec le code de test 482917. */
-    const etape2 = async () => {
-      (await etape1()).flush({ defi: 'defi', emailMasque: 'c•••••@cabinet-test.fr', codeDeTest: '482917' });
-      await stable();
-    };
-    return { fixture, page, saisir, remplir, envoyer, texte, etape1, etape2, stable };
+    return { fixture, page, saisir, remplir, envoyer, texte, etape1, stable };
   }
 
   it('étape 1 : affiche le formulaire « Vos informations »', async () => {
@@ -102,10 +96,11 @@ describe('Créer un compte (US-36)', () => {
     expect(texte('.cgu')).toContain("J'accepte les conditions générales d'utilisation");
     expect(page.querySelector('[data-testid=tarif]')).toBeNull();
     expect(page.querySelector('.steps__num--actif')?.textContent).toBe('1');
-    // Plus de champ mobile : le code part par email.
-    expect(page.querySelector('#mobile')).toBeNull();
-    expect(texte('.steps li:nth-child(2) strong')).toBe('Code email');
-    expect(texte('button[type=submit]')).toBe('Recevoir le code par email');
+    // 2 étapes : plus d'étape « Code email ».
+    expect(page.querySelectorAll('.steps li').length).toBe(2);
+    expect(texte('.steps li:nth-child(2) strong')).toBe('Cabinet prêt');
+    expect(texte('.etape')).toBe('Étape 1 sur 2');
+    expect(texte('button[type=submit]')).toBe('Créer mon cabinet');
   });
 
   it('RG2 : le nombre de dossiers affiche la tranche et le prix mensuel', async () => {
@@ -144,50 +139,21 @@ describe('Créer un compte (US-36)', () => {
     expect(page.querySelector<HTMLInputElement>('#mot-de-passe')!.type).toBe('text');
   });
 
-  it('CA1 étapes 1 et 2 : le formulaire envoie le code par email, puis passe au code', async () => {
+  it('CA1 : le formulaire crée le cabinet, connecte Claire et affiche « Cabinet prêt », sans code email', async () => {
     await configurer();
     const { page, etape1, stable, texte } = await ouvrir();
     const requete = await etape1();
     expect(requete.request.method).toBe('POST');
     expect(requete.request.body).toEqual(claire());
-    requete.flush({ defi: 'defi', emailMasque: 'c•••••@cabinet-test.fr', codeDeTest: '482917' });
-    await stable();
-
-    expect(texte('h1')).toBe('Confirmez votre email');
-    expect(texte('.form__title p')).toBe(
-      'Saisissez le code à 6 chiffres envoyé à claire.martin@cabinet-test.fr. Il est valable 5 minutes.',
-    );
-    expect(texte('.aside__titre')).toBe('Encore une étape : confirmez votre email.');
-    expect(texte('.aside__lead')).toBe(
-      'Un code vous sera envoyé par email à chaque connexion. Il protège l’accès aux dossiers et aux données ' +
-        'bancaires de vos clients.',
-    );
-    expect(texte('button.back')).toBe('← Modifier l’email');
-    expect(texte('label[for=code]')).toBe('Code reçu par email');
-    expect(TestBed.inject(Title).getTitle()).toBe(TITRE_CONFIRMATION);
-    expect(TITRE_CONFIRMATION).toBe('Pointéo – Confirmer l’email');
-    // Le code arrive par email (Mailpit en dev/qualif) : jamais affiché, même si le backend le renvoie.
-    expect(page.textContent).not.toContain('482917');
-    expect(page.querySelector('.steps__num--actif')?.textContent).toBe('2');
-    expect(texte('.renvoi')).toBe('Renvoyer un code dans 60 s');
-  });
-
-  it('CA1 étape 3 : le bon code crée le cabinet, connecte Claire et affiche « Cabinet prêt »', async () => {
-    await configurer();
-    const { page, saisir, envoyer, etape2, stable, texte } = await ouvrir();
-    await etape2();
-    await saisir('#code', '482917');
-    await envoyer();
-    const requete = http.expectOne('/api/inscription/code');
-    expect(requete.request.body).toEqual({ defi: 'defi', code: '482917' });
     requete.flush({ jeton: 'jeton', role: 'COLLABORATEUR', nomAffiche: 'Claire Martin', nomCabinet: 'Cabinet Test' });
     await stable();
 
     expect(texte('h1')).toBe('Cabinet Test est prêt');
-    expect(texte('[data-testid=bandeau]')).toBe('Compte créé et email confirmé');
-    expect(TestBed.inject(Title).getTitle()).not.toBe(TITRE_CONFIRMATION);
+    expect(texte('[data-testid=bandeau]')).toBe('Compte créé');
+    expect(texte('.etape')).toBe('Étape 2 sur 2');
     expect(texte('.form__title p')).toContain('Bienvenue Claire Martin');
-    expect(page.querySelector('.steps__num--actif')?.textContent).toBe('3');
+    expect(page.querySelector('.steps__num--actif')?.textContent).toBe('2');
+    expect(page.querySelector('#code')).toBeNull();
     expect(page.querySelectorAll('.action').length).toBe(3);
     expect(TestBed.inject(SessionService).jeton()).toBe('jeton');
     expect(TestBed.inject(SessionService).utilisateur()).toEqual({
@@ -196,6 +162,19 @@ describe('Créer un compte (US-36)', () => {
       administrateur: true,
     });
     expect(page.querySelector('.action a[href="/equipe"]')?.textContent).toBe('Inviter mes collaborateurs');
+  });
+
+  it('pendant la création, le bouton est désactivé et un second clic n’envoie rien', async () => {
+    await configurer();
+    const { page, etape1, stable, texte } = await ouvrir();
+    const requete = await etape1();
+    expect(texte('button[type=submit]')).toBe('Création du cabinet…');
+    expect(page.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(true);
+    page.querySelector('form')!.dispatchEvent(new Event('submit'));
+    await stable();
+    http.expectNone('/api/inscription');
+    requete.flush({ jeton: 'jeton', role: 'COLLABORATEUR', nomAffiche: 'Claire Martin', nomCabinet: 'Cabinet Test' });
+    await stable();
   });
 
   it('CA2 : SIREN déjà utilisé -> message affiché, sous le SIREN aussi', async () => {
@@ -217,103 +196,5 @@ describe('Créer un compte (US-36)', () => {
     (await etape1()).flush(null, { status: 500, statusText: 'Server Error' });
     await stable();
     expect(texte('[data-testid=alerte]')).toBe(MESSAGE_INDISPONIBLE);
-  });
-
-  it('code faux -> message et code vidé ; code expiré -> avertissement', async () => {
-    await configurer();
-    const { page, saisir, envoyer, etape2, stable, texte } = await ouvrir();
-    await etape2();
-    await saisir('#code', '111111');
-    await envoyer();
-    http
-      .expectOne('/api/inscription/code')
-      .flush(
-        { message: 'Code incorrect. Il vous reste 2 tentatives.', tentativesRestantes: 2, retourFormulaire: false },
-        { status: 401, statusText: 'Unauthorized' },
-      );
-    await stable();
-    expect(texte('[data-testid=alerte]')).toBe('Code incorrect. Il vous reste 2 tentatives.');
-    expect(page.querySelector<HTMLInputElement>('#code')!.value).toBe('');
-
-    await saisir('#code', '482917');
-    await envoyer();
-    http
-      .expectOne('/api/inscription/code')
-      .flush({ message: 'Ce code a expiré. Demandez un nouveau code.' }, { status: 410, statusText: 'Gone' });
-    await stable();
-    expect(page.querySelector('.alert--avertissement')?.textContent).toContain('expiré');
-  });
-
-  it('trop de codes faux -> retour au formulaire, informations conservées', async () => {
-    await configurer();
-    const { page, saisir, envoyer, etape2, stable, texte } = await ouvrir();
-    await etape2();
-    await saisir('#code', '111111');
-    await envoyer();
-    http
-      .expectOne('/api/inscription/code')
-      .flush(
-        { message: 'Trop de codes incorrects.', tentativesRestantes: 0, retourFormulaire: true },
-        { status: 401, statusText: 'Unauthorized' },
-      );
-    await stable();
-    expect(texte('h1')).toBe('Créer un compte');
-    expect(texte('[data-testid=alerte]')).toBe('Trop de codes incorrects.');
-    expect(page.querySelector<HTMLInputElement>('#siren')!.value).toBe('123 456 789');
-  });
-
-  it('« Modifier l’email » revient à l’étape 1', async () => {
-    await configurer();
-    const { page, etape2, stable, texte } = await ouvrir();
-    await etape2();
-    page.querySelector<HTMLButtonElement>('button.back')!.click();
-    await stable();
-    expect(texte('h1')).toBe('Créer un compte');
-    expect(page.querySelector<HTMLInputElement>('#email')!.value).toBe('claire.martin@cabinet-test.fr');
-  });
-
-  it('renvoi du code après 60 secondes', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-    await configurer();
-    const { page, etape2, stable, texte } = await ouvrir();
-    await etape2();
-    vi.advanceTimersByTime(60_000);
-    await stable();
-    page.querySelector<HTMLButtonElement>('.renvoi button')!.click();
-    http.expectOne('/api/inscription/code/renvoyer').flush({ codeDeTest: '555666' });
-    await stable();
-    expect(page.textContent).not.toContain('555666');
-    expect(texte('[data-testid=alerte]')).toBe('Un nouveau code vous a été envoyé.');
-
-    vi.advanceTimersByTime(60_000);
-    await stable();
-    page.querySelector<HTMLButtonElement>('.renvoi button')!.click();
-    http
-      .expectOne('/api/inscription/code/renvoyer')
-      .flush({ message: 'Vous pourrez…', secondesRestantes: 12 }, { status: 429, statusText: 'Too Many Requests' });
-    await stable();
-    expect(texte('.renvoi')).toBe('Renvoyer un code dans 12 s');
-  });
-
-  it('renvoi refusé : demande expirée -> formulaire ; email impossible -> message', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
-    await configurer();
-    const { page, etape2, stable, texte } = await ouvrir();
-    await etape2();
-    vi.advanceTimersByTime(60_000);
-    await stable();
-    page.querySelector<HTMLButtonElement>('.renvoi button')!.click();
-    http
-      .expectOne('/api/inscription/code/renvoyer')
-      .flush({ message: 'L’email n’a pas pu être envoyé. Réessayez.' }, { status: 503, statusText: 'Unavailable' });
-    await stable();
-    expect(texte('[data-testid=alerte]')).toBe('L’email n’a pas pu être envoyé. Réessayez.');
-
-    page.querySelector<HTMLButtonElement>('.renvoi button')!.click();
-    http
-      .expectOne('/api/inscription/code/renvoyer')
-      .flush({ message: 'Recommencez.', retourFormulaire: true }, { status: 401, statusText: 'Unauthorized' });
-    await stable();
-    expect(texte('h1')).toBe('Créer un compte');
   });
 });
