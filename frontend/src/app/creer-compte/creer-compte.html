@@ -126,7 +126,7 @@
             <legend>Votre abonnement</legend>
             <div class="field">
               <label for="nombre-dossiers">Nombre de dossiers prévus</label>
-              <input id="nombre-dossiers" type="number" min="1" step="1" formControlName="nombreDossiers" placeholder="120"
+              <input id="nombre-dossiers" type="text" inputmode="numeric" autocomplete="off" formControlName="nombreDossiers" placeholder="120"
                 [class.invalid]="erreur('nombreDossiers')" [attr.aria-invalid]="!!erreur('nombreDossiers')" />
               @if (erreur('nombreDossiers'); as e) { <span class="field__error">{{ e }}</span> }
             </div>

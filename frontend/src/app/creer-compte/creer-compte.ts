@@ -27,6 +27,18 @@ export const MESSAGE_INDISPONIBLE = 'La création du compte est momentanément i
 /** Titre de l'onglet à l'étape 2 « Code email ». */
 export const TITRE_CONFIRMATION = 'Pointéo – Confirmer l’email';
 
+/**
+ * Nombre de dossiers tapé au clavier : vide -> null (« obligatoire »), espaces ignorés (« 1 000 »),
+ * autre chose que des chiffres -> NaN (« Indiquez au moins 1 dossier »).
+ */
+export function nombreSaisi(saisie: string): number | null {
+  const chiffres = saisie.replace(/\s/g, '');
+  if (!chiffres) {
+    return null;
+  }
+  return /^\d+$/.test(chiffres) ? Number(chiffres) : Number.NaN;
+}
+
 /** US-36 Connaître le tarif et créer le compte de son cabinet (écran « Créer un compte »). */
 @Component({
   imports: [ReactiveFormsModule, RouterLink],
@@ -47,7 +59,8 @@ export class CreerCompte implements OnDestroy {
     nom: new FormControl('', { nonNullable: true }),
     email: new FormControl('', { nonNullable: true }),
     motDePasse: new FormControl('', { nonNullable: true }),
-    nombreDossiers: new FormControl<number | null>(null),
+    /** Saisie libre au clavier (texte), convertie en nombre par valeur(). */
+    nombreDossiers: new FormControl('', { nonNullable: true }),
     codeParrainage: new FormControl('', { nonNullable: true }),
     cguAcceptees: new FormControl(false, { nonNullable: true }),
   });
@@ -90,7 +103,7 @@ export class CreerCompte implements OnDestroy {
     // Nombre de dossiers saisi dans le simulateur de la landing page (?dossiers=120).
     const dossiers = Number(inject(ActivatedRoute).snapshot.queryParamMap.get('dossiers'));
     if (Number.isInteger(dossiers) && dossiers > 0) {
-      this.form.controls.nombreDossiers.setValue(dossiers);
+      this.form.controls.nombreDossiers.setValue(String(dossiers));
     }
     this.form.valueChanges
       .pipe(takeUntilDestroyed(inject(DestroyRef)))
@@ -214,7 +227,8 @@ export class CreerCompte implements OnDestroy {
   }
 
   private valeur(): Formulaire {
-    return this.form.getRawValue();
+    const brut = this.form.getRawValue();
+    return { ...brut, nombreDossiers: nombreSaisi(brut.nombreDossiers) };
   }
 
   private demarrerMinuteur(secondes: number): void {
