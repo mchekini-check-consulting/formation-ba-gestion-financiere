@@ -88,7 +88,6 @@ export class Landing {
     { title: 'Synchronisation bancaire', text: 'Les opérations de vos clients chaque matin, en lecture seule.' },
     { title: 'Rapprochement automatique', text: 'Pointéo propose la facture de chaque opération, vous validez.' },
     { title: 'CRM', text: 'Vos échanges et missions avec chaque client.' },
-    { title: 'Suivi des temps', text: 'Le temps passé par dossier et par collaborateur.' },
   ];
 
   protected readonly included = [
@@ -120,8 +119,8 @@ export class Landing {
       a: 'Chaque cabinet ne voit que ses dossiers, chaque client que son entreprise, et un compte est bloqué après 3 mots de passe incorrects.',
     },
     {
-      q: 'Quand arrivent les modules CRM et Suivi des temps ?',
-      a: 'Ils sont visibles dans chaque dossier avec la mention « Bientôt disponible » et seront activés dans une prochaine version.',
+      q: 'Quand arrivent les nouveaux modules ?',
+      a: 'Synchronisation bancaire, rapprochement automatique et CRM sont visibles dans le menu de gauche avec la mention « Bientôt » et seront activés dans une prochaine version.',
     },
     {
       q: 'Pointéo remplace-t-il notre logiciel comptable ?',

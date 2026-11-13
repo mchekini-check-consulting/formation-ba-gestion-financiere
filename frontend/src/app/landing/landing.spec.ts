@@ -57,6 +57,13 @@ describe('Landing', () => {
     expect(compiled.querySelectorAll('.tile .soon').length).toBe(5);
   });
 
+  it('should list the upcoming modules, without Suivi des temps', async () => {
+    await render();
+    const cartes = Array.from(compiled.querySelectorAll('.upcoming__card strong')).map((e) => e.textContent?.trim());
+    expect(cartes).toEqual(['Synchronisation bancaire', 'Rapprochement automatique', 'CRM']);
+    expect(compiled.textContent).not.toContain('Suivi des temps');
+  });
+
   it('should switch to the entreprises tab', async () => {
     await render();
     button('Entreprises clientes').click();
