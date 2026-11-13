@@ -70,6 +70,22 @@ class ConnexionIT {
 		assertThat(reponse.body()).contains("\"jeton\":").contains("\"role\":\"DIRIGEANT\"");
 	}
 
+	// V19 : le dirigeant de démonstration est rattaché à un dossier, son espace client liste ses dépôts.
+	@Test
+	void dirigeantDeDemonstrationVoitSesDepots() throws Exception {
+		String corps = seConnecter("sophie.martin@boulangerie-test.fr", MOT_DE_PASSE_DEMO).body();
+		String jeton = corps.replaceAll(".*\"jeton\":\"([^\"]+)\".*", "$1");
+		HttpRequest requete = HttpRequest
+				.newBuilder(URI.create("http://localhost:" + port + "/espace-client/factures?sens=ACHAT"))
+				.header("Authorization", "Bearer " + jeton)
+				.GET()
+				.build();
+		HttpResponse<String> reponse = http.send(requete, HttpResponse.BodyHandlers.ofString());
+		assertThat(reponse.statusCode()).isEqualTo(200);
+		assertThat(reponse.body()).isEqualTo("[]");
+		assertThat(comptes.findByEmail("sophie.martin@boulangerie-test.fr").orElseThrow().getDossierId()).isNotNull();
+	}
+
 	@Test
 	void rg1EmailEnMajusculesAccepte() throws Exception {
 		assertThat(seConnecter("Jean.Dupont@Cabinet-Test.fr", MOT_DE_PASSE_DEMO).statusCode()).isEqualTo(200);

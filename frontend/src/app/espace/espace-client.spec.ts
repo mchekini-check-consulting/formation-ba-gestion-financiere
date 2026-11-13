@@ -84,6 +84,22 @@ describe('Espace client du dirigeant (US-15, US-38, US-16)', () => {
     return trouve as HTMLButtonElement;
   }
 
+  it('Mes dépôts : refus du serveur (403) affiché tel quel, autre erreur -> message générique', async () => {
+    const message = 'Seuls les dirigeants clients ont accès à leur espace';
+    const fixture = TestBed.createComponent(EspaceClient);
+    await fixture.whenStable();
+    const page = fixture.nativeElement as HTMLElement;
+    http.expectOne(`${URL}?sens=ACHAT`).flush({ message }, { status: 403, statusText: 'Forbidden' });
+    await fixture.whenStable();
+    expect(page.querySelector('.alerte')?.textContent).toBe(message);
+
+    bouton(page, 'Factures clients (ventes)').click();
+    await fixture.whenStable();
+    http.expectOne(`${URL}?sens=VENTE`).flush(null, { status: 500, statusText: 'Server Error' });
+    await fixture.whenStable();
+    expect(page.querySelector('.alerte')?.textContent).toBe(INDISPONIBLE);
+  });
+
   it('US-16 RG1 : mes dépôts avec la date ; CA2 : pas de « Supprimer » si le cabinet l’a ouverte', async () => {
     const { page } = await ouvrir();
     expect(page.querySelector('h1')?.textContent).toBe('Bonjour Sophie Martin');
