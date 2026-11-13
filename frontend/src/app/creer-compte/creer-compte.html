@@ -7,15 +7,7 @@
       </svg>
       <span>Pointéo</span>
     </a>
-    @if (etape() === 'code') {
-      <h2 class="aside__titre">Encore une étape : confirmez votre email.</h2>
-      <p class="aside__lead">
-        Un code vous sera envoyé par email à chaque connexion. Il protège l’accès aux dossiers et aux données bancaires
-        de vos clients.
-      </p>
-    } @else {
-      <h2 class="aside__titre">Créez le compte de votre cabinet en quelques minutes.</h2>
-    }
+    <h2 class="aside__titre">Créez le compte de votre cabinet en quelques minutes.</h2>
     <ol class="steps" aria-label="Étapes de la création du compte">
       <li [attr.aria-current]="etape() === 'informations' ? 'step' : null">
         <span class="steps__num" [class.steps__num--actif]="etape() === 'informations'">1</span>
@@ -24,15 +16,8 @@
           <span>Votre cabinet, vous, et le nombre de dossiers prévus.</span>
         </span>
       </li>
-      <li [attr.aria-current]="etape() === 'code' ? 'step' : null">
-        <span class="steps__num" [class.steps__num--actif]="etape() === 'code'">2</span>
-        <span class="steps__texte">
-          <strong>Code email</strong>
-          <span>Pour confirmer votre email.</span>
-        </span>
-      </li>
       <li [attr.aria-current]="etape() === 'pret' ? 'step' : null">
-        <span class="steps__num" [class.steps__num--actif]="etape() === 'pret'">3</span>
+        <span class="steps__num" [class.steps__num--actif]="etape() === 'pret'">2</span>
         <span class="steps__texte">
           <strong>Cabinet prêt</strong>
           <span>Invitez votre équipe et vos clients.</span>
@@ -48,8 +33,8 @@
   <main class="main">
     @switch (etape()) {
       @case ('informations') {
-        <form class="form" [formGroup]="form" (ngSubmit)="envoyerFormulaire()" novalidate>
-          <span class="etape">Étape 1 sur 3</span>
+        <form class="form" [formGroup]="form" (ngSubmit)="creerCabinet()" novalidate>
+          <span class="etape">Étape 1 sur 2</span>
           <div class="form__title">
             <h1>Créer un compte</h1>
             <p>Déjà client ? <a routerLink="/connexion">Se connecter</a></p>
@@ -154,52 +139,16 @@
           </div>
 
           <button type="submit" class="submit" [disabled]="enCours()">
-            {{ enCours() ? 'Envoi…' : 'Recevoir le code par email' }}
+            {{ enCours() ? 'Création du cabinet…' : 'Créer mon cabinet' }}
           </button>
-        </form>
-      }
-
-      @case ('code') {
-        <form class="form" (submit)="$event.preventDefault(); validerCode()" novalidate>
-          <button type="button" class="back" (click)="revenirAuFormulaire()">← Modifier l’email</button>
-          <span class="etape">Étape 2 sur 3</span>
-          <div class="form__title">
-            <h1>Confirmez votre email</h1>
-            <p>
-              Saisissez le code à 6 chiffres envoyé à <strong data-testid="email">{{ emailSaisi() }}</strong>.
-              Il est valable 5 minutes.
-            </p>
-          </div>
-
-          @if (alerte(); as m) {
-            <div [attr.role]="m.ton === 'succes' ? 'status' : 'alert'" class="alert alert--{{ m.ton }}" data-testid="alerte">{{ m.texte }}</div>
-          }
-
-          <div class="field">
-            <label for="code">Code reçu par email</label>
-            <input id="code" class="code-unique" [formControl]="code" inputmode="numeric" autocomplete="one-time-code"
-              maxlength="6" placeholder="••••••" />
-          </div>
-
-          <button type="submit" class="submit" [disabled]="!codeComplet() || enCours()">
-            {{ enCours() ? 'Création du cabinet…' : 'Valider et créer mon cabinet' }}
-          </button>
-
-          <div class="renvoi">
-            @if (secondesAvantRenvoi() > 0) {
-              Renvoyer un code dans {{ secondesAvantRenvoi() }} s
-            } @else {
-              <button type="button" (click)="renvoyerCode()">Renvoyer un code</button>
-            }
-          </div>
         </form>
       }
 
       @case ('pret') {
         @if (cabinet(); as c) {
           <section class="form pret" aria-labelledby="titre-pret">
-            <span class="etape">Étape 3 sur 3</span>
-            <div role="status" class="alert alert--succes" data-testid="bandeau">Compte créé et email confirmé</div>
+            <span class="etape">Étape 2 sur 2</span>
+            <div role="status" class="alert alert--succes" data-testid="bandeau">Compte créé</div>
             <div class="pret__badge" aria-hidden="true">✓</div>
             <div class="form__title">
               <h1 id="titre-pret">{{ c.nomCabinet }} est prêt</h1>

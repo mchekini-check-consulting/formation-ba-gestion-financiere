@@ -38,7 +38,6 @@ class ReglesEtEntitesTest {
 		assertNotEquals(jeton, Jetons.nouveau());
 		assertEquals(64, Jetons.empreinte(jeton).length());
 		assertEquals(Jetons.empreinte(jeton), Jetons.empreinte(jeton));
-		assertTrue(Jetons.codeSixChiffres().matches("\\d{6}"));
 	}
 
 	@Test

@@ -2,20 +2,20 @@ package com.example.gestionfinanciere.cabinet;
 
 import java.util.Map;
 
-import com.example.gestionfinanciere.compte.DefiCode;
+import com.example.gestionfinanciere.compte.Compte;
 
-// Issue de l'étape 1 « Vos informations » (US-36) : code envoyé par email, ou ce qui bloque.
-public record ResultatInscription(Statut statut, Map<String, String> erreurs, DefiCode defi) {
+// Issue du formulaire « Vos informations » (US-36) : cabinet créé avec son administrateur, ou ce qui bloque.
+public record ResultatInscription(Statut statut, Map<String, String> erreurs, Compte compte) {
 
 	public enum Statut {
-		CODE_ENVOYE,
+		CABINET_CREE,
 		INVALIDE,
 		SIREN_DEJA_UTILISE,
 		EMAIL_DEJA_UTILISE
 	}
 
-	static ResultatInscription codeEnvoye(DefiCode defi) {
-		return new ResultatInscription(Statut.CODE_ENVOYE, Map.of(), defi);
+	static ResultatInscription cabinetCree(Compte administrateur) {
+		return new ResultatInscription(Statut.CABINET_CREE, Map.of(), administrateur);
 	}
 
 	static ResultatInscription invalide(Map<String, String> erreurs) {
