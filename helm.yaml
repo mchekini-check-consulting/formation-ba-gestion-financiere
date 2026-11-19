@@ -99,7 +99,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: a33080f
-      qualif: 203239b
+      qualif: a33080f
       preprod: ""
       prod: ""
     containerPort: 8080
