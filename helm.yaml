@@ -13,7 +13,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: 6c7af8e
-      qualif: 203239b
+      qualif: 6c7af8e
       preprod: ""
       prod: ""
     containerPort: 8080
