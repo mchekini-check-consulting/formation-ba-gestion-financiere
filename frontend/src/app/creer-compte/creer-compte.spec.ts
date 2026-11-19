@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { SessionService } from '../session/session.service';
-import { CreerCompte, MESSAGE_INDISPONIBLE } from './creer-compte';
+import { CreerCompte, MESSAGE_INDISPONIBLE, nombreSaisi } from './creer-compte';
 import { Formulaire } from './validation';
 
 /** CA1 : formulaire de Claire Martin pour Cabinet Test. */
@@ -111,6 +111,28 @@ describe('Créer un compte (US-36)', () => {
     expect(texte('[data-testid=tarif] strong')).toBe('960 € HT par mois');
     await saisir('#nombre-dossiers', '300');
     expect(texte('[data-testid=tarif] strong')).toBe('2 100 € HT par mois');
+  });
+
+  it('nombre de dossiers en saisie libre au clavier (pas de flèches)', async () => {
+    await configurer();
+    const { page, saisir, envoyer, texte } = await ouvrir();
+    const champ = page.querySelector<HTMLInputElement>('#nombre-dossiers')!;
+    expect(champ.type).toBe('text');
+    expect(champ.inputMode).toBe('numeric');
+    await saisir('#nombre-dossiers', '1 000');
+    expect(texte('[data-testid=tarif] strong')).toContain('€ HT par mois');
+    await saisir('#nombre-dossiers', 'abc');
+    await envoyer();
+    expect(texte('#nombre-dossiers + .field__error')).toBe('Indiquez au moins 1 dossier');
+  });
+
+  it('nombreSaisi convertit la saisie en nombre', () => {
+    expect(nombreSaisi('')).toBeNull();
+    expect(nombreSaisi('  ')).toBeNull();
+    expect(nombreSaisi('120')).toBe(120);
+    expect(nombreSaisi(' 1 000 ')).toBe(1000);
+    expect(nombreSaisi('12,5')).toBeNaN();
+    expect(nombreSaisi('-3')).toBeNaN();
   });
 
   it('reprend le nombre de dossiers du simulateur de la landing page', async () => {
