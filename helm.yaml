@@ -12,8 +12,8 @@ applications:
     # Garder une valeur par ligne, sans commentaire en fin de ligne : Kargo
     # remplace tout jusqu'à la fin de la ligne.
     tag:
-      dev: 203239b
-      qualif: 203239b
+      dev: 6c7af8e
+      qualif: 6c7af8e
       preprod: ""
       prod: ""
     containerPort: 8080
@@ -44,6 +44,10 @@ applications:
       # Mode test : bouton « factures d'exemple » des dossiers. Les codes et liens des emails ne
       # s'affichent jamais à l'écran : ils arrivent dans Mailpit (voir SMTP_HOST). Jamais en preprod/prod.
       - key: POINTEO_MODE_TEST
+        value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
+      # US-58 Bouchon bancaire : transactions de démonstration (source « Bouchon ») dans les dossiers,
+      # sans connexion à un vrai compte. Jamais en preprod/prod.
+      - key: POINTEO_BOUCHON_BANCAIRE
         value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
       # Contrat d'interface des API (Swagger) : .../backend/swagger-ui.html. Jamais en preprod/prod.
       - key: POINTEO_SWAGGER
@@ -94,8 +98,8 @@ applications:
     # Garder une valeur par ligne, sans commentaire en fin de ligne : Kargo
     # remplace tout jusqu'à la fin de la ligne.
     tag:
-      dev: 203239b
-      qualif: 203239b
+      dev: a33080f
+      qualif: a33080f
       preprod: ""
       prod: ""
     containerPort: 8080

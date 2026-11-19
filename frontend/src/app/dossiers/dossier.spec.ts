@@ -92,13 +92,14 @@ describe('US-11 Ouvrir un dossier', () => {
     expect(actif.page.querySelector('.etat')?.classList).toContain('etat--actif');
   });
 
-  it('RG2 : deux onglets (les modules sont dans le menu de gauche, US-18), Factures fournisseurs ouvert par défaut', async () => {
+  it('RG2 : onglets factures et Banque (US-45 ; les modules sont dans le menu de gauche, US-18), Factures fournisseurs ouvert par défaut', async () => {
     const { fixture, page } = await ouvrir();
     expect(onglets(page).map((o) => o.textContent?.trim())).toEqual([
       'Factures fournisseurs',
       'Factures clients',
+      'Banque',
     ]);
-    expect(onglets(page).map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false']);
+    expect(onglets(page).map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
     expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune facture fournisseur pour le moment');
 
     onglets(page)[1].click();
@@ -108,6 +109,13 @@ describe('US-11 Ouvrir un dossier', () => {
     expect(onglets(page)[1].getAttribute('aria-selected')).toBe('true');
     expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune facture client pour le moment');
 
+    // US-45 : l'onglet Banque charge les transactions du dossier.
+    onglets(page)[2].click();
+    await fixture.whenStable();
+    http.expectOne('/api/dossiers/2/transactions').flush([]);
+    await fixture.whenStable();
+    expect(onglets(page)[2].getAttribute('aria-selected')).toBe('true');
+    expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune transaction sur cette période');
   });
 
   it('RG3 : dossier d\'un autre cabinet ou adresse tapée à la main', async () => {
