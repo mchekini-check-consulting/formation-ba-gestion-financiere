@@ -98,8 +98,9 @@ describe('US-11 Ouvrir un dossier', () => {
       'Factures fournisseurs',
       'Factures clients',
       'Banque',
+      'Plan comptable',
     ]);
-    expect(onglets(page).map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false']);
+    expect(onglets(page).map((o) => o.getAttribute('aria-selected'))).toEqual(['true', 'false', 'false', 'false']);
     expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune facture fournisseur pour le moment');
 
     onglets(page)[1].click();
@@ -116,6 +117,17 @@ describe('US-11 Ouvrir un dossier', () => {
     await fixture.whenStable();
     expect(onglets(page)[2].getAttribute('aria-selected')).toBe('true');
     expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Aucune transaction sur cette période');
+
+    // US-41 : l'onglet Plan comptable charge le plan du dossier.
+    onglets(page)[3].click();
+    await fixture.whenStable();
+    http.expectOne('/api/dossiers/2/plan-comptable').flush({
+      comptes: [{ numero: '401', libelle: 'Fournisseurs', sousCompte: false, actif: true }],
+      parDefaut: [{ code: 'BANQUE', libelle: 'Banque', numero: '512' }],
+    });
+    await fixture.whenStable();
+    expect(onglets(page)[3].getAttribute('aria-selected')).toBe('true');
+    expect(page.querySelector('[role=tabpanel]')?.textContent).toContain('Fournisseurs');
   });
 
   it('RG3 : dossier d\'un autre cabinet ou adresse tapée à la main', async () => {
