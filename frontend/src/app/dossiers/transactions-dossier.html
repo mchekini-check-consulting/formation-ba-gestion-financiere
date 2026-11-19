@@ -1,0 +1,87 @@
+@if (erreur(); as e) {
+  <p class="alerte" role="alert">{{ e }}</p>
+} @else if (transactions()) {
+  <!-- RG2 : filtres sens, période (mois en cours par défaut) et recherche dans le libellé -->
+  <div class="filtres">
+    <div class="sens" role="group" aria-label="Sens">
+      @for (f of filtresSens; track f.id) {
+        <button
+          type="button"
+          class="filtre"
+          [attr.aria-pressed]="sens() === f.id"
+          (click)="choisirSens(f.id)"
+        >
+          {{ f.libelle }}
+        </button>
+      }
+    </div>
+    <label class="champ">
+      Période
+      <input type="month" class="mois" [value]="mois()" (change)="choisirMois($any($event.target).value)" />
+    </label>
+    <label class="champ champ--recherche">
+      Recherche
+      <input
+        type="search"
+        class="recherche"
+        placeholder="Rechercher dans le libellé"
+        [value]="recherche()"
+        (input)="chercher($any($event.target).value)"
+      />
+    </label>
+  </div>
+
+  <!-- RG3 : totaux de la période -->
+  <dl class="totaux">
+    <div class="total total--entree">
+      <dt>Entrées</dt>
+      <dd>{{ montant(totauxPeriode().entrees) }}</dd>
+    </div>
+    <div class="total total--sortie">
+      <dt>Sorties</dt>
+      <dd>{{ montant(totauxPeriode().sorties) }}</dd>
+    </div>
+    <div class="total total--solde" [class.negatif]="totauxPeriode().solde < 0">
+      <dt>Solde</dt>
+      <dd>{{ montant(totauxPeriode().solde) }}</dd>
+    </div>
+  </dl>
+
+  @if (lignes().length === 0) {
+    <!-- CA3 -->
+    <p class="vide">{{ vide }}</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Libellé</th>
+          <th scope="col">Tiers</th>
+          <th scope="col" class="montant">Montant</th>
+          <th scope="col">Sens</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of lignes(); track $index) {
+          <!-- RG1 : Entrée en vert, Sortie en rouge -->
+          <tr [class.entree]="t.sens === 'ENTREE'" [class.sortie]="t.sens === 'SORTIE'">
+            <td>{{ date(t) }}</td>
+            <td class="libelle">{{ t.libelle }}</td>
+            <td>{{ t.tiers }}</td>
+            <td class="montant">{{ montant(t.montant) }}</td>
+            <td>
+              <span class="badge">{{ t.sens === 'ENTREE' ? 'Entrée' : 'Sortie' }}</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (demonstration()) {
+    <!-- US-58 : jamais de confusion entre données de démonstration et vraies données -->
+    <p class="muted demonstration">Transactions de démonstration (bouchon bancaire)</p>
+  }
+} @else {
+  <p class="muted">Chargement…</p>
+}

@@ -51,6 +51,10 @@
       @case ('clients') {
         <app-factures-dossier [dossierId]="d.id" sens="VENTE" />
       }
+      @case ('banque') {
+        <!-- US-45 : entrées et sorties d'argent du dossier -->
+        <app-transactions-dossier [dossierId]="d.id" />
+      }
     }
   </section>
 } @else if (erreur(); as e) {
