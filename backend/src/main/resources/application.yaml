@@ -48,6 +48,11 @@ pointeo:
   # Jamais en preprod/prod. Activé en local par ./mvnw spring-boot:run (pom.xml) et en
   # dev/qualif par POINTEO_MODE_TEST (helm.yaml).
   mode-test: false
+  # US-58 Bouchon bancaire : transactions de démonstration (src/main/resources/bouchon/transactions.csv,
+  # qui explique comment ajouter des données), source « Bouchon », sans connexion à un vrai compte.
+  # Désactivé par défaut. Activé en local par ./mvnw spring-boot:run (pom.xml) et en dev/qualif par
+  # POINTEO_BOUCHON_BANCAIRE (helm.yaml). Jamais en preprod/prod.
+  bouchon-bancaire: ${POINTEO_BOUCHON_BANCAIRE:false}
 
 # Contrat d'interface des API (Swagger / OpenAPI) : /swagger-ui.html et /v3/api-docs.
 # Désactivé par défaut ; activé en local par ./mvnw spring-boot:run (pom.xml) et en dev/qualif
