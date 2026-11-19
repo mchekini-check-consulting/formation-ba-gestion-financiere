@@ -51,12 +51,13 @@ public class PlanComptableService {
 	@Transactional(readOnly = true)
 	public Optional<PlanComptable> consulter(Compte collaborateur, Long dossierId) {
 		if (!accessible(collaborateur, dossierId)) {
-			journal(EvenementMetier.de("plan_comptable.consultation", "introuvable"), collaborateur, dossierId).warn();
+			journal(EvenementMetier.de("plan_comptable.consultation", "introuvable"), collaborateur, dossierId)
+					.warn();
 			return Optional.empty();
 		}
 		List<VueCompte> plan = comptes.findByDossierIdOrderByNumero(dossierId).stream().map(VueCompte::de).toList();
-		journal(EvenementMetier.de("plan_comptable.consultation", "consulte"), collaborateur, dossierId).avec("nombre", plan.size())
-				.info();
+		journal(EvenementMetier.de("plan_comptable.consultation", "consulte"), collaborateur, dossierId)
+				.avec("nombre", plan.size()).info();
 		return Optional.of(new PlanComptable(plan, parDefaut()));
 	}
 

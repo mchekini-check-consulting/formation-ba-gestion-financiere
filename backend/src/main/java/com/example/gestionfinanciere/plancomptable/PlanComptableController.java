@@ -2,7 +2,7 @@ package com.example.gestionfinanciere.plancomptable;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -83,12 +83,9 @@ public class PlanComptableController {
 				(compte, numero) -> reponse(plans.supprimer(compte, numero, numeroCompte)));
 	}
 
-	private interface Action {
-		ResponseEntity<Object> executer(Compte collaborateur, Long dossierId);
-	}
-
 	// US-07 : session ; US-11 RG3 : numéro de dossier lu dans l'adresse.
-	private ResponseEntity<Object> avecDossier(String autorisation, String dossierId, Action action) {
+	private ResponseEntity<Object> avecDossier(String autorisation, String dossierId,
+			BiFunction<Compte, Long, ResponseEntity<Object>> action) {
 		ResultatSession session = sessions.consulter(SessionController.jeton(autorisation));
 		ResponseEntity<Object> refus = DossierController.refus(session);
 		if (refus != null) {
@@ -98,12 +95,10 @@ public class PlanComptableController {
 		if (numero.isEmpty()) {
 			return DossierController.introuvable();
 		}
-		return action.executer(session.compte(), numero.get());
+		return action.apply(session.compte(), numero.get());
 	}
 
 	static ResponseEntity<Object> reponse(ResultatCompte resultat) {
-		Function<String, ResponseEntity<Object>> conflit = message -> ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(new ErreurResponse(message));
 		return switch (resultat.statut()) {
 			case CREE -> ResponseEntity.status(HttpStatus.CREATED).body(resultat.compte());
 			case MODIFIE -> ResponseEntity.ok(resultat.compte());
@@ -112,7 +107,8 @@ public class PlanComptableController {
 					.body(new ErreursFormulaire(MESSAGE_FORMULAIRE, resultat.erreurs()));
 			case DEJA_EXISTANT -> ResponseEntity.status(HttpStatus.CONFLICT).body(
 					new ErreursFormulaire(MESSAGE_DEJA_EXISTANT, Map.of("numero", MESSAGE_DEJA_EXISTANT)));
-			case COMPTE_GENERAL -> conflit.apply(MESSAGE_COMPTE_GENERAL);
+			case COMPTE_GENERAL -> ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(new ErreurResponse(MESSAGE_COMPTE_GENERAL));
 			case COMPTE_INTROUVABLE -> ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new ErreurResponse(MESSAGE_COMPTE_INTROUVABLE));
 			case DOSSIER_INTROUVABLE -> DossierController.introuvable();

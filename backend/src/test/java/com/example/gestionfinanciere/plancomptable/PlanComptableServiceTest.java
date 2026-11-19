@@ -2,6 +2,7 @@ package com.example.gestionfinanciere.plancomptable;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -150,10 +151,10 @@ class PlanComptableServiceTest {
 	void entites() {
 		assertEquals(42L, moulins.getDossierId());
 		assertEquals(MAINTENANT, moulins.getCreeLe());
-		assertEquals(null, moulins.getId());
+		assertNull(moulins.getId());
 		Categorie achat = new Categorie("ACHAT", "Achat", "607", 1);
 		assertEquals(1, achat.getOrdre());
-		assertEquals(null, achat.getId());
+		assertNull(achat.getId());
 	}
 
 }

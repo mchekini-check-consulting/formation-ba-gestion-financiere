@@ -20,6 +20,8 @@ public final class ValidationCompte {
 	public static final String LIBELLE_OBLIGATOIRE = "Le libellé est obligatoire";
 	public static final String LIBELLE_TROP_LONG = "Le libellé ne doit pas dépasser 200 caractères";
 	static final int LIBELLE_MAX = 200;
+	static final String CHAMP_NUMERO = "numero";
+	static final String CHAMP_LIBELLE = "libelle";
 
 	private static final Pattern NUMERO = Pattern.compile("^[1-7][0-9]{2}[0-9A-Z]{0,17}$");
 	private static final Pattern ESPACES = Pattern.compile("\\s");
@@ -41,18 +43,18 @@ public final class ValidationCompte {
 		Map<String, String> erreurs = new LinkedHashMap<>();
 		String numero = numero(demande.numero());
 		if (numero.isEmpty()) {
-			erreurs.put("numero", NUMERO_OBLIGATOIRE);
+			erreurs.put(CHAMP_NUMERO, NUMERO_OBLIGATOIRE);
 		} else if (!NUMERO.matcher(numero).matches()) {
-			erreurs.put("numero", NUMERO_INVALIDE);
+			erreurs.put(CHAMP_NUMERO, NUMERO_INVALIDE);
 		} else if (comptesGeneraux.stream()
 				.noneMatch(general -> numero.length() > general.length() && numero.startsWith(general))) {
-			erreurs.put("numero", NUMERO_SANS_COMPTE_PARENT);
+			erreurs.put(CHAMP_NUMERO, NUMERO_SANS_COMPTE_PARENT);
 		}
 		String libelle = libelle(demande.libelle());
 		if (libelle.isEmpty()) {
-			erreurs.put("libelle", LIBELLE_OBLIGATOIRE);
+			erreurs.put(CHAMP_LIBELLE, LIBELLE_OBLIGATOIRE);
 		} else if (libelle.length() > LIBELLE_MAX) {
-			erreurs.put("libelle", LIBELLE_TROP_LONG);
+			erreurs.put(CHAMP_LIBELLE, LIBELLE_TROP_LONG);
 		}
 		return erreurs;
 	}
