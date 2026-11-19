@@ -1,0 +1,55 @@
+# US-58 Bouchon bancaire : transactions de démonstration (aucun vrai compte bancaire).
+#
+# ACTIVER / DÉSACTIVER
+#   Réglage POINTEO_BOUCHON_BANCAIRE (pointeo.bouchon-bancaire dans application.yaml) :
+#   - en local (./mvnw spring-boot:run) : activé par pom.xml ;
+#   - dev et qualif : activé par helm.yaml ; preprod et prod : désactivé (jamais de données de test).
+#   Désactivé et sans connexion bancaire : l'onglet Banque affiche « Aucune transaction ».
+#   Les mêmes transactions sont proposées pour chaque dossier, toujours avec la source « Bouchon ».
+#
+# AJOUTER DES DONNÉES : une ligne par transaction, 5 colonnes séparées par « ; » :
+#   il_y_a_jours  date de la transaction, en nombre de jours avant aujourd'hui (0 = aujourd'hui) ;
+#                 le jeu reste ainsi toujours sur les 3 derniers mois
+#   libelle       texte affiché par la banque (obligatoire)
+#   tiers         qui paie ou qui est payé (une entreprise, jamais une personne réelle)
+#   montant       toujours positif, point ou virgule pour les centimes : 186.40
+#   sens          ENTREE (l'argent arrive) ou SORTIE (l'argent part)
+# Les lignes vides et celles qui commencent par # sont ignorées. Une ligne mal écrite empêche le
+# backend de démarrer, avec son numéro de ligne dans le message d'erreur.
+# Pour le rapprochement (US-25), reprendre le même montant et le même tiers qu'une facture de démo
+# (ex. prélèvement EDF de 186,40 € pour la facture EDF de 186,40 €).
+il_y_a_jours;libelle;tiers;montant;sens
+2;PRLV SEPA EDF - Facture electricite octobre;EDF;186.40;SORTIE
+3;CB Encaissements caisse;Encaissements carte bancaire;1245.60;ENTREE
+5;VIR Restaurant Le Fournil - Facture 0042;Restaurant Le Fournil;640.00;ENTREE
+6;PRLV SEPA Grands Moulins de Paris;Grands Moulins de Paris;1320.75;SORTIE
+8;REMISE CHEQUES;Remise de chèques;385.00;ENTREE
+10;CB Metro Cash & Carry;Metro;412.18;SORTIE
+12;PRLV SEPA Orange Pro;Orange;54.99;SORTIE
+14;CB Encaissements caisse;Encaissements carte bancaire;1398.20;ENTREE
+17;VIR Loyer local commercial;SCI Les Halles;1450.00;SORTIE
+19;PRLV SEPA URSSAF;URSSAF;892.00;SORTIE
+21;VIR Hotel du Parc - Facture 0039;Hotel du Parc;520.50;ENTREE
+24;PRLV SEPA Axa Assurance multirisque;AXA;118.30;SORTIE
+27;CB Encaissements caisse;Encaissements carte bancaire;1187.40;ENTREE
+30;FRAIS Tenue de compte;Banque;18.50;SORTIE
+33;PRLV SEPA EDF - Facture electricite septembre;EDF;174.25;SORTIE
+35;PRLV SEPA Grands Moulins de Paris;Grands Moulins de Paris;1288.40;SORTIE
+37;VIR Restaurant Le Fournil - Facture 0036;Restaurant Le Fournil;598.00;ENTREE
+40;CB Encaissements caisse;Encaissements carte bancaire;1302.90;ENTREE
+42;CB Metro Cash & Carry;Metro;376.64;SORTIE
+44;PRLV SEPA Orange Pro;Orange;54.99;SORTIE
+47;VIR Loyer local commercial;SCI Les Halles;1450.00;SORTIE
+49;PRLV SEPA URSSAF;URSSAF;892.00;SORTIE
+52;REMISE CHEQUES;Remise de chèques;240.00;ENTREE
+55;CB Encaissements caisse;Encaissements carte bancaire;1256.10;ENTREE
+58;VIR Mairie - Buffet fete du village - Facture 0031;Mairie de Saint-Martin;860.00;ENTREE
+60;FRAIS Tenue de compte;Banque;18.50;SORTIE
+63;PRLV SEPA EDF - Facture electricite aout;EDF;169.80;SORTIE
+65;PRLV SEPA Grands Moulins de Paris;Grands Moulins de Paris;1254.10;SORTIE
+68;CB Encaissements caisse;Encaissements carte bancaire;1120.75;ENTREE
+71;CB Metro Cash & Carry;Metro;398.22;SORTIE
+74;PRLV SEPA Orange Pro;Orange;54.99;SORTIE
+77;VIR Loyer local commercial;SCI Les Halles;1450.00;SORTIE
+80;VIR Hotel du Parc - Facture 0028;Hotel du Parc;488.00;ENTREE
+85;CB Encaissements caisse;Encaissements carte bancaire;1065.30;ENTREE

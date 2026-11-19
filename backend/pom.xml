@@ -106,6 +106,8 @@
 					<environmentVariables>
 						<POINTEO_MODE_TEST>true</POINTEO_MODE_TEST>
 						<POINTEO_SWAGGER>true</POINTEO_SWAGGER>
+						<!-- US-58 : transactions de démonstration (bouchon bancaire) -->
+						<POINTEO_BOUCHON_BANCAIRE>true</POINTEO_BOUCHON_BANCAIRE>
 						<!-- Emails envoyés au Mailpit de compose.yaml (http://localhost:8025) -->
 						<SMTP_HOST>localhost</SMTP_HOST>
 					</environmentVariables>
