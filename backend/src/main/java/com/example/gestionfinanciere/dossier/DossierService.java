@@ -20,6 +20,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.RoleCabinet;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
+import com.example.gestionfinanciere.plancomptable.CompteComptableRepository;
 
 // US-10 Créer un dossier client. L'appelant vérifie avant que la personne connectée est un
 // collaborateur d'un cabinet : le dossier est toujours rangé dans son cabinet.
@@ -34,11 +35,14 @@ public class DossierService {
 
 	private final DossierRepository dossiers;
 	private final AttributionDossierRepository attributions;
+	private final CompteComptableRepository plansComptables;
 	private final Clock horloge;
 
-	public DossierService(DossierRepository dossiers, AttributionDossierRepository attributions, Clock horloge) {
+	public DossierService(DossierRepository dossiers, AttributionDossierRepository attributions,
+			CompteComptableRepository plansComptables, Clock horloge) {
 		this.dossiers = dossiers;
 		this.attributions = attributions;
+		this.plansComptables = plansComptables;
 		this.horloge = horloge;
 	}
 
@@ -69,6 +73,8 @@ public class DossierService {
 		try {
 			Dossier dossier = dossiers.save(new Dossier(collaborateur.getCabinet(), demande.raisonSociale().trim(),
 					siren, collaborateur, horloge.instant()));
+			// US-41 RG1 : chaque dossier démarre avec le plan comptable général.
+			plansComptables.initialiser(dossier.getId(), dossier.getCreeLe());
 			// US-20 RG3 : un dossier créé par un comptable lui est attribué automatiquement.
 			if (collaborateur.getRoleCabinet() == RoleCabinet.COMPTABLE) {
 				attributions.save(new AttributionDossier(dossier, collaborateur, dossier.getCreeLe()));

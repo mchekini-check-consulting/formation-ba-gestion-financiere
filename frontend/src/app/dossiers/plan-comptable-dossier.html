@@ -1,0 +1,115 @@
+@if (erreur(); as e) {
+  <p class="alerte" role="alert">{{ e }}</p>
+} @else if (plan(); as p) {
+  <!-- RG2 : comptes utilisés par défaut -->
+  <section aria-labelledby="titre-par-defaut">
+    <h2 id="titre-par-defaut">Comptes par défaut</h2>
+    <ul class="par-defaut">
+      @for (d of p.parDefaut; track d.code) {
+        <li>
+          <span class="categorie">{{ d.libelle }}</span>
+          <span class="numero">{{ d.numero }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <!-- RG1 : ajouter un sous-compte (ex. 401MOULINS) -->
+  <section aria-labelledby="titre-nouveau">
+    <h2 id="titre-nouveau">Nouveau compte</h2>
+    <form class="nouveau" (submit)="$event.preventDefault(); creer()" novalidate>
+      <div class="champ">
+        <label for="numero-compte">Numéro</label>
+        <input
+          id="numero-compte"
+          name="numero"
+          autocomplete="off"
+          placeholder="401MOULINS"
+          [value]="numero()"
+          (input)="saisirNumero($any($event.target).value)"
+          [attr.aria-invalid]="!!erreurs().numero"
+        />
+        @if (erreurs().numero; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+      <div class="champ champ--libelle">
+        <label for="libelle-compte">Libellé</label>
+        <input
+          id="libelle-compte"
+          name="libelle"
+          autocomplete="off"
+          placeholder="Moulins Bertrand"
+          [value]="libelle()"
+          (input)="saisirLibelle($any($event.target).value)"
+          [attr.aria-invalid]="!!erreurs().libelle"
+        />
+        @if (erreurs().libelle; as e) { <span class="erreur">{{ e }}</span> }
+      </div>
+      <button type="submit" class="bouton" [disabled]="enCours()">
+        {{ enCours() ? 'Ajout…' : 'Ajouter le compte' }}
+      </button>
+    </form>
+    <p class="aide">
+      Un sous-compte commence par le numéro d'un compte du plan, suivi de chiffres ou de lettres.
+    </p>
+  </section>
+
+  @if (alerte(); as a) {
+    <p class="alerte" role="alert">{{ a }}</p>
+  }
+  @if (confirmation(); as c) {
+    <p class="confirmation" role="status">{{ c }}</p>
+  }
+
+  <!-- RG1, RG3 : comptes du dossier -->
+  <section aria-labelledby="titre-comptes">
+    <div class="entete-comptes">
+      <h2 id="titre-comptes">Comptes du dossier</h2>
+      <input
+        type="search"
+        class="recherche"
+        aria-label="Rechercher un compte"
+        placeholder="Rechercher un numéro ou un libellé"
+        [value]="recherche()"
+        (input)="chercher($any($event.target).value)"
+      />
+    </div>
+
+    @if (lignes().length === 0) {
+      <p class="vide">{{ aucunCompte }}</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Numéro</th>
+            <th scope="col">Libellé</th>
+            <th scope="col">Type</th>
+            <th scope="col">État</th>
+            <th scope="col"><span class="masque">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of lignes(); track c.numero) {
+            <tr [class.inactif]="!c.actif">
+              <td class="numero">{{ c.numero }}</td>
+              <td>{{ c.libelle }}</td>
+              <td>{{ c.sousCompte ? 'Sous-compte' : 'Plan général' }}</td>
+              <td>
+                <span class="badge" [class.badge--actif]="c.actif">{{ c.actif ? 'Actif' : 'Désactivé' }}</span>
+              </td>
+              <td class="actions">
+                <button type="button" class="lien" (click)="basculer(c)">
+                  {{ c.actif ? 'Désactiver' : 'Réactiver' }}
+                </button>
+                @if (c.sousCompte) {
+                  <button type="button" class="lien lien--danger" (click)="supprimer(c)">Supprimer</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+} @else {
+  <p class="muted">Chargement…</p>
+}

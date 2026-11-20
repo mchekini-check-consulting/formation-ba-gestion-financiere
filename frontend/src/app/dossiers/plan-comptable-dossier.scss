@@ -1,0 +1,236 @@
+// US-41 Onglet Plan comptable : mêmes couleurs que l'onglet Banque.
+$encre: #0b1b3a;
+$or: #1d4ed8;
+$bord: #dbe4f0;
+$gris: #42526b;
+$vert: #1e5b2c;
+$vert-fond: #e8f3ea;
+$rouge: #8c1d18;
+$rouge-fond: #fdecea;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: $encre;
+}
+
+.par-defaut {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid $bord;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 13px;
+  }
+
+  .categorie {
+    color: $gris;
+  }
+}
+
+.numero {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: $encre;
+}
+
+.nouveau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $gris;
+
+  &--libelle {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  input {
+    padding: 9px 10px;
+    border: 1px solid $bord;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    color: $encre;
+
+    &[aria-invalid='true'] {
+      border-color: #b3261e;
+    }
+  }
+}
+
+.erreur {
+  font-weight: 400;
+  font-size: 13px;
+  color: #b3261e;
+}
+
+.bouton {
+  margin-top: 20px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: $or;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.aide {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: $gris;
+}
+
+.entete-comptes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.recherche {
+  flex: 1;
+  max-width: 320px;
+  min-width: 200px;
+  padding: 8px 10px;
+  border: 1px solid $bord;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 10px;
+  border-top: 1px solid #e8eef8;
+  text-align: left;
+}
+
+th {
+  border-top: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: $gris;
+}
+
+.inactif td {
+  color: $gris;
+}
+
+.badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #eef2f8;
+  color: $gris;
+  font-size: 12px;
+  font-weight: 600;
+
+  &--actif {
+    background: $vert-fond;
+    color: $vert;
+  }
+}
+
+.actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lien {
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  color: $or;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--danger {
+    color: $rouge;
+  }
+}
+
+.masque {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.vide {
+  margin: 0;
+  padding: 20px 0;
+  text-align: center;
+  color: $gris;
+}
+
+.muted {
+  margin: 0;
+  color: $gris;
+}
+
+.alerte {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: $rouge-fond;
+  color: $rouge;
+  font-size: 14px;
+}
+
+.confirmation {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: $vert-fond;
+  color: $vert;
+  font-size: 14px;
+}

@@ -27,6 +27,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.compte.RoleCabinet;
 import com.example.gestionfinanciere.logging.JournalCapture;
+import com.example.gestionfinanciere.plancomptable.CompteComptableRepository;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -37,7 +38,8 @@ class DossierServiceTest {
 
 	private final DossierRepository dossiers = mock(DossierRepository.class);
 	private final AttributionDossierRepository attributions = mock(AttributionDossierRepository.class);
-	private final DossierService service = new DossierService(dossiers, attributions,
+	private final CompteComptableRepository plansComptables = mock(CompteComptableRepository.class);
+	private final DossierService service = new DossierService(dossiers, attributions, plansComptables,
 			new HorlogeReglable(MAINTENANT));
 
 	private final Cabinet cabinetTest = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
@@ -70,6 +72,8 @@ class DossierServiceTest {
 		verify(dossiers).save(enregistre.capture());
 		assertSame(cabinetTest, enregistre.getValue().getCabinet());
 		assertSame(jean, enregistre.getValue().getCreePar());
+		// US-41 RG1 : le dossier démarre avec le plan comptable général.
+		verify(plansComptables).initialiser(42L, MAINTENANT);
 	}
 
 	@Test
