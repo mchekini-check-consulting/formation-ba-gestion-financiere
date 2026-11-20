@@ -26,6 +26,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.example.gestionfinanciere.cabinet.Cabinet;
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.HorlogeReglable;
+import com.example.gestionfinanciere.compte.RoleCabinet;
 import com.example.gestionfinanciere.dossier.Dossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
 import com.example.gestionfinanciere.logging.EvenementMetier;
@@ -73,8 +74,8 @@ class FactureServiceTest {
 
 		ListeFactures liste = service(false).lister(jean, 42L, Facture.Sens.ACHAT).orElseThrow();
 
-		assertEquals(List.of(new LigneFacture(5L, "edf.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true),
-				new LigneFacture(5L, "loyer.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, false)),
+		assertEquals(List.of(new LigneFacture(5L, "edf.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true, Facture.Source.DEPOT_CLIENT),
+				new LigneFacture(5L, "loyer.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, false, Facture.Source.DEPOT_CLIENT)),
 				liste.factures());
 		assertFalse(liste.exemplesPossibles());
 		assertTrue(service(true).lister(jean, 42L, Facture.Sens.VENTE).orElseThrow().exemplesPossibles());
@@ -204,6 +205,71 @@ class FactureServiceTest {
 			assertEquals("introuvable", refus.getMDCPropertyMap().get("outcome"));
 			assertEquals("99", refus.getMDCPropertyMap().get("dossierId"));
 		}
+	}
+
+	// ---------- US-52 Importer des factures depuis le dossier ----------
+
+	private static final byte[] PDF = "%PDF-1.7 facture".getBytes(StandardCharsets.US_ASCII);
+
+	private Facture enregistree() {
+		ArgumentCaptor<Facture> capture = ArgumentCaptor.forClass(Facture.class);
+		verify(factures).save(capture.capture());
+		return capture.getValue();
+	}
+
+	// CA1, RG1 et RG4 : facture de l'onglet, « Reçue », « Import cabinet », visible tout de suite (« Nouvelle »).
+	@Test
+	void us52Ca1Import() {
+		when(factures.save(any(Facture.class))).thenAnswer(appel -> {
+			Facture facture = appel.getArgument(0);
+			ReflectionTestUtils.setField(facture, "id", 9L);
+			return facture;
+		});
+
+		ResultatImport resultat = service(false).importer(jean, 42L, Facture.Sens.ACHAT,
+				"C:\\docs\\facture-edf-juin.pdf", PDF);
+
+		assertEquals(ResultatImport.Statut.IMPORTEE, resultat.statut());
+		assertEquals(new LigneFacture(9L, "facture-edf-juin.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true,
+				Facture.Source.IMPORT_CABINET), resultat.facture());
+		Facture facture = enregistree();
+		assertEquals("application/pdf", facture.getTypeFichier());
+		assertEquals(Facture.Sens.ACHAT, facture.getSens());
+		assertEquals(fleurs, facture.getDossier());
+	}
+
+	// CA2 et RG2 : ni PDF, ni JPG, ni PNG ; ou plus de 10 Mo.
+	@Test
+	void us52Ca2FichierRefuse() {
+		byte[] xlsx = { 'P', 'K', 3, 4, 0, 0 };
+		assertEquals(ResultatImport.Statut.FORMAT_REFUSE,
+				service(false).importer(jean, 42L, Facture.Sens.VENTE, "releve.xlsx", xlsx).statut());
+		assertEquals(ResultatImport.Statut.FORMAT_REFUSE,
+				service(false).importer(jean, 42L, Facture.Sens.VENTE, "vide.pdf", null).statut());
+		byte[] gros = new byte[(int) DepotFactureService.TAILLE_MAX + 1];
+		assertEquals(ResultatImport.Statut.TROP_VOLUMINEUX,
+				service(false).importer(jean, 42L, Facture.Sens.ACHAT, "gros.pdf", gros).statut());
+		verify(factures, never()).save(any());
+	}
+
+	// CA3 et RG3 : dossier d'un autre cabinet, ou non attribué au comptable -> refus, rien d'enregistré.
+	@Test
+	void us52Ca3DossierNonAttribue() {
+		Compte lucie = Compte.invite(cabinet, "lucie@cabinet-test.fr", "x", "Lucie Moreau", RoleCabinet.COMPTABLE);
+		ReflectionTestUtils.setField(lucie, "id", 5L);
+		ReflectionTestUtils.setField(fleurs, "id", 42L);
+
+		assertEquals(ResultatImport.Statut.DOSSIER_INTROUVABLE,
+				service(false).importer(jean, 99L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
+		assertEquals(ResultatImport.Statut.DOSSIER_INTROUVABLE,
+				service(false).importer(lucie, 42L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
+		verify(factures, never()).save(any());
+
+		// Une fois le dossier attribué à Lucie (US-20), l'import est possible.
+		when(dossiers.estAttribue(42L, 5L)).thenReturn(true);
+		when(factures.save(any(Facture.class))).thenAnswer(appel -> appel.getArgument(0));
+		assertEquals(ResultatImport.Statut.IMPORTEE,
+				service(false).importer(lucie, 42L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
 	}
 
 }

@@ -93,6 +93,44 @@ public class FactureService {
 	}
 
 	/**
+	 * US-52 : un fichier importé par le cabinet dans l'onglet du dossier (RG1). Mêmes contrôles que
+	 * le dépôt du dirigeant (RG2, US-15 RG1 : vrai type et taille) ; un comptable n'importe que dans
+	 * ses dossiers (RG3, US-20). La facture apparaît tout de suite, « Reçue » et « Import cabinet »
+	 * (RG4). Jamais le nom ni le contenu du fichier dans les logs.
+	 */
+	@Transactional
+	public ResultatImport importer(Compte collaborateur, Long dossierId, Facture.Sens sens, String nomFichier,
+			byte[] contenu) {
+		ResultatImport resultat = importerSansJournal(collaborateur, dossierId, sens, nomFichier, contenu);
+		EvenementMetier evenement = EvenementMetier.de("facture.import", resultat.statut())
+				.avec(collaborateur.identifiantsPourLogs()).avec(CHAMP_DOSSIER, dossierId).avec("sens", sens)
+				.avec("taille", contenu == null ? 0 : contenu.length);
+		if (resultat.facture() != null) {
+			evenement.avec(CHAMP_FACTURE, resultat.facture().id());
+		}
+		evenement.journaliser(resultat.statut() == ResultatImport.Statut.IMPORTEE);
+		return resultat;
+	}
+
+	private ResultatImport importerSansJournal(Compte collaborateur, Long dossierId, Facture.Sens sens,
+			String nomFichier, byte[] contenu) {
+		Optional<Dossier> dossier = dossierDuCabinet(collaborateur, dossierId);
+		if (dossier.isEmpty()) {
+			return ResultatImport.refuse(ResultatImport.Statut.DOSSIER_INTROUVABLE);
+		}
+		if (contenu != null && contenu.length > DepotFactureService.TAILLE_MAX) {
+			return ResultatImport.refuse(ResultatImport.Statut.TROP_VOLUMINEUX);
+		}
+		Optional<String> type = TypeFichier.reconnaitre(contenu);
+		if (type.isEmpty()) {
+			return ResultatImport.refuse(ResultatImport.Statut.FORMAT_REFUSE);
+		}
+		Facture facture = factures.save(Facture.importee(dossier.get(), sens, DepotFactureService.nom(nomFichier),
+				type.get(), horloge.instant(), collaborateur, contenu));
+		return ResultatImport.importee(LigneFacture.de(facture));
+	}
+
+	/**
 	 * Mode test seulement : le dépôt de factures (US-15) n'existe pas encore. Ajoute au dossier
 	 * deux factures fournisseurs (dont une déjà ouverte) et une facture client, déposées par le
 	 * collaborateur, avec un vrai fichier (US-13). Faux si le dossier n'est pas celui de son cabinet.
