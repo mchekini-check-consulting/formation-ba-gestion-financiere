@@ -14,14 +14,43 @@ export const SOURCES: Record<Source, string> = {
   IMPORT_CABINET: 'Import cabinet',
 };
 
-/** US-12 RG2 : une ligne de la liste ; RG3 : nouvelle tant que personne du cabinet ne l'a ouverte. */
+/** US-51 RG1 : statut de traitement d'une facture. */
+export type Statut = 'RECUE' | 'EN_COURS' | 'TRAITEE' | 'A_COMPLETER';
+
+export const STATUTS: Statut[] = ['RECUE', 'EN_COURS', 'TRAITEE', 'A_COMPLETER'];
+
+export const LIBELLES_STATUT: Record<Statut, string> = {
+  RECUE: 'Reçue',
+  EN_COURS: 'En cours de traitement',
+  TRAITEE: 'Traitée',
+  A_COMPLETER: 'À compléter',
+};
+
+/** US-51 RG4 : pastille de couleur de chaque statut (classe CSS). */
+export const PASTILLES_STATUT: Record<Statut, string> = {
+  RECUE: 'pastille--recue',
+  EN_COURS: 'pastille--en-cours',
+  TRAITEE: 'pastille--traitee',
+  A_COMPLETER: 'pastille--a-completer',
+};
+
+/** US-51 CA3. */
+export const MESSAGE_MOTIF_MANQUANT = 'Indiquez le motif';
+
+/**
+ * US-12 RG2 : une ligne de la liste ; RG3 : nouvelle tant que personne du cabinet ne l'a ouverte.
+ * US-51 : motif de « À compléter » (RG3) et seuls statuts proposés depuis le statut actuel (RG2, CA4).
+ * US-52 RG4 : source (dépôt du dirigeant ou import du cabinet).
+ */
 export interface LigneFacture {
   id: number;
   nomFichier: string;
   deposeeLe: string;
   deposeePar: string;
-  statut: 'RECUE';
+  statut: Statut;
   nouvelle: boolean;
+  motif: string | null;
+  statutsPossibles: Statut[];
   source: Source;
 }
 
@@ -69,6 +98,11 @@ export class FactureService {
   fichier(dossierId: number | string, factureId: number | string, telechargement: boolean): Observable<Blob> {
     const params = telechargement ? new HttpParams().set('telechargement', 'true') : undefined;
     return this.http.get(`${this.url}/${dossierId}/factures/${factureId}/fichier`, { params, responseType: 'blob' });
+  }
+
+  /** US-51 : changer le statut ; le motif n'est utile que pour « À compléter » (RG3). */
+  changerStatut(dossierId: number, factureId: number, statut: Statut, motif: string | null): Observable<LigneFacture> {
+    return this.http.patch<LigneFacture>(`${this.url}/${dossierId}/factures/${factureId}/statut`, { statut, motif });
   }
 
   /** Mode test : factures d'exemple, le dépôt (US-15) n'existant pas encore. */

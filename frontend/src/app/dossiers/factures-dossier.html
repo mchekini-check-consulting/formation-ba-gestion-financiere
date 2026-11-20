@@ -39,35 +39,103 @@
     <!-- CA vide -->
     <p class="vide">{{ vide() }}</p>
   } @else {
-    <table>
-      <thead>
-        <tr>
-          <th scope="col">Fichier</th>
-          <th scope="col">Déposée le</th>
-          <th scope="col">Déposée par</th>
-          <th scope="col">Source</th>
-          <th scope="col">Statut</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (f of l.factures; track f.id) {
-          <tr>
-            <td>
-              <!-- US-13 RG1 : un clic ouvre l'aperçu -->
-              <a class="fichier" [routerLink]="['/dossiers', dossierId(), 'factures', f.id]">{{ f.nomFichier }}</a>
-              @if (f.nouvelle) {
-                <span class="badge badge--nouvelle">Nouvelle</span>
-              }
-            </td>
-            <td>{{ depot(f) }}</td>
-            <td>{{ f.deposeePar }}</td>
-            <!-- US-52 RG4 -->
-            <td>{{ sources[f.source] }}</td>
-            <td><span class="badge">Reçue</span></td>
-          </tr>
+    <!-- US-51 RG4 : filtre par statut -->
+    <div class="filtres">
+      <label for="filtre-statut">Filtrer par statut</label>
+      <select id="filtre-statut" class="filtre" (change)="filtrer($any($event.target).value)">
+        <option value="">Tous les statuts</option>
+        @for (s of statuts; track s) {
+          <option [value]="s" [selected]="filtre() === s">{{ libelles[s] }}</option>
         }
-      </tbody>
-    </table>
+      </select>
+    </div>
+    @if (affichees().length === 0) {
+      <p class="vide">{{ videFiltre() }}</p>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Fichier</th>
+            <th scope="col">Déposée le</th>
+            <th scope="col">Déposée par</th>
+            <th scope="col">Source</th>
+            <th scope="col">Statut</th>
+            <th scope="col"><span class="invisible">Changer le statut</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of affichees(); track f.id) {
+            <tr>
+              <td>
+                <!-- US-13 RG1 : un clic ouvre l'aperçu -->
+                <a class="fichier" [routerLink]="['/dossiers', dossierId(), 'factures', f.id]">{{ f.nomFichier }}</a>
+                @if (f.nouvelle) {
+                  <span class="badge badge--nouvelle">Nouvelle</span>
+                }
+              </td>
+              <td>{{ depot(f) }}</td>
+              <td>{{ f.deposeePar }}</td>
+              <!-- US-52 RG4 -->
+              <td>{{ sources[f.source] }}</td>
+              <td>
+                <!-- US-51 RG4 : pastille de couleur ; RG3 : motif de « À compléter » -->
+                <span class="pastille" [class]="pastilles[f.statut]">{{ libelles[f.statut] }}</span>
+                @if (f.statut === 'A_COMPLETER' && f.motif) {
+                  <span class="motif">Motif : {{ f.motif }}</span>
+                }
+              </td>
+              <td class="action">
+                @if (f.statutsPossibles.length > 0) {
+                  <!-- US-51 RG2 / CA4 : seuls les passages autorisés sont proposés -->
+                  <label class="invisible" [for]="'statut-' + f.id">Changer le statut de {{ f.nomFichier }}</label>
+                  <select
+                    class="changer"
+                    [id]="'statut-' + f.id"
+                    [disabled]="changement()?.envoi"
+                    (change)="choisirStatut(f, $any($event.target).value)"
+                  >
+                    <option value="" [selected]="changement()?.factureId !== f.id">Changer le statut…</option>
+                    @for (s of f.statutsPossibles; track s) {
+                      <option [value]="s" [selected]="changement()?.factureId === f.id && changement()?.statut === s">
+                        {{ libelles[s] }}
+                      </option>
+                    }
+                  </select>
+                  @if (changement(); as c) {
+                    @if (c.factureId === f.id) {
+                      <div class="changement">
+                        @if (c.statut === 'A_COMPLETER') {
+                          <!-- US-51 RG3 : motif obligatoire, affiché au client -->
+                          <label class="motif-label" [for]="'motif-' + f.id">Motif</label>
+                          <input
+                            class="motif-saisie"
+                            type="text"
+                            maxlength="255"
+                            placeholder="Ex. Facture illisible"
+                            [id]="'motif-' + f.id"
+                            [value]="c.motif"
+                            (input)="saisirMotif($any($event.target).value)"
+                          />
+                        }
+                        <span class="boutons">
+                          <button type="button" class="valider" [disabled]="c.envoi" (click)="validerChangement()">
+                            Valider
+                          </button>
+                          <button type="button" class="lien" (click)="annulerChangement()">Annuler</button>
+                        </span>
+                        @if (c.erreur) {
+                          <p class="erreur-statut" role="alert">{{ c.erreur }}</p>
+                        }
+                      </div>
+                    }
+                  }
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
   }
   @if (l.exemplesPossibles) {
     <!-- Mode test seulement : le dépôt de factures (US-15) n'existe pas encore. -->

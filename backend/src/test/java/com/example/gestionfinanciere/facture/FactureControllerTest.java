@@ -41,7 +41,9 @@ class FactureControllerTest {
 	private final Cabinet cabinet = new Cabinet("Cabinet Test", "123456789", 120, null, Instant.EPOCH, Instant.EPOCH);
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean@test.fr", "x", "Jean Dupont");
 	private final ListeFactures liste = new ListeFactures(
-			List.of(new LigneFacture(1L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.RECUE, true, Facture.Source.DEPOT_CLIENT)), false);
+			List.of(new LigneFacture(1L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.RECUE, true, null,
+					Facture.Statut.RECUE.suivants(), Facture.Source.DEPOT_CLIENT)),
+			false);
 
 	private void connecte(Compte compte) {
 		when(sessions.consulter("jeton")).thenReturn(ResultatSession.active(compte));
@@ -144,6 +146,74 @@ class FactureControllerTest {
 		assertEquals(HttpStatus.FORBIDDEN, controller.consulter(AUTORISATION, "42", "5").getStatusCode());
 	}
 
+	private static FactureController.ChangementStatutRequest demande(String statut, String motif) {
+		return new FactureController.ChangementStatutRequest(statut, motif);
+	}
+
+	// US-51 CA1 : passage autorisé -> la ligne à jour.
+	@Test
+	void us51ChangerStatut() {
+		connecte(jean);
+		LigneFacture enCours = new LigneFacture(5L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.EN_COURS,
+				false, null, Facture.Statut.EN_COURS.suivants(), Facture.Source.DEPOT_CLIENT);
+		when(factures.changerStatut(jean, 42L, 5L, Facture.Statut.EN_COURS, null))
+				.thenReturn(new ResultatStatut(ResultatStatut.Issue.CHANGE, enCours));
+
+		ResponseEntity<Object> reponse = controller.changerStatut(AUTORISATION, "42", "5", demande(" en_cours ", null));
+		assertEquals(HttpStatus.OK, reponse.getStatusCode());
+		assertEquals(enCours, reponse.getBody());
+	}
+
+	// US-51 CA3 (motif manquant), CA4 (passage interdit), statut inconnu, facture introuvable.
+	@Test
+	void us51Refus() {
+		connecte(jean);
+		String tropLong = "x".repeat(300);
+		when(factures.changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, ""))
+				.thenReturn(ResultatStatut.refuse(ResultatStatut.Issue.MOTIF_MANQUANT));
+		when(factures.changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, tropLong))
+				.thenReturn(ResultatStatut.refuse(ResultatStatut.Issue.MOTIF_TROP_LONG));
+		when(factures.changerStatut(jean, 42L, 5L, Facture.Statut.TRAITEE, null))
+				.thenReturn(ResultatStatut.refuse(ResultatStatut.Issue.PASSAGE_INTERDIT));
+		when(factures.changerStatut(jean, 42L, 6L, Facture.Statut.EN_COURS, null))
+				.thenReturn(ResultatStatut.refuse(ResultatStatut.Issue.INTROUVABLE));
+
+		ResponseEntity<Object> sansMotif = controller.changerStatut(AUTORISATION, "42", "5", demande("A_COMPLETER", ""));
+		assertEquals(HttpStatus.BAD_REQUEST, sansMotif.getStatusCode());
+		assertEquals(new ErreurResponse("Indiquez le motif"), sansMotif.getBody());
+
+		assertEquals(new ErreurResponse(FactureController.MESSAGE_MOTIF_TROP_LONG),
+				controller.changerStatut(AUTORISATION, "42", "5", demande("A_COMPLETER", tropLong)).getBody());
+
+		ResponseEntity<Object> interdit = controller.changerStatut(AUTORISATION, "42", "5", demande("TRAITEE", null));
+		assertEquals(HttpStatus.CONFLICT, interdit.getStatusCode());
+		assertEquals(new ErreurResponse(FactureController.MESSAGE_PASSAGE_INTERDIT), interdit.getBody());
+
+		assertEquals(HttpStatus.NOT_FOUND,
+				controller.changerStatut(AUTORISATION, "42", "6", demande("EN_COURS", null)).getStatusCode());
+		assertEquals(HttpStatus.NOT_FOUND,
+				controller.changerStatut(AUTORISATION, "x", "5", demande("EN_COURS", null)).getStatusCode());
+
+		for (FactureController.ChangementStatutRequest inconnue : new FactureController.ChangementStatutRequest[] {
+				null, demande(null, null), demande("PERDUE", null) }) {
+			ResponseEntity<Object> reponse = controller.changerStatut(AUTORISATION, "42", "5", inconnue);
+			assertEquals(HttpStatus.BAD_REQUEST, reponse.getStatusCode());
+			assertEquals(new ErreurResponse("Statut inconnu"), reponse.getBody());
+		}
+	}
+
+	// US-51 : réservé aux collaborateurs du cabinet ; session obligatoire.
+	@Test
+	void us51SessionEtRole() {
+		when(sessions.consulter(null)).thenReturn(ResultatSession.nonConnecte());
+		assertEquals(HttpStatus.UNAUTHORIZED,
+				controller.changerStatut(null, "42", "5", demande("EN_COURS", null)).getStatusCode());
+		connecte(new Compte("sophie@test.fr", "x", Role.DIRIGEANT, true, "Sophie Martin"));
+		assertEquals(HttpStatus.FORBIDDEN,
+				controller.changerStatut(AUTORISATION, "42", "5", demande("EN_COURS", null)).getStatusCode());
+		verify(factures, never()).changerStatut(any(), any(), any(), any(), any());
+	}
+
 	@Test
 	void exemples() {
 		connecte(jean);
@@ -166,7 +236,7 @@ class FactureControllerTest {
 	void us52Ca1Import() {
 		connecte(jean);
 		LigneFacture ligne = new LigneFacture(9L, "facture-edf-juin.pdf", Instant.EPOCH, "Jean Dupont",
-				Facture.Statut.RECUE, true, Facture.Source.IMPORT_CABINET);
+				Facture.Statut.RECUE, true, null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET);
 		when(factures.importer(jean, 42L, Facture.Sens.ACHAT, "facture-edf-juin.pdf", PDF))
 				.thenReturn(ResultatImport.importee(ligne));
 

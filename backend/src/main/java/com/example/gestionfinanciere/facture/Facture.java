@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere.facture;
 
 import java.time.Instant;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,11 +29,26 @@ public class Facture {
 		VENTE
 	}
 
+	// US-51 RG1 : statut de traitement de la facture par le cabinet.
 	public enum Statut {
-		RECUE
+		RECUE,
+		EN_COURS,
+		TRAITEE,
+		A_COMPLETER;
+
+		// RG2 : Reçue -> En cours de traitement -> Traitée ; Reçue ou En cours -> À compléter ;
+		// À compléter -> En cours de traitement (quand le client a redéposé ou complété).
+		public List<Statut> suivants() {
+			return switch (this) {
+				case RECUE -> List.of(EN_COURS, A_COMPLETER);
+				case EN_COURS -> List.of(TRAITEE, A_COMPLETER);
+				case A_COMPLETER -> List.of(EN_COURS);
+				case TRAITEE -> List.of();
+			};
+		}
 	}
 
-	// US-52 RG4 (V21__source_facture.sql) : déposée par le dirigeant ou importée par le cabinet.
+	// US-52 RG4 (V22__source_facture.sql) : déposée par le dirigeant ou importée par le cabinet.
 	public enum Source {
 		DEPOT_CLIENT,
 		IMPORT_CABINET
@@ -66,6 +82,10 @@ public class Facture {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "statut", nullable = false)
 	private Statut statut;
+
+	// US-51 RG3 : motif du statut « À compléter », affiché au client ; vide pour les autres statuts.
+	@Column(name = "motif_a_completer")
+	private String motifACompleter;
 
 	// Vide tant que personne du cabinet ne l'a ouverte : badge « Nouvelle » (US-12 RG3).
 	@Column(name = "ouverte_le")
@@ -115,6 +135,16 @@ public class Facture {
 		}
 	}
 
+	// US-51 RG2 et RG3 : vrai si le passage est autorisé ; le motif n'est gardé que pour « À compléter ».
+	boolean changerStatut(Statut nouveau, String motif) {
+		if (!statut.suivants().contains(nouveau)) {
+			return false;
+		}
+		statut = nouveau;
+		motifACompleter = nouveau == Statut.A_COMPLETER ? motif : null;
+		return true;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -145,6 +175,10 @@ public class Facture {
 
 	public Statut getStatut() {
 		return statut;
+	}
+
+	public String getMotifACompleter() {
+		return motifACompleter;
 	}
 
 	public Instant getOuverteLe() {

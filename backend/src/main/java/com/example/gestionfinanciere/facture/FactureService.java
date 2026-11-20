@@ -33,14 +33,19 @@ public class FactureService {
 	private static final String TICKET = "ticket-fournitures.png";
 	private static final String VENTE = "facture-client-0042.pdf";
 
+	// US-51 RG3 : longueur de la colonne motif_a_completer.
+	static final int LONGUEUR_MOTIF_MAX = 255;
+
 	private final FactureRepository factures;
+	private final ChangementStatutFactureRepository historique;
 	private final DossierRepository dossiers;
 	private final Clock horloge;
 	private final boolean modeTest;
 
-	public FactureService(FactureRepository factures, DossierRepository dossiers, Clock horloge,
-			@Value("${pointeo.mode-test:false}") boolean modeTest) {
+	public FactureService(FactureRepository factures, ChangementStatutFactureRepository historique,
+			DossierRepository dossiers, Clock horloge, @Value("${pointeo.mode-test:false}") boolean modeTest) {
 		this.factures = factures;
+		this.historique = historique;
 		this.dossiers = dossiers;
 		this.horloge = horloge;
 		this.modeTest = modeTest;
@@ -128,6 +133,47 @@ public class FactureService {
 		Facture facture = factures.save(Facture.importee(dossier.get(), sens, DepotFactureService.nom(nomFichier),
 				type.get(), horloge.instant(), collaborateur, contenu));
 		return ResultatImport.importee(LigneFacture.de(facture));
+	}
+
+	/**
+	 * US-51 : le collaborateur change le statut d'une facture de son cabinet. RG2 : seuls les passages
+	 * autorisés ; RG3 : « À compléter » exige un motif ; RG4 : chaque changement garde son auteur et sa
+	 * date. Jamais le motif dans les logs (texte libre).
+	 */
+	@Transactional
+	public ResultatStatut changerStatut(Compte collaborateur, Long dossierId, Long factureId, Facture.Statut nouveau,
+			String motif) {
+		Optional<Facture> trouvee = factureDuCabinet(collaborateur, dossierId, factureId);
+		if (trouvee.isEmpty()) {
+			refus("facture.statut", collaborateur, dossierId, factureId);
+			return ResultatStatut.refuse(ResultatStatut.Issue.INTROUVABLE);
+		}
+		Facture facture = trouvee.get();
+		Facture.Statut ancien = facture.getStatut();
+		String motifNettoye = motif == null ? "" : motif.strip();
+		ResultatStatut.Issue issue;
+		if (!ancien.suivants().contains(nouveau)) {
+			issue = ResultatStatut.Issue.PASSAGE_INTERDIT;
+		} else if (nouveau == Facture.Statut.A_COMPLETER && motifNettoye.isEmpty()) {
+			issue = ResultatStatut.Issue.MOTIF_MANQUANT;
+		} else if (motifNettoye.length() > LONGUEUR_MOTIF_MAX) {
+			issue = ResultatStatut.Issue.MOTIF_TROP_LONG;
+		} else {
+			issue = ResultatStatut.Issue.CHANGE;
+		}
+		EvenementMetier evenement = EvenementMetier.de("facture.statut", issue).avec(collaborateur.identifiantsPourLogs())
+				.avec(CHAMP_DOSSIER, dossierId).avec(CHAMP_FACTURE, factureId).avec("ancienStatut", ancien)
+				.avec("nouveauStatut", nouveau);
+		if (issue != ResultatStatut.Issue.CHANGE) {
+			evenement.warn();
+			return ResultatStatut.refuse(issue);
+		}
+		String motifGarde = nouveau == Facture.Statut.A_COMPLETER ? motifNettoye : null;
+		facture.changerStatut(nouveau, motifGarde);
+		historique.save(new ChangementStatutFacture(facture, ancien, nouveau, motifGarde, collaborateur,
+				horloge.instant()));
+		evenement.info();
+		return new ResultatStatut(issue, LigneFacture.de(facture));
 	}
 
 	/**

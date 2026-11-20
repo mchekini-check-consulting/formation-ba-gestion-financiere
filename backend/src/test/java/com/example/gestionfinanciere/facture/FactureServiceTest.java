@@ -3,11 +3,13 @@ package com.example.gestionfinanciere.facture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,13 +43,14 @@ class FactureServiceTest {
 
 	private final FactureRepository factures = mock(FactureRepository.class);
 	private final DossierRepository dossiers = mock(DossierRepository.class);
+	private final ChangementStatutFactureRepository historique = mock(ChangementStatutFactureRepository.class);
 
 	private final Cabinet cabinet = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean.dupont@cabinet-test.fr", "x", "Jean Dupont");
 	private final Dossier fleurs = new Dossier(cabinet, "Fleurs Martin EURL", "812345679", jean, MAINTENANT);
 
 	private FactureService service(boolean modeTest) {
-		return new FactureService(factures, dossiers, new HorlogeReglable(MAINTENANT), modeTest);
+		return new FactureService(factures, historique, dossiers, new HorlogeReglable(MAINTENANT), modeTest);
 	}
 
 	@BeforeEach
@@ -74,8 +77,11 @@ class FactureServiceTest {
 
 		ListeFactures liste = service(false).lister(jean, 42L, Facture.Sens.ACHAT).orElseThrow();
 
-		assertEquals(List.of(new LigneFacture(5L, "edf.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true, Facture.Source.DEPOT_CLIENT),
-				new LigneFacture(5L, "loyer.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, false, Facture.Source.DEPOT_CLIENT)),
+		List<Facture.Statut> possibles = List.of(Facture.Statut.EN_COURS, Facture.Statut.A_COMPLETER);
+		assertEquals(List.of(
+				new LigneFacture(5L, "edf.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true, null, possibles, Facture.Source.DEPOT_CLIENT),
+				new LigneFacture(5L, "loyer.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, false, null,
+						possibles, Facture.Source.DEPOT_CLIENT)),
 				liste.factures());
 		assertFalse(liste.exemplesPossibles());
 		assertTrue(service(true).lister(jean, 42L, Facture.Sens.VENTE).orElseThrow().exemplesPossibles());
@@ -181,6 +187,91 @@ class FactureServiceTest {
 		}
 	}
 
+	private Facture edf() {
+		Facture facture = facture(Facture.Sens.ACHAT, "facture-edf.pdf", null);
+		ReflectionTestUtils.setField(fleurs, "id", 42L);
+		when(factures.findByIdAndDossierId(5L, 42L)).thenReturn(Optional.of(facture));
+		return facture;
+	}
+
+	// US-51 CA1 : Reçue -> En cours de traitement -> Traitée ; RG4 : chaque changement garde auteur et date.
+	@Test
+	void us51Ca1EnCoursPuisTraitee() {
+		Facture facture = edf();
+
+		ResultatStatut enCours = service(false).changerStatut(jean, 42L, 5L, Facture.Statut.EN_COURS, null);
+		assertEquals(ResultatStatut.Issue.CHANGE, enCours.issue());
+		assertEquals(Facture.Statut.EN_COURS, enCours.facture().statut());
+		ResultatStatut traitee = service(false).changerStatut(jean, 42L, 5L, Facture.Statut.TRAITEE, " ");
+		assertEquals(Facture.Statut.TRAITEE, traitee.facture().statut());
+		assertEquals(Facture.Statut.TRAITEE, facture.getStatut());
+
+		ArgumentCaptor<ChangementStatutFacture> changements = ArgumentCaptor.forClass(ChangementStatutFacture.class);
+		verify(historique, times(2)).save(changements.capture());
+		ChangementStatutFacture dernier = changements.getAllValues().get(1);
+		assertEquals(Facture.Statut.EN_COURS, dernier.getAncienStatut());
+		assertEquals(Facture.Statut.TRAITEE, dernier.getNouveauStatut());
+		assertSame(jean, dernier.getModifiePar());
+		assertEquals(MAINTENANT, dernier.getModifieLe());
+		assertNull(dernier.getMotif());
+	}
+
+	// US-51 CA2 : « À compléter » avec motif (espaces retirés), gardé dans l'historique.
+	@Test
+	void us51Ca2ACompleterAvecMotif() {
+		edf();
+		ResultatStatut resultat = service(false).changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER,
+				"  Facture illisible ");
+		assertEquals(ResultatStatut.Issue.CHANGE, resultat.issue());
+		assertEquals("Facture illisible", resultat.facture().motif());
+		ArgumentCaptor<ChangementStatutFacture> changement = ArgumentCaptor.forClass(ChangementStatutFacture.class);
+		verify(historique).save(changement.capture());
+		assertEquals("Facture illisible", changement.getValue().getMotif());
+	}
+
+	// US-51 CA3 (motif manquant ou trop long), CA4 (passage interdit), autre cabinet : rien ne change.
+	@Test
+	void us51Refus() {
+		Facture facture = edf();
+		FactureService service = service(false);
+
+		assertEquals(ResultatStatut.Issue.MOTIF_MANQUANT,
+				service.changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, null).issue());
+		assertEquals(ResultatStatut.Issue.MOTIF_MANQUANT,
+				service.changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, "   ").issue());
+		assertEquals(ResultatStatut.Issue.MOTIF_TROP_LONG,
+				service.changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, "x".repeat(256)).issue());
+		assertEquals(ResultatStatut.Issue.PASSAGE_INTERDIT,
+				service.changerStatut(jean, 42L, 5L, Facture.Statut.TRAITEE, null).issue());
+		assertEquals(ResultatStatut.Issue.INTROUVABLE,
+				service.changerStatut(jean, 99L, 5L, Facture.Statut.EN_COURS, null).issue());
+		assertNull(service.changerStatut(jean, 42L, 6L, Facture.Statut.EN_COURS, null).facture());
+
+		assertEquals(Facture.Statut.RECUE, facture.getStatut());
+		verify(historique, never()).save(any());
+	}
+
+	// Logs : changement (info) avec ancien et nouveau statut, refus (warn) ; jamais le motif ni le nom du fichier.
+	@Test
+	void us51Logs() {
+		edf();
+		try (JournalCapture journal = JournalCapture.de(EvenementMetier.class)) {
+			service(false).changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, "Facture illisible");
+			service(false).changerStatut(jean, 42L, 5L, Facture.Statut.TRAITEE, null);
+
+			Map<String, String> change = journal.seule(Level.INFO).getMDCPropertyMap();
+			assertEquals("facture.statut", change.get("event"));
+			assertEquals("change", change.get("outcome"));
+			assertEquals("RECUE", change.get("ancienStatut"));
+			assertEquals("A_COMPLETER", change.get("nouveauStatut"));
+			assertEquals("passage_interdit", journal.seule(Level.WARN).getMDCPropertyMap().get("outcome"));
+			assertTrue(journal.lignes().stream()
+					.noneMatch(e -> e.getMDCPropertyMap().toString().contains("illisible")
+							|| e.getFormattedMessage().contains("illisible")
+							|| e.getMDCPropertyMap().toString().contains("edf")));
+		}
+	}
+
 	// Logs : consultation (info) avec dossier, onglet et nombre ; refus d'accès (warn) ; jamais de nom de fichier.
 	@Test
 	void logs() {
@@ -231,7 +322,7 @@ class FactureServiceTest {
 
 		assertEquals(ResultatImport.Statut.IMPORTEE, resultat.statut());
 		assertEquals(new LigneFacture(9L, "facture-edf-juin.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true,
-				Facture.Source.IMPORT_CABINET), resultat.facture());
+				null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET), resultat.facture());
 		Facture facture = enregistree();
 		assertEquals("application/pdf", facture.getTypeFichier());
 		assertEquals(Facture.Sens.ACHAT, facture.getSens());

@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +74,49 @@ class FactureTest {
 		assertNotEquals(fichier, new FichierFacture("a.pdf", "image/png", new byte[] { 1, 2, 3 }));
 		assertNotEquals(fichier, (Object) "a.pdf");
 		assertEquals("FichierFacture[application/pdf, 3 octets]", fichier.toString());
+	}
+
+	// US-51 RG2 : passages autorisés depuis chaque statut.
+	@Test
+	void us51PassagesAutorises() {
+		assertEquals(List.of(Facture.Statut.EN_COURS, Facture.Statut.A_COMPLETER), Facture.Statut.RECUE.suivants());
+		assertEquals(List.of(Facture.Statut.TRAITEE, Facture.Statut.A_COMPLETER), Facture.Statut.EN_COURS.suivants());
+		assertEquals(List.of(Facture.Statut.EN_COURS), Facture.Statut.A_COMPLETER.suivants());
+		assertEquals(List.of(), Facture.Statut.TRAITEE.suivants());
+	}
+
+	// US-51 RG2 et RG3 : le motif n'est gardé que pour « À compléter » ; un passage interdit ne change rien.
+	@Test
+	void us51ChangerStatut() {
+		Facture facture = new Facture(dossier, Facture.Sens.ACHAT, "f.pdf", "application/pdf", MAINTENANT, jean);
+
+		assertFalse(facture.changerStatut(Facture.Statut.TRAITEE, null));
+		assertEquals(Facture.Statut.RECUE, facture.getStatut());
+
+		assertTrue(facture.changerStatut(Facture.Statut.A_COMPLETER, "Facture illisible"));
+		assertEquals("Facture illisible", facture.getMotifACompleter());
+		assertEquals("Facture illisible", LigneFacture.de(facture).motif());
+
+		assertTrue(facture.changerStatut(Facture.Statut.EN_COURS, "ignoré"));
+		assertNull(facture.getMotifACompleter());
+		assertTrue(facture.changerStatut(Facture.Statut.TRAITEE, null));
+		assertEquals(List.of(), LigneFacture.de(facture).statutsPossibles());
+	}
+
+	// US-51 RG4 : un changement de statut garde l'ancien et le nouveau statut, le motif, l'auteur et la date.
+	@Test
+	void us51ChangementGardeAuteurEtDate() {
+		Facture facture = new Facture(dossier, Facture.Sens.ACHAT, "f.pdf", "application/pdf", MAINTENANT, jean);
+		ChangementStatutFacture changement = new ChangementStatutFacture(facture, Facture.Statut.RECUE,
+				Facture.Statut.A_COMPLETER, "Montant TTC manquant", jean, MAINTENANT);
+
+		assertNull(changement.getId());
+		assertSame(facture, changement.getFacture());
+		assertEquals(Facture.Statut.RECUE, changement.getAncienStatut());
+		assertEquals(Facture.Statut.A_COMPLETER, changement.getNouveauStatut());
+		assertEquals("Montant TTC manquant", changement.getMotif());
+		assertSame(jean, changement.getModifiePar());
+		assertEquals(MAINTENANT, changement.getModifieLe());
 	}
 
 	@Test

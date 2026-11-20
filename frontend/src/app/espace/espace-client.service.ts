@@ -2,15 +2,20 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiBase } from '../api';
-import { Sens } from '../dossiers/facture.service';
+import { Sens, Statut } from '../dossiers/facture.service';
 
-/** US-16 RG1 : une facture déposée par le dirigeant ; supprimable tant que le cabinet ne l'a pas ouverte (RG2, RG3). */
+/**
+ * US-16 RG1 : une facture déposée par le dirigeant ; supprimable tant que le cabinet ne l'a pas
+ * ouverte (RG2, RG3) ni traitée (US-51 RG5). US-51 CA1, CA2 : son statut et le motif de « À compléter ».
+ */
 export interface FactureDeposee {
   id: number;
   nomFichier: string;
   deposeeLe: string;
   sens: Sens;
   supprimable: boolean;
+  statut: Statut;
+  motif: string | null;
 }
 
 /** US-15 RG1 : PDF, JPG ou PNG, 10 Mo maximum, 20 fichiers par dépôt. */
