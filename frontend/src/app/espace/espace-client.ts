@@ -93,7 +93,9 @@ export class EspaceClient implements OnInit {
           this.factures.set(liste);
         }
       },
-      error: () => this.erreur.set(MESSAGE_INDISPONIBLE),
+      // 403 : le serveur explique le refus (ex. compte pas rattaché à un dossier) ; sinon message générique.
+      error: (err: HttpErrorResponse) =>
+        this.erreur.set(err.status === 403 && err.error?.message ? String(err.error.message) : MESSAGE_INDISPONIBLE),
     });
   }
 
