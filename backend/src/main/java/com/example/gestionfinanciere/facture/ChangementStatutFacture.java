@@ -16,7 +16,7 @@ import jakarta.persistence.Table;
 import com.example.gestionfinanciere.compte.Compte;
 
 // US-51 RG4 : un changement de statut d'une facture, avec son auteur et sa date
-// (V20__statut_facture.sql). Supprimé avec sa facture (US-16).
+// (V21__statut_facture.sql). Supprimé avec sa facture (US-16).
 @Entity
 @Table(name = "facture_statut_historique")
 public class ChangementStatutFacture {
