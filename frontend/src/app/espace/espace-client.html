@@ -77,6 +77,7 @@
           <tr>
             <th scope="col">Fichier</th>
             <th scope="col">Déposée le</th>
+            <th scope="col">Statut</th>
             <th scope="col"><span class="invisible">Action</span></th>
           </tr>
         </thead>
@@ -85,8 +86,14 @@
             <tr>
               <td class="fichier">{{ f.nomFichier }}</td>
               <td>{{ depot(f) }}</td>
+              <td>
+                <!-- US-51 CA1 : statut donné par le cabinet ; CA2 : « À compléter : <motif> » -->
+                <span class="pastille" [class]="pastilles[f.statut]">{{ statut(f) }}</span>
+              </td>
               <td class="action">
-                @if (!f.supprimable) {
+                @if (f.statut === 'TRAITEE') {
+                  <!-- US-51 RG5 : traitée, plus de « Supprimer » -->
+                } @else if (!f.supprimable) {
                   <!-- US-16 RG3 / CA2 : déjà ouverte par le cabinet, plus de « Supprimer » -->
                   <span class="badge">Ouverte par le cabinet</span>
                 } @else if (aConfirmer() === f.id) {

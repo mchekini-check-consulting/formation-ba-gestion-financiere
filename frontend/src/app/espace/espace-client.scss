@@ -244,3 +244,32 @@ th {
   color: #8c1d18;
   font-size: 14px;
 }
+
+// US-51 : pastille de couleur du statut (mêmes couleurs que côté cabinet).
+.pastille {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+
+  &--recue {
+    background: #e8eef8;
+    color: #1e293b;
+  }
+
+  &--en-cours {
+    background: #ebf1f9;
+    color: #1e40af;
+  }
+
+  &--traitee {
+    background: #e3f5ea;
+    color: #116035;
+  }
+
+  &--a-completer {
+    background: #fff1db;
+    color: #7a4100;
+  }
+}

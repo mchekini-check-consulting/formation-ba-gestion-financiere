@@ -34,7 +34,7 @@ import com.example.gestionfinanciere.logging.EvenementMetier;
 // l'en-tête "Authorization: Bearer <jeton>" de la session (US-07), réservé au dirigeant d'un dossier :
 //   GET    /espace-client/factures?sens=ACHAT|VENTE  ses dépôts de l'onglet (US-16 RG1)
 //   POST   /espace-client/factures?sens=ACHAT|VENTE  déposer un fichier, champ « fichier » (US-15, US-38)
-//   DELETE /espace-client/factures/{id}              supprimer un dépôt pas encore ouvert (US-16)
+//   DELETE /espace-client/factures/{id}              supprimer un dépôt pas encore ouvert (US-16) ni traité (US-51 RG5)
 @RestController
 @RequestMapping("/espace-client/factures")
 public class EspaceClientController {
@@ -47,6 +47,8 @@ public class EspaceClientController {
 	static final String MESSAGE_INTROUVABLE = "Facture introuvable ou accès non autorisé";
 	// US-16 RG3.
 	static final String MESSAGE_DEJA_OUVERTE = "Votre cabinet a déjà ouvert cette facture : elle ne peut plus être supprimée";
+	// US-51 RG5.
+	static final String MESSAGE_DEJA_TRAITEE = "Votre cabinet a traité cette facture : elle ne peut plus être supprimée";
 
 	private final DepotFactureService depots;
 	private final SessionService sessions;
@@ -119,6 +121,8 @@ public class EspaceClientController {
 			case INTROUVABLE -> introuvable();
 			case DEJA_OUVERTE -> ResponseEntity.status(HttpStatus.CONFLICT)
 					.body(new ErreurResponse(MESSAGE_DEJA_OUVERTE));
+			case DEJA_TRAITEE -> ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(new ErreurResponse(MESSAGE_DEJA_TRAITEE));
 		};
 	}
 
