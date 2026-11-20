@@ -13,7 +13,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: fd4e03d
-      qualif: 6c7af8e
+      qualif: fd4e03d
       preprod: ""
       prod: ""
     containerPort: 8080
@@ -99,7 +99,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: fd4e03d
-      qualif: a33080f
+      qualif: fd4e03d
       preprod: ""
       prod: ""
     containerPort: 8080
