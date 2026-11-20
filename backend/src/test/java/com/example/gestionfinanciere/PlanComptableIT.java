@@ -27,7 +27,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.SessionService;
 
-// US-41 Plan comptable d'un dossier : vrai serveur HTTP et PostgreSQL 16 jetable (migration V19).
+// US-41 Plan comptable d'un dossier : vrai serveur HTTP et PostgreSQL 16 jetable (migration V20).
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class PlanComptableIT {

@@ -6,7 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 // US-41 RG2 Catégorie (Achat, Vente, Frais bancaires) et son compte par défaut
-// (V19__plan_comptable.sql). La liste se règle par migration, comme les modules (US-18).
+// (V20__plan_comptable.sql). La liste se règle par migration, comme les modules (US-18).
 @Entity
 @Table(name = "categorie")
 public class Categorie {

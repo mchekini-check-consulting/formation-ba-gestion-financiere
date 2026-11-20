@@ -9,7 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-// US-41 Compte du plan comptable d'un dossier (V19__plan_comptable.sql) : compte du plan général
+// US-41 Compte du plan comptable d'un dossier (V20__plan_comptable.sql) : compte du plan général
 // copié à la création du dossier (RG1) ou sous-compte ajouté par la comptable (ex. 401MOULINS).
 @Entity
 @Table(name = "compte_comptable")
