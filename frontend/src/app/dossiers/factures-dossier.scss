@@ -86,6 +86,76 @@ th {
   }
 }
 
+// US-52 « Importer des factures » : bouton principal de l'onglet, champ fichier masqué.
+.import {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.importer {
+  position: relative;
+  padding: 9px 16px;
+  border-radius: 10px;
+  background: $or;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus-within {
+    outline: 2px solid $encre;
+    outline-offset: 2px;
+  }
+
+  &--inactif {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.import__aide {
+  font-size: 13px;
+  color: $gris;
+}
+
+.resultat {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #e7f6ec;
+  color: #14532d;
+  font-size: 14px;
+
+  &--refus {
+    background: #fff4e5;
+    color: #7a4100;
+  }
+
+  &__message {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  &__refus,
+  &__fichier {
+    margin: 6px 0 0;
+    padding-left: 18px;
+  }
+
+  &__fichier {
+    padding-left: 0;
+  }
+}
+
 .alerte {
   margin: 0;
   padding: 12px 14px;

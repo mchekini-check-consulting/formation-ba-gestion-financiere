@@ -1,6 +1,40 @@
 @if (erreur(); as e) {
   <p class="alerte" role="alert">{{ e }}</p>
 } @else if (liste(); as l) {
+  <!-- US-52 RG1 : import par le cabinet dans l'onglet ouvert ; CA3 : pas proposé sans accès au dossier -->
+  <div class="import">
+    <label class="importer" [class.importer--inactif]="importEnCours()">
+      Importer des factures
+      <input
+        #champ
+        type="file"
+        multiple
+        accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+        [disabled]="importEnCours()"
+        (change)="choisirFichiers(champ)"
+      />
+    </label>
+    <span class="import__aide">PDF, JPG ou PNG · 10 Mo maximum par fichier · 20 fichiers par import</span>
+  </div>
+
+  @if (importEnCours()) {
+    <p class="muted" role="status">Import en cours…</p>
+  }
+  @if (resultat(); as r) {
+    <div class="resultat" [class.resultat--refus]="r.refus.length > 0" role="status">
+      <p class="resultat__message">{{ r.message }}</p>
+      @if (r.refus.length > 1 || (r.refus.length === 1 && r.message !== r.refus[0].motif)) {
+        <ul class="resultat__refus">
+          @for (f of r.refus; track $index) {
+            <li>{{ f.nom }} : {{ f.motif }}</li>
+          }
+        </ul>
+      } @else if (r.refus.length === 1) {
+        <p class="resultat__fichier">{{ r.refus[0].nom }}</p>
+      }
+    </div>
+  }
+
   @if (l.factures.length === 0) {
     <!-- CA vide -->
     <p class="vide">{{ vide() }}</p>
@@ -24,6 +58,7 @@
             <th scope="col">Fichier</th>
             <th scope="col">Déposée le</th>
             <th scope="col">Déposée par</th>
+            <th scope="col">Source</th>
             <th scope="col">Statut</th>
             <th scope="col"><span class="invisible">Changer le statut</span></th>
           </tr>
@@ -40,6 +75,8 @@
               </td>
               <td>{{ depot(f) }}</td>
               <td>{{ f.deposeePar }}</td>
+              <!-- US-52 RG4 -->
+              <td>{{ sources[f.source] }}</td>
               <td>
                 <!-- US-51 RG4 : pastille de couleur ; RG3 : motif de « À compléter » -->
                 <span class="pastille" [class]="pastilles[f.statut]">{{ libelles[f.statut] }}</span>

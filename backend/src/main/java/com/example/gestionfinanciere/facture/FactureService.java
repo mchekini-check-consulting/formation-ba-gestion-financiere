@@ -98,6 +98,44 @@ public class FactureService {
 	}
 
 	/**
+	 * US-52 : un fichier importé par le cabinet dans l'onglet du dossier (RG1). Mêmes contrôles que
+	 * le dépôt du dirigeant (RG2, US-15 RG1 : vrai type et taille) ; un comptable n'importe que dans
+	 * ses dossiers (RG3, US-20). La facture apparaît tout de suite, « Reçue » et « Import cabinet »
+	 * (RG4). Jamais le nom ni le contenu du fichier dans les logs.
+	 */
+	@Transactional
+	public ResultatImport importer(Compte collaborateur, Long dossierId, Facture.Sens sens, String nomFichier,
+			byte[] contenu) {
+		ResultatImport resultat = importerSansJournal(collaborateur, dossierId, sens, nomFichier, contenu);
+		EvenementMetier evenement = EvenementMetier.de("facture.import", resultat.statut())
+				.avec(collaborateur.identifiantsPourLogs()).avec(CHAMP_DOSSIER, dossierId).avec("sens", sens)
+				.avec("taille", contenu == null ? 0 : contenu.length);
+		if (resultat.facture() != null) {
+			evenement.avec(CHAMP_FACTURE, resultat.facture().id());
+		}
+		evenement.journaliser(resultat.statut() == ResultatImport.Statut.IMPORTEE);
+		return resultat;
+	}
+
+	private ResultatImport importerSansJournal(Compte collaborateur, Long dossierId, Facture.Sens sens,
+			String nomFichier, byte[] contenu) {
+		Optional<Dossier> dossier = dossierDuCabinet(collaborateur, dossierId);
+		if (dossier.isEmpty()) {
+			return ResultatImport.refuse(ResultatImport.Statut.DOSSIER_INTROUVABLE);
+		}
+		if (contenu != null && contenu.length > DepotFactureService.TAILLE_MAX) {
+			return ResultatImport.refuse(ResultatImport.Statut.TROP_VOLUMINEUX);
+		}
+		Optional<String> type = TypeFichier.reconnaitre(contenu);
+		if (type.isEmpty()) {
+			return ResultatImport.refuse(ResultatImport.Statut.FORMAT_REFUSE);
+		}
+		Facture facture = factures.save(Facture.importee(dossier.get(), sens, DepotFactureService.nom(nomFichier),
+				type.get(), horloge.instant(), collaborateur, contenu));
+		return ResultatImport.importee(LigneFacture.de(facture));
+	}
+
+	/**
 	 * US-51 : le collaborateur change le statut d'une facture de son cabinet. RG2 : seuls les passages
 	 * autorisés ; RG3 : « À compléter » exige un motif ; RG4 : chaque changement garde son auteur et sa
 	 * date. Jamais le motif dans les logs (texte libre).

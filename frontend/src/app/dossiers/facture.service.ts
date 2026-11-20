@@ -6,6 +6,14 @@ import { apiBase } from '../api';
 /** US-12 RG1 : factures fournisseurs (achats) ou factures clients (ventes). */
 export type Sens = 'ACHAT' | 'VENTE';
 
+/** US-52 RG4 : déposée par le dirigeant (US-15, US-38) ou importée par le cabinet. */
+export type Source = 'DEPOT_CLIENT' | 'IMPORT_CABINET';
+
+export const SOURCES: Record<Source, string> = {
+  DEPOT_CLIENT: 'Dépôt client',
+  IMPORT_CABINET: 'Import cabinet',
+};
+
 /** US-51 RG1 : statut de traitement d'une facture. */
 export type Statut = 'RECUE' | 'EN_COURS' | 'TRAITEE' | 'A_COMPLETER';
 
@@ -32,6 +40,7 @@ export const MESSAGE_MOTIF_MANQUANT = 'Indiquez le motif';
 /**
  * US-12 RG2 : une ligne de la liste ; RG3 : nouvelle tant que personne du cabinet ne l'a ouverte.
  * US-51 : motif de « À compléter » (RG3) et seuls statuts proposés depuis le statut actuel (RG2, CA4).
+ * US-52 RG4 : source (dépôt du dirigeant ou import du cabinet).
  */
 export interface LigneFacture {
   id: number;
@@ -42,6 +51,7 @@ export interface LigneFacture {
   nouvelle: boolean;
   motif: string | null;
   statutsPossibles: Statut[];
+  source: Source;
 }
 
 /** US-13 : en-tête de la page d'aperçu. */
@@ -66,6 +76,15 @@ export class FactureService {
 
   lister(dossierId: number, sens: Sens): Observable<ListeFactures> {
     return this.http.get<ListeFactures>(`${this.url}/${dossierId}/factures`, {
+      params: new HttpParams().set('sens', sens),
+    });
+  }
+
+  /** US-52 : un fichier par appel, importé dans l'onglet (RG1) ; un refus n'empêche pas les autres (RG2). */
+  importer(dossierId: number, sens: Sens, fichier: File): Observable<LigneFacture> {
+    const corps = new FormData();
+    corps.append('fichier', fichier, fichier.name);
+    return this.http.post<LigneFacture>(`${this.url}/${dossierId}/factures`, corps, {
       params: new HttpParams().set('sens', sens),
     });
   }

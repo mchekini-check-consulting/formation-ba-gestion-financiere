@@ -48,6 +48,12 @@ public class Facture {
 		}
 	}
 
+	// US-52 RG4 (V22__source_facture.sql) : déposée par le dirigeant ou importée par le cabinet.
+	public enum Source {
+		DEPOT_CLIENT,
+		IMPORT_CABINET
+	}
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -89,7 +95,19 @@ public class Facture {
 	@Column(name = "contenu")
 	private byte[] contenu;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "source", nullable = false)
+	private Source source = Source.DEPOT_CLIENT;
+
 	protected Facture() {
+	}
+
+	// US-52 : facture importée par un collaborateur du cabinet dans le dossier (RG4 « Import cabinet »).
+	public static Facture importee(Dossier dossier, Sens sens, String nomFichier, String typeFichier,
+			Instant importeeLe, Compte collaborateur, byte[] contenu) {
+		Facture facture = new Facture(dossier, sens, nomFichier, typeFichier, importeeLe, collaborateur, contenu);
+		facture.source = Source.IMPORT_CABINET;
+		return facture;
 	}
 
 	public Facture(Dossier dossier, Sens sens, String nomFichier, String typeFichier, Instant deposeeLe,
@@ -169,6 +187,10 @@ public class Facture {
 
 	public byte[] getContenu() {
 		return contenu == null ? null : contenu.clone();
+	}
+
+	public Source getSource() {
+		return source;
 	}
 
 }
