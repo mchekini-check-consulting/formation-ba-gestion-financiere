@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.dossier.Dossier;
 import com.example.gestionfinanciere.dossier.AccesDossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
+import com.example.gestionfinanciere.facture.lecture.DemandeLecture;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 
@@ -38,14 +40,19 @@ public class FactureService {
 
 	private final FactureRepository factures;
 	private final ChangementStatutFactureRepository historique;
+	private final ChampLuRepository champsLus;
 	private final DossierRepository dossiers;
+	private final ApplicationEventPublisher evenements;
 	private final Clock horloge;
 	private final boolean modeTest;
 
 	public FactureService(FactureRepository factures, ChangementStatutFactureRepository historique,
-			DossierRepository dossiers, Clock horloge, @Value("${pointeo.mode-test:false}") boolean modeTest) {
+			ChampLuRepository champsLus, DossierRepository dossiers, ApplicationEventPublisher evenements, Clock horloge,
+			@Value("${pointeo.mode-test:false}") boolean modeTest) {
 		this.factures = factures;
 		this.historique = historique;
+		this.champsLus = champsLus;
+		this.evenements = evenements;
 		this.dossiers = dossiers;
 		this.horloge = horloge;
 		this.modeTest = modeTest;
@@ -73,7 +80,7 @@ public class FactureService {
 		if (facture.isEmpty()) {
 			refus("facture.consultation", collaborateur, dossierId, factureId);
 		}
-		return facture.map(VueFacture::de);
+		return facture.map(f -> VueFacture.de(f, champsLus.findByFactureId(f.getId())));
 	}
 
 	/**
@@ -154,11 +161,15 @@ public class FactureService {
 		Facture electricite = new Facture(dossier.get(), Facture.Sens.ACHAT, ELECTRICITE, PDF,
 				maintenant.minus(Duration.ofDays(3)), collaborateur, exemple(ELECTRICITE));
 		electricite.marquerOuverte(maintenant.minus(Duration.ofDays(2)));
-		factures.saveAll(List.of(electricite,
+		List<Facture> exemples = List.of(electricite,
 				new Facture(dossier.get(), Facture.Sens.ACHAT, TICKET, "image/png",
 						maintenant.minus(Duration.ofHours(5)), collaborateur, exemple(TICKET)),
 				new Facture(dossier.get(), Facture.Sens.VENTE, VENTE, PDF, maintenant.minus(Duration.ofDays(1)),
-						collaborateur, exemple(VENTE))));
+						collaborateur, exemple(VENTE)));
+		// US-53 RG1 : les factures fournisseurs d'exemple sont lues comme un vrai dépôt.
+		List<Facture> aLire = exemples.stream().filter(Facture::demarrerLecture).toList();
+		factures.saveAll(exemples);
+		aLire.forEach(f -> evenements.publishEvent(new DemandeLecture(f.getId())));
 		EvenementMetier.de("facture.exemples", "ajoutees").avec(collaborateur.identifiantsPourLogs())
 				.avec(CHAMP_DOSSIER, dossierId).avec("nombre", 3).info();
 		return true;

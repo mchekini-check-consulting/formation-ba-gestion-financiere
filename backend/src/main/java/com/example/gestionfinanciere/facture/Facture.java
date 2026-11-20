@@ -1,7 +1,11 @@
 package com.example.gestionfinanciere.facture;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
+
+import org.hibernate.annotations.DynamicUpdate;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,10 +20,14 @@ import jakarta.persistence.Table;
 
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.dossier.Dossier;
+import com.example.gestionfinanciere.facture.lecture.ResultatLecture;
 
 // Facture déposée dans un dossier client (V12__facture_et_espace_client.sql). Comptée dans la
 // liste des dossiers (US-09) ; affichée par l'US-12, prévisualisée et téléchargée par l'US-13.
+// @DynamicUpdate : la lecture (US-53, en arrière-plan) ne réécrit que ses colonnes, jamais le statut ou
+// l'ouverture changés au même moment par le cabinet.
 @Entity
+@DynamicUpdate
 @Table(name = "facture")
 public class Facture {
 
@@ -46,6 +54,13 @@ public class Facture {
 				case TRAITEE -> List.of();
 			};
 		}
+	}
+
+	// US-53 RG6 : statut de la lecture automatique d'une facture fournisseur.
+	public enum StatutLecture {
+		EN_COURS,
+		LUE,
+		ECHOUEE
 	}
 
 	@Id
@@ -89,6 +104,45 @@ public class Facture {
 	@Column(name = "contenu")
 	private byte[] contenu;
 
+	// US-53 : lecture automatique (vide si la facture n'est pas lue : facture client, déposée avant l'US-53).
+	@Enumerated(EnumType.STRING)
+	@Column(name = "lecture_statut")
+	private StatutLecture lectureStatut;
+
+	@Column(name = "lecture_terminee_le")
+	private Instant lectureTermineeLe;
+
+	@Column(name = "lecture_a_verifier")
+	private Boolean lectureAVerifier;
+
+	// US-53 RG2 : champs lus.
+	@Column(name = "type_tiers")
+	private String typeTiers;
+
+	@Column(name = "nom_tiers")
+	private String nomTiers;
+
+	@Column(name = "numero_facture")
+	private String numeroFacture;
+
+	@Column(name = "date_emission")
+	private LocalDate dateEmission;
+
+	@Column(name = "montant_ht", precision = 12, scale = 2)
+	private BigDecimal montantHt;
+
+	@Column(name = "montant_tva", precision = 12, scale = 2)
+	private BigDecimal montantTva;
+
+	@Column(name = "taux_tva", precision = 5, scale = 2)
+	private BigDecimal tauxTva;
+
+	@Column(name = "montant_ttc", precision = 12, scale = 2)
+	private BigDecimal montantTtc;
+
+	@Column(name = "compte_contrepartie")
+	private String compteContrepartie;
+
 	protected Facture() {
 	}
 
@@ -125,6 +179,39 @@ public class Facture {
 		statut = nouveau;
 		motifACompleter = nouveau == Statut.A_COMPLETER ? motif : null;
 		return true;
+	}
+
+	/**
+	 * US-53 RG1 : une facture fournisseur avec son fichier est mise en lecture dès son arrivée.
+	 * Vrai si la lecture est demandée ; faux pour une facture client ou sans fichier.
+	 */
+	public boolean demarrerLecture() {
+		if (sens != Sens.ACHAT || contenu == null) {
+			return false;
+		}
+		lectureStatut = StatutLecture.EN_COURS;
+		return true;
+	}
+
+	// US-53 RG2 à RG6 : résultat de la lecture ; illisible -> « Lecture échouée » (CA4), aucun champ.
+	public void terminerLecture(ResultatLecture resultat, Instant quand) {
+		lectureTermineeLe = quand;
+		if (!resultat.lisible()) {
+			lectureStatut = StatutLecture.ECHOUEE;
+			lectureAVerifier = null;
+			return;
+		}
+		lectureStatut = StatutLecture.LUE;
+		lectureAVerifier = resultat.aVerifierOuARenseigner();
+		typeTiers = resultat.typeTiers();
+		nomTiers = resultat.nomTiers();
+		numeroFacture = resultat.numeroFacture();
+		dateEmission = resultat.dateEmission();
+		montantHt = resultat.montantHt();
+		montantTva = resultat.montantTva();
+		tauxTva = resultat.tauxTva();
+		montantTtc = resultat.montantTtc();
+		compteContrepartie = resultat.compteContrepartie();
 	}
 
 	public Long getId() {
@@ -165,6 +252,54 @@ public class Facture {
 
 	public Instant getOuverteLe() {
 		return ouverteLe;
+	}
+
+	public StatutLecture getLectureStatut() {
+		return lectureStatut;
+	}
+
+	public Instant getLectureTermineeLe() {
+		return lectureTermineeLe;
+	}
+
+	public boolean isLectureAVerifier() {
+		return Boolean.TRUE.equals(lectureAVerifier);
+	}
+
+	public String getTypeTiers() {
+		return typeTiers;
+	}
+
+	public String getNomTiers() {
+		return nomTiers;
+	}
+
+	public String getNumeroFacture() {
+		return numeroFacture;
+	}
+
+	public LocalDate getDateEmission() {
+		return dateEmission;
+	}
+
+	public BigDecimal getMontantHt() {
+		return montantHt;
+	}
+
+	public BigDecimal getMontantTva() {
+		return montantTva;
+	}
+
+	public BigDecimal getTauxTva() {
+		return tauxTva;
+	}
+
+	public BigDecimal getMontantTtc() {
+		return montantTtc;
+	}
+
+	public String getCompteContrepartie() {
+		return compteContrepartie;
 	}
 
 	public byte[] getContenu() {

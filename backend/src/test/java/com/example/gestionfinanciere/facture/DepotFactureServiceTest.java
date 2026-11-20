@@ -19,6 +19,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.gestionfinanciere.cabinet.Cabinet;
@@ -26,6 +27,7 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.dossier.Dossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
+import com.example.gestionfinanciere.facture.lecture.DemandeLecture;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.JournalCapture;
 
@@ -39,8 +41,9 @@ class DepotFactureServiceTest {
 
 	private final FactureRepository factures = mock(FactureRepository.class);
 	private final DossierRepository dossiers = mock(DossierRepository.class);
+	private final ApplicationEventPublisher evenements = mock(ApplicationEventPublisher.class);
 	private final DepotFactureService service = new DepotFactureService(factures, dossiers,
-			new HorlogeReglable(MAINTENANT));
+			new HorlogeReglable(MAINTENANT), evenements);
 
 	private final Cabinet cabinet = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean@test.fr", "x", "Jean Dupont");
@@ -85,6 +88,9 @@ class DepotFactureServiceTest {
 		assertEquals(TypeFichier.PDF, facture.getTypeFichier());
 		// Badge « Nouvelle » côté cabinet (US-12 RG3).
 		assertNull(facture.getOuverteLe());
+		// US-53 RG1 : lecture automatique lancée dès le dépôt.
+		assertEquals(Facture.StatutLecture.EN_COURS, facture.getLectureStatut());
+		verify(evenements).publishEvent(new DemandeLecture(5L));
 	}
 
 	// US-38 CA1 : facture client rangée dans les ventes seulement.
@@ -95,6 +101,9 @@ class DepotFactureServiceTest {
 		ArgumentCaptor<Facture> enregistree = ArgumentCaptor.forClass(Facture.class);
 		verify(factures).save(enregistree.capture());
 		assertEquals(Facture.Sens.VENTE, enregistree.getValue().getSens());
+		// US-53 RG1 : une facture client n'est pas lue.
+		assertNull(enregistree.getValue().getLectureStatut());
+		verify(evenements, never()).publishEvent(any(Object.class));
 	}
 
 	// US-15 CA2 / RG1 : le vrai type compte, pas le nom ; plus de 10 Mo refusé.

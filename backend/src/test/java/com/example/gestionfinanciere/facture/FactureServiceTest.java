@@ -23,6 +23,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.gestionfinanciere.cabinet.Cabinet;
@@ -43,13 +44,16 @@ class FactureServiceTest {
 	private final FactureRepository factures = mock(FactureRepository.class);
 	private final DossierRepository dossiers = mock(DossierRepository.class);
 	private final ChangementStatutFactureRepository historique = mock(ChangementStatutFactureRepository.class);
+	private final ChampLuRepository champsLus = mock(ChampLuRepository.class);
+	private final ApplicationEventPublisher evenements = mock(ApplicationEventPublisher.class);
 
 	private final Cabinet cabinet = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean.dupont@cabinet-test.fr", "x", "Jean Dupont");
 	private final Dossier fleurs = new Dossier(cabinet, "Fleurs Martin EURL", "812345679", jean, MAINTENANT);
 
 	private FactureService service(boolean modeTest) {
-		return new FactureService(factures, historique, dossiers, new HorlogeReglable(MAINTENANT), modeTest);
+		return new FactureService(factures, historique, champsLus, dossiers, evenements, new HorlogeReglable(MAINTENANT),
+				modeTest);
 	}
 
 	@BeforeEach
@@ -78,9 +82,10 @@ class FactureServiceTest {
 
 		List<Facture.Statut> possibles = List.of(Facture.Statut.EN_COURS, Facture.Statut.A_COMPLETER);
 		assertEquals(List.of(
-				new LigneFacture(5L, "edf.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true, null, possibles),
+				new LigneFacture(5L, "edf.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true, null, possibles,
+						null, false),
 				new LigneFacture(5L, "loyer.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, false, null,
-						possibles)),
+						possibles, null, false)),
 				liste.factures());
 		assertFalse(liste.exemplesPossibles());
 		assertTrue(service(true).lister(jean, 42L, Facture.Sens.VENTE).orElseThrow().exemplesPossibles());
@@ -118,6 +123,11 @@ class FactureServiceTest {
 				liste.stream().map(Facture::getTypeFichier).toList());
 		assertEquals("%PDF", new String(liste.get(0).getContenu(), 0, 4, StandardCharsets.US_ASCII));
 		assertEquals("PNG", new String(liste.get(1).getContenu(), 1, 3, StandardCharsets.US_ASCII));
+		// US-53 RG1 : les deux factures fournisseurs partent en lecture, pas la facture client.
+		assertEquals(List.of(Facture.StatutLecture.EN_COURS, Facture.StatutLecture.EN_COURS),
+				liste.stream().map(Facture::getLectureStatut).limit(2).toList());
+		assertNull(liste.get(2).getLectureStatut());
+		verify(evenements, org.mockito.Mockito.times(2)).publishEvent(any(Object.class));
 	}
 
 	@Test
@@ -142,7 +152,7 @@ class FactureServiceTest {
 		Facture facture = avecFichier(null);
 		when(factures.findByIdAndDossierId(5L, 42L)).thenReturn(Optional.of(facture));
 
-		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT)),
+		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null)),
 				service(false).consulter(jean, 42L, 5L));
 		assertTrue(LigneFacture.de(facture).nouvelle());
 

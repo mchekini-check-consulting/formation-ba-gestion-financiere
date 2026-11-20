@@ -40,7 +40,7 @@ class FactureControllerTest {
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean@test.fr", "x", "Jean Dupont");
 	private final ListeFactures liste = new ListeFactures(
 			List.of(new LigneFacture(1L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.RECUE, true, null,
-					Facture.Statut.RECUE.suivants())),
+					Facture.Statut.RECUE.suivants(), null, false)),
 			false);
 
 	private void connecte(Compte compte) {
@@ -116,7 +116,7 @@ class FactureControllerTest {
 	@Test
 	void us13NomEtTypeDuFichier() {
 		connecte(jean);
-		VueFacture vue = new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT);
+		VueFacture vue = new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null);
 		when(factures.consulter(jean, 42L, 5L)).thenReturn(Optional.of(vue));
 		assertEquals(vue, controller.consulter(AUTORISATION, "42", "5").getBody());
 	}
@@ -153,7 +153,7 @@ class FactureControllerTest {
 	void us51ChangerStatut() {
 		connecte(jean);
 		LigneFacture enCours = new LigneFacture(5L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.EN_COURS,
-				false, null, Facture.Statut.EN_COURS.suivants());
+				false, null, Facture.Statut.EN_COURS.suivants(), null, false);
 		when(factures.changerStatut(jean, 42L, 5L, Facture.Statut.EN_COURS, null))
 				.thenReturn(new ResultatStatut(ResultatStatut.Issue.CHANGE, enCours));
 
