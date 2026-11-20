@@ -38,7 +38,7 @@ class EspaceClientControllerTest {
 
 	private final Compte sophie = Compte.dirigeantInvite(42L, "sophie@test.fr", "x", "Sophie Martin");
 	private final FactureDeposee ticket = new FactureDeposee(5L, "ticket.jpg", Instant.EPOCH, Facture.Sens.ACHAT,
-			true);
+			true, Facture.Statut.RECUE, null);
 	private final MockMultipartFile fichier = new MockMultipartFile("fichier", "facture.pdf", "application/pdf", PDF);
 
 	private void connecte(Compte compte) {
@@ -119,6 +119,7 @@ class EspaceClientControllerTest {
 		when(depots.supprimer(sophie, 5L)).thenReturn(DepotFactureService.ResultatSuppression.SUPPRIMEE);
 		when(depots.supprimer(sophie, 6L)).thenReturn(DepotFactureService.ResultatSuppression.DEJA_OUVERTE);
 		when(depots.supprimer(sophie, 7L)).thenReturn(DepotFactureService.ResultatSuppression.INTROUVABLE);
+		when(depots.supprimer(sophie, 8L)).thenReturn(DepotFactureService.ResultatSuppression.DEJA_TRAITEE);
 
 		assertEquals(HttpStatus.NO_CONTENT, controller.supprimer(AUTORISATION, "5").getStatusCode());
 		ResponseEntity<Object> ouverte = controller.supprimer(AUTORISATION, "6");
@@ -126,6 +127,10 @@ class EspaceClientControllerTest {
 		assertEquals(new ErreurResponse(EspaceClientController.MESSAGE_DEJA_OUVERTE), ouverte.getBody());
 		assertEquals(HttpStatus.NOT_FOUND, controller.supprimer(AUTORISATION, "7").getStatusCode());
 		assertEquals(HttpStatus.NOT_FOUND, controller.supprimer(AUTORISATION, "abc").getStatusCode());
+		// US-51 RG5.
+		ResponseEntity<Object> traitee = controller.supprimer(AUTORISATION, "8");
+		assertEquals(HttpStatus.CONFLICT, traitee.getStatusCode());
+		assertEquals(new ErreurResponse(EspaceClientController.MESSAGE_DEJA_TRAITEE), traitee.getBody());
 	}
 
 	// Réservé au dirigeant actif d'un dossier (US-07 : session obligatoire).

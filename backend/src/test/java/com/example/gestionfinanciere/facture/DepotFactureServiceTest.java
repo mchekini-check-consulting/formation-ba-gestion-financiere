@@ -74,7 +74,8 @@ class DepotFactureServiceTest {
 		ResultatDepot resultat = service.deposer(sophie, Facture.Sens.ACHAT, "facture-moulins-bertrand-0142.pdf", PDF);
 
 		assertEquals(ResultatDepot.Statut.DEPOSEE, resultat.statut());
-		assertEquals(new FactureDeposee(5L, "facture-moulins-bertrand-0142.pdf", MAINTENANT, Facture.Sens.ACHAT, true),
+		assertEquals(new FactureDeposee(5L, "facture-moulins-bertrand-0142.pdf", MAINTENANT, Facture.Sens.ACHAT, true,
+				Facture.Statut.RECUE, null),
 				resultat.facture());
 		ArgumentCaptor<Facture> enregistree = ArgumentCaptor.forClass(Facture.class);
 		verify(factures).save(enregistree.capture());
@@ -162,6 +163,32 @@ class DepotFactureServiceTest {
 		assertEquals(DepotFactureService.ResultatSuppression.DEJA_OUVERTE, service.supprimer(sophie, 5L));
 		assertEquals(DepotFactureService.ResultatSuppression.INTROUVABLE, service.supprimer(sophie, 6L));
 		verify(factures, never()).delete(any());
+	}
+
+	// US-51 RG5 : facture « Traitée » -> plus supprimable par le client, même jamais ouverte.
+	@Test
+	void us51Rg5FactureTraiteeNonSupprimable() {
+		Facture traitee = depot("edf.pdf", null);
+		traitee.changerStatut(Facture.Statut.EN_COURS, null);
+		traitee.changerStatut(Facture.Statut.TRAITEE, null);
+		when(factures.findByIdAndDossierIdAndDeposeeParId(5L, 42L, 9L)).thenReturn(Optional.of(traitee));
+
+		assertFalse(FactureDeposee.de(traitee).supprimable());
+		assertEquals(Facture.Statut.TRAITEE, FactureDeposee.de(traitee).statut());
+		assertEquals(DepotFactureService.ResultatSuppression.DEJA_TRAITEE, service.supprimer(sophie, 5L));
+		verify(factures, never()).delete(any());
+	}
+
+	// US-51 CA2 : le dirigeant voit « À compléter » et le motif dans son espace.
+	@Test
+	void us51Ca2MotifVuParLeDirigeant() {
+		Facture facture = depot("F-107.pdf", null);
+		facture.changerStatut(Facture.Statut.A_COMPLETER, "Facture illisible");
+
+		FactureDeposee vue = FactureDeposee.de(facture);
+		assertEquals(Facture.Statut.A_COMPLETER, vue.statut());
+		assertEquals("Facture illisible", vue.motif());
+		assertTrue(vue.supprimable());
 	}
 
 	// Logs métier : jamais le nom du fichier ; refus en warn.

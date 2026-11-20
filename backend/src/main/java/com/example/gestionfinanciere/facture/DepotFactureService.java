@@ -33,7 +33,9 @@ public class DepotFactureService {
 		SUPPRIMEE,
 		INTROUVABLE,
 		// US-16 RG3 : déjà ouverte par le cabinet.
-		DEJA_OUVERTE
+		DEJA_OUVERTE,
+		// US-51 RG5 : déjà traitée par le cabinet.
+		DEJA_TRAITEE
 	}
 
 	private final FactureRepository factures;
@@ -91,7 +93,8 @@ public class DepotFactureService {
 		return ResultatDepot.deposee(FactureDeposee.de(facture));
 	}
 
-	// US-16 CA1 : la facture disparaît de l'espace du dirigeant et du dossier ; RG3 : pas si le cabinet l'a ouverte.
+	// US-16 CA1 : la facture disparaît de l'espace du dirigeant et du dossier ; RG3 : pas si le cabinet l'a
+	// ouverte ; US-51 RG5 : pas si elle est « Traitée ».
 	@Transactional
 	public ResultatSuppression supprimer(Compte dirigeant, Long factureId) {
 		Optional<Facture> facture = factures.findByIdAndDossierIdAndDeposeeParId(factureId, dirigeant.getDossierId(),
@@ -99,6 +102,8 @@ public class DepotFactureService {
 		ResultatSuppression resultat;
 		if (facture.isEmpty()) {
 			resultat = ResultatSuppression.INTROUVABLE;
+		} else if (facture.get().getStatut() == Facture.Statut.TRAITEE) {
+			resultat = ResultatSuppression.DEJA_TRAITEE;
 		} else if (facture.get().getOuverteLe() != null) {
 			resultat = ResultatSuppression.DEJA_OUVERTE;
 		} else {

@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { catchError, concatMap, from, map, of, toArray } from 'rxjs';
-import { Sens, formaterDepot } from '../dossiers/facture.service';
+import { LIBELLES_STATUT, PASTILLES_STATUT, Sens, formaterDepot } from '../dossiers/facture.service';
 import { SessionService } from '../session/session.service';
 import { EspaceClientService, FICHIERS_MAX, FactureDeposee, refusAvantEnvoi } from './espace-client.service';
 
@@ -62,6 +62,7 @@ export class EspaceClient implements OnInit {
 
   protected readonly nom = computed(() => this.session.utilisateur()?.nomAffiche ?? '');
   protected readonly onglets = ONGLETS_ESPACE;
+  protected readonly pastilles = PASTILLES_STATUT;
   protected readonly sens = signal<Sens>('ACHAT');
   protected readonly factures = signal<FactureDeposee[] | null>(null);
   protected readonly erreur = signal<string | null>(null);
@@ -191,6 +192,12 @@ export class EspaceClient implements OnInit {
 
   protected vide(): string {
     return MESSAGES_VIDE_ESPACE[this.sens()];
+  }
+
+  /** US-51 CA1 : « Traitée » ; CA2 : « À compléter : Facture illisible ». */
+  protected statut(facture: FactureDeposee): string {
+    const libelle = LIBELLES_STATUT[facture.statut];
+    return facture.statut === 'A_COMPLETER' && facture.motif ? `${libelle} : ${facture.motif}` : libelle;
   }
 
   protected depot(facture: FactureDeposee): string {

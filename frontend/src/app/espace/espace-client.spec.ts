@@ -14,6 +14,8 @@ const TICKET: FactureDeposee = {
   deposeeLe: '2026-11-08T09:05:00Z',
   sens: 'ACHAT',
   supprimable: true,
+  statut: 'RECUE',
+  motif: null,
 };
 const LOYER: FactureDeposee = { ...TICKET, id: 8, nomFichier: 'loyer.pdf', supprimable: false };
 
@@ -104,10 +106,28 @@ describe('Espace client du dirigeant (US-15, US-38, US-16)', () => {
     const { page } = await ouvrir();
     expect(page.querySelector('h1')?.textContent).toBe('Bonjour Sophie Martin');
     expect(lignes(page)).toEqual([
-      ['ticket-carburant.jpg', '08/11/2026 à 10:05', 'Supprimer'],
-      ['loyer.pdf', '08/11/2026 à 10:05', 'Ouverte par le cabinet'],
+      ['ticket-carburant.jpg', '08/11/2026 à 10:05', 'Reçue', 'Supprimer'],
+      ['loyer.pdf', '08/11/2026 à 10:05', 'Reçue', 'Ouverte par le cabinet'],
     ]);
     expect(page.querySelectorAll('.supprimer')).toHaveLength(1);
+  });
+
+  it('US-51 CA1, CA2 : statut du cabinet et motif de « À compléter » ; RG5 : traitée non supprimable', async () => {
+    const { page } = await ouvrir([
+      { ...TICKET, id: 1, nomFichier: 'facture-edf.pdf', statut: 'TRAITEE', supprimable: false },
+      { ...TICKET, id: 2, nomFichier: 'F-107.pdf', statut: 'A_COMPLETER', motif: 'Facture illisible' },
+      { ...TICKET, id: 3, nomFichier: 'loyer.pdf', statut: 'EN_COURS', supprimable: false },
+    ]);
+    expect(lignes(page)).toEqual([
+      ['facture-edf.pdf', '08/11/2026 à 10:05', 'Traitée', ''],
+      ['F-107.pdf', '08/11/2026 à 10:05', 'À compléter : Facture illisible', 'Supprimer'],
+      ['loyer.pdf', '08/11/2026 à 10:05', 'En cours de traitement', 'Ouverte par le cabinet'],
+    ]);
+    expect(Array.from(page.querySelectorAll('.pastille')).map((p) => p.className)).toEqual([
+      'pastille pastille--traitee',
+      'pastille pastille--a-completer',
+      'pastille pastille--en-cours',
+    ]);
   });
 
   it('US-38 RG1 : choix de l’espace, Factures fournisseurs par défaut', async () => {

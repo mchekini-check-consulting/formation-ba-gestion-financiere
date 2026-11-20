@@ -168,6 +168,57 @@ class EspaceClientIT {
 		assertThat(appel("GET", "/espace-client/factures", null, null).statusCode()).isEqualTo(401);
 	}
 
+	private HttpResponse<String> statut(Long dossier, Long facture, String json, String jeton)
+			throws IOException, InterruptedException {
+		return appel("PATCH", "/dossiers/" + dossier + "/factures/" + facture + "/statut", json, jeton);
+	}
+
+	// US-51 CA1 à CA4, RG4 (historique, supprimé avec la facture) et RG5 : Lucie suit le traitement, Sophie le voit.
+	@Test
+	void us51StatutDeTraitement() throws Exception {
+		Cabinet cabinet = cabinet();
+		String lucie = sessions.ouvrir(collaborateur(cabinet, "Lucie Moreau", RoleCabinet.ADMINISTRATEUR));
+		Long dossier = dossier(lucie, "Boulangerie Dupont");
+		Compte dirigeante = Compte.dirigeantInvite(dossier, unique() + "@boulangerie-test.fr", "x", "Sophie Dupont");
+		dirigeante.activer("x");
+		String sophie = sessions.ouvrir(comptes.save(dirigeante));
+		Long edf = id(deposer("ACHAT", "facture-edf.pdf", PDF, sophie));
+		Long f107 = id(deposer("ACHAT", "F-107.pdf", PDF, sophie));
+
+		// CA4 : de « Reçue », « Traitée » n'est pas proposée, et refusée si on l'envoie quand même.
+		assertThat(appel("GET", "/dossiers/" + dossier + "/factures?sens=ACHAT", null, lucie).body())
+				.contains("\"statut\":\"RECUE\"", "\"statutsPossibles\":[\"EN_COURS\",\"A_COMPLETER\"]");
+		assertThat(statut(dossier, edf, "{\"statut\":\"TRAITEE\"}", lucie).statusCode()).isEqualTo(409);
+
+		// CA3 : « À compléter » sans motif -> « Indiquez le motif », le statut ne change pas.
+		HttpResponse<String> sansMotif = statut(dossier, edf, "{\"statut\":\"A_COMPLETER\",\"motif\":\" \"}", lucie);
+		assertThat(sansMotif.statusCode()).isEqualTo(400);
+		assertThat(sansMotif.body()).contains("Indiquez le motif");
+
+		// CA1 : En cours de traitement puis Traitée, visible chez Lucie et chez Sophie.
+		assertThat(statut(dossier, edf, "{\"statut\":\"EN_COURS\"}", lucie).statusCode()).isEqualTo(200);
+		HttpResponse<String> traitee = statut(dossier, edf, "{\"statut\":\"TRAITEE\"}", lucie);
+		assertThat(traitee.statusCode()).isEqualTo(200);
+		assertThat(traitee.body()).contains("\"statut\":\"TRAITEE\"", "\"statutsPossibles\":[]");
+
+		// CA2 : F-107 « À compléter » avec motif, vu par Sophie.
+		statut(dossier, f107, "{\"statut\":\"EN_COURS\"}", lucie);
+		assertThat(statut(dossier, f107, "{\"statut\":\"A_COMPLETER\",\"motif\":\"Facture illisible\"}", lucie)
+				.statusCode()).isEqualTo(200);
+		assertThat(appel("GET", "/espace-client/factures?sens=ACHAT", null, sophie).body()).containsSubsequence(
+				"\"nomFichier\":\"F-107.pdf\"", "\"statut\":\"A_COMPLETER\",\"motif\":\"Facture illisible\"",
+				"\"nomFichier\":\"facture-edf.pdf\"", "\"supprimable\":false,\"statut\":\"TRAITEE\"");
+
+		// RG5 : la facture traitée ne peut plus être supprimée ; F-107 (jamais ouverte), oui, avec son historique.
+		assertThat(appel("DELETE", "/espace-client/factures/" + edf, null, sophie).statusCode()).isEqualTo(409);
+		assertThat(appel("DELETE", "/espace-client/factures/" + f107, null, sophie).statusCode()).isEqualTo(204);
+
+		// Réservé au cabinet du dossier.
+		assertThat(statut(dossier, edf, "{\"statut\":\"EN_COURS\"}", sophie).statusCode()).isEqualTo(403);
+		String autreCabinet = sessions.ouvrir(collaborateur(cabinet(), "Paul Martin", RoleCabinet.ADMINISTRATEUR));
+		assertThat(statut(dossier, edf, "{\"statut\":\"EN_COURS\"}", autreCabinet).statusCode()).isEqualTo(404);
+	}
+
 	// US-20 CA1, CA2, RG3 : attribution, accès limité du comptable, attribution automatique.
 	@Test
 	void attributionDesDossiers() throws Exception {

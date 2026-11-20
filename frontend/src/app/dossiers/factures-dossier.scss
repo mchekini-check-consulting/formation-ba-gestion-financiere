@@ -94,3 +94,127 @@ th {
   color: #8c1d18;
   font-size: 14px;
 }
+
+// US-51 RG4 : pastille de couleur du statut (couleurs de la maquette).
+.pastille {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--recue {
+    background: #e8eef8;
+    color: #1e293b;
+  }
+
+  &--en-cours {
+    background: #ebf1f9;
+    color: #1e40af;
+  }
+
+  &--traitee {
+    background: #e3f5ea;
+    color: #116035;
+  }
+
+  &--a-completer {
+    background: #fff1db;
+    color: #7a4100;
+  }
+}
+
+.motif {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #7a4100;
+}
+
+.filtres {
+  display: flex;
+  justify-content: flex-end;
+
+  label {
+    position: absolute;
+    left: -9999px;
+  }
+}
+
+.filtre,
+.changer,
+.motif-saisie {
+  padding: 8px 10px;
+  border: 1px solid #cbd6e6;
+  border-radius: 10px;
+  background: #fff;
+  color: $encre;
+  font: inherit;
+  font-size: 13px;
+}
+
+.action {
+  min-width: 220px;
+}
+
+.changement {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.motif-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.boutons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.valider {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: $or;
+  color: #fcfdff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.lien {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $or;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.erreur-statut {
+  margin: 0;
+  font-size: 13px;
+  color: #8c1d18;
+}
+
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
