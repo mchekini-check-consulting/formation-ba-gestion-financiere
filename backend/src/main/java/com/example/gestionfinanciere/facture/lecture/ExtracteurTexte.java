@@ -21,9 +21,11 @@ import org.springframework.stereotype.Component;
 public class ExtracteurTexte {
 
 	static final String PDF = "application/pdf";
+	static final String PNG = "image/png";
 	// Une facture tient sur peu de pages : on n'envoie pas un long document entier à l'OCR.
 	static final int PAGES_MAX = 3;
-	private static final float RESOLUTION = 300;
+	// Assez fin pour lire une facture, assez léger pour l'envoi à Claude (A4 : 1240 x 1754 points).
+	private static final float RESOLUTION = 150;
 
 	private final MoteurOcr ocr;
 
@@ -38,7 +40,7 @@ public class ExtracteurTexte {
 		if (PDF.equals(typeFichier)) {
 			return textePdf(contenu);
 		}
-		return typeFichier.startsWith("image/") ? ocr.lire(contenu).orElse("") : "";
+		return typeFichier.startsWith("image/") ? ocr.lire(contenu, typeFichier).orElse("") : "";
 	}
 
 	private String textePdf(byte[] contenu) {
@@ -53,7 +55,7 @@ public class ExtracteurTexte {
 				BufferedImage image = rendu.renderImageWithDPI(page, RESOLUTION, ImageType.GRAY);
 				ByteArrayOutputStream png = new ByteArrayOutputStream();
 				ImageIO.write(image, "png", png);
-				ocr.lire(png.toByteArray()).ifPresent(texteOcr -> lu.append(texteOcr).append('\n'));
+				ocr.lire(png.toByteArray(), PNG).ifPresent(texteOcr -> lu.append(texteOcr).append('\n'));
 			}
 			return lu.toString();
 		} catch (IOException e) {

@@ -60,6 +60,9 @@
             <th scope="col">Déposée par</th>
             <th scope="col">Source</th>
             <th scope="col">Statut</th>
+            @if (sens() === 'ACHAT') {
+              <th scope="col">Lecture</th>
+            }
             <th scope="col"><span class="invisible">Changer le statut</span></th>
           </tr>
         </thead>
@@ -84,6 +87,19 @@
                   <span class="motif">Motif : {{ f.motif }}</span>
                 }
               </td>
+              @if (sens() === 'ACHAT') {
+                <!-- US-53 RG6 : statut de la lecture automatique ; pastille « À vérifier » -->
+                <td>
+                  @if (f.lecture; as lecture) {
+                    <span class="pastille" [class]="pastillesLecture[lecture]">{{ libellesLecture[lecture] }}</span>
+                    @if (lecture === 'LUE' && f.lectureAVerifier) {
+                      <span class="badge badge--a-verifier">À vérifier</span>
+                    }
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
+              }
               <td class="action">
                 @if (f.statutsPossibles.length > 0) {
                   <!-- US-51 RG2 / CA4 : seuls les passages autorisés sont proposés -->

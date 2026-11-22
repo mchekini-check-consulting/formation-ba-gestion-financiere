@@ -156,8 +156,9 @@ class FactureIT {
 		Long ticket = premiereFacture(dossier, "ACHAT", jeton);
 		String chemin = dossier + "/factures/" + ticket;
 
-		assertThat(appel("GET", chemin, null, jeton).body()).isEqualTo(
-				"{\"id\":%d,\"nomFichier\":\"ticket-fournitures.png\",\"typeFichier\":\"image/png\",\"sens\":\"ACHAT\"}"
+		// Suivi de la lecture automatique (US-53) : vérifié dans EspaceClientIT.
+		assertThat(appel("GET", chemin, null, jeton).body()).startsWith(
+				"{\"id\":%d,\"nomFichier\":\"ticket-fournitures.png\",\"typeFichier\":\"image/png\",\"sens\":\"ACHAT\","
 						.formatted(ticket));
 
 		HttpResponse<byte[]> apercu = fichier(chemin + "/fichier", jeton);

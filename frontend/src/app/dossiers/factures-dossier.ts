@@ -1,14 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnChanges, computed, inject, input, signal } from '@angular/core';
+import { Component, OnChanges, OnDestroy, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { catchError, concatMap, from, map, of, toArray } from 'rxjs';
 import { FICHIERS_MAX, refusAvantEnvoi } from '../espace/espace-client.service';
 import {
   FactureService,
+  LIBELLES_LECTURE,
   LIBELLES_STATUT,
   LigneFacture,
   ListeFactures,
   MESSAGE_MOTIF_MANQUANT,
+  PASTILLES_LECTURE,
   PASTILLES_STATUT,
   SOURCES,
   STATUTS,
@@ -25,6 +27,9 @@ export const MESSAGES_VIDE: Record<Sens, string> = {
   ACHAT: 'Aucune facture fournisseur pour le moment',
   VENTE: 'Aucune facture client pour le moment',
 };
+
+/** US-53 : délai entre deux mises à jour de la liste tant qu'une lecture est en cours. */
+export const DELAI_SUIVI_LECTURE_MS = 5000;
 
 /** Un fichier refusé et son motif (US-52 RG2 : il n'empêche pas l'import des autres). */
 export interface FichierRefuse {
@@ -64,14 +69,15 @@ interface Changement {
 
 /**
  * US-12 Factures d'un onglet du dossier (US-11 RG2) ; US-51 statut de traitement de chaque facture ;
- * US-52 « Importer des factures » par le cabinet. */
+ * US-52 « Importer des factures » par le cabinet ; US-53 statut de la lecture automatique des
+ * factures fournisseurs, suivi tout seul tant qu'une lecture est en cours. */
 @Component({
   imports: [RouterLink],
   selector: 'app-factures-dossier',
   templateUrl: './factures-dossier.html',
   styleUrl: './factures-dossier.scss',
 })
-export class FacturesDossier implements OnChanges {
+export class FacturesDossier implements OnChanges, OnDestroy {
   private readonly factures = inject(FactureService);
   readonly dossierId = input.required<number>();
   readonly sens = input.required<Sens>();
@@ -92,20 +98,65 @@ export class FacturesDossier implements OnChanges {
   protected readonly importEnCours = signal(false);
   protected readonly resultat = signal<ResultatImport | null>(null);
   protected readonly sources = SOURCES;
+  protected readonly libellesLecture = LIBELLES_LECTURE;
+  protected readonly pastillesLecture = PASTILLES_LECTURE;
+  private suivi: ReturnType<typeof setTimeout> | null = null;
 
   ngOnChanges(): void {
     this.resultat.set(null);
     this.charger();
   }
 
+  ngOnDestroy(): void {
+    this.arreterSuivi();
+  }
+
   private charger(): void {
+    this.arreterSuivi();
     this.liste.set(null);
     this.erreur.set(null);
     this.changement.set(null);
     this.factures.lister(this.dossierId(), this.sens()).subscribe({
-      next: (liste) => this.liste.set(liste),
+      next: (liste) => this.recevoir(liste),
       error: () => this.erreur.set(MESSAGE_INDISPONIBLE),
     });
+  }
+
+  private recevoir(liste: ListeFactures): void {
+    this.liste.set(liste);
+    if (liste.factures.some((f) => f.lecture === 'EN_COURS')) {
+      this.suivi = setTimeout(() => this.suivreLecture(), DELAI_SUIVI_LECTURE_MS);
+    }
+  }
+
+  /**
+   * US-53 RG6 : la lecture se fait en arrière-plan ; la liste se met à jour toute seule, sans
+   * « Chargement… », jusqu'à la fin des lectures. Pas pendant un changement de statut en cours de saisie.
+   */
+  private suivreLecture(): void {
+    this.suivi = null;
+    if (this.changement()) {
+      this.suivi = setTimeout(() => this.suivreLecture(), DELAI_SUIVI_LECTURE_MS);
+      return;
+    }
+    const dossierId = this.dossierId();
+    const sens = this.sens();
+    this.factures.lister(dossierId, sens).subscribe({
+      next: (liste) => {
+        if (this.dossierId() === dossierId && this.sens() === sens && !this.changement()) {
+          this.recevoir(liste);
+        }
+      },
+      // Échec passager : la liste affichée reste, nouvel essai plus tard.
+      error: () => (this.suivi = setTimeout(() => this.suivreLecture(), DELAI_SUIVI_LECTURE_MS)),
+    });
+  }
+
+  private arreterSuivi(): void {
+    if (this.suivi) {
+      clearTimeout(this.suivi);
+      this.suivi = null;
+    }
   }
 
   ajouterExemples(): void {

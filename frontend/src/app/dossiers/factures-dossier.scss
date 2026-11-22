@@ -53,6 +53,13 @@ th {
     background: #fff1db;
     color: #7a4100;
   }
+
+  // US-53 : au moins un champ lu avec un doute ou non lu.
+  &--a-verifier {
+    margin-left: 6px;
+    background: #fde8e8;
+    color: #9b1c1c;
+  }
 }
 
 .vide {
@@ -191,6 +198,22 @@ th {
   &--a-completer {
     background: #fff1db;
     color: #7a4100;
+  }
+
+  // US-53 RG6 : statut de la lecture automatique.
+  &--lecture-en-cours {
+    background: #ebf1f9;
+    color: #1e40af;
+  }
+
+  &--lue {
+    background: #e3f5ea;
+    color: #116035;
+  }
+
+  &--lecture-echouee {
+    background: #fde8e8;
+    color: #9b1c1c;
   }
 }
 

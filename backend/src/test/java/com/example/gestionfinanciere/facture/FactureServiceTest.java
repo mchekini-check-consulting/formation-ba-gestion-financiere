@@ -34,6 +34,7 @@ import com.example.gestionfinanciere.dossier.Dossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.JournalCapture;
+import com.example.gestionfinanciere.facture.lecture.DemandeLecture;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -332,11 +333,26 @@ class FactureServiceTest {
 
 		assertEquals(ResultatImport.Statut.IMPORTEE, resultat.statut());
 		assertEquals(new LigneFacture(9L, "facture-edf-juin.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true,
-				null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET, null, false), resultat.facture());
+				null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET, Facture.StatutLecture.EN_COURS,
+				false), resultat.facture());
 		Facture facture = enregistree();
 		assertEquals("application/pdf", facture.getTypeFichier());
 		assertEquals(Facture.Sens.ACHAT, facture.getSens());
 		assertEquals(fleurs, facture.getDossier());
+		// US-53 RG1 : facture fournisseur importée par le cabinet -> lue en arrière-plan, comme un dépôt.
+		verify(evenements).publishEvent(new DemandeLecture(9L));
+	}
+
+	// US-53 RG1 : une facture client importée n'est pas lue.
+	@Test
+	void us52ImportFactureClientNonLue() {
+		when(factures.save(any(Facture.class))).thenAnswer(appel -> appel.getArgument(0));
+
+		ResultatImport resultat = service(false).importer(jean, 42L, Facture.Sens.VENTE, "vente.pdf", PDF);
+
+		assertEquals(ResultatImport.Statut.IMPORTEE, resultat.statut());
+		assertNull(resultat.facture().lecture());
+		verify(evenements, never()).publishEvent(any(Object.class));
 	}
 
 	// CA2 et RG2 : ni PDF, ni JPG, ni PNG ; ou plus de 10 Mo.

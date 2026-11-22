@@ -137,8 +137,14 @@ public class FactureService {
 		if (type.isEmpty()) {
 			return ResultatImport.refuse(ResultatImport.Statut.FORMAT_REFUSE);
 		}
-		Facture facture = factures.save(Facture.importee(dossier.get(), sens, DepotFactureService.nom(nomFichier),
-				type.get(), horloge.instant(), collaborateur, contenu));
+		Facture nouvelle = Facture.importee(dossier.get(), sens, DepotFactureService.nom(nomFichier), type.get(),
+				horloge.instant(), collaborateur, contenu);
+		// US-53 RG1 : une facture fournisseur importée par le cabinet est lue comme un dépôt du dirigeant.
+		boolean aLire = nouvelle.demarrerLecture();
+		Facture facture = factures.save(nouvelle);
+		if (aLire) {
+			evenements.publishEvent(new DemandeLecture(facture.getId()));
+		}
 		return ResultatImport.importee(LigneFacture.de(facture));
 	}
 

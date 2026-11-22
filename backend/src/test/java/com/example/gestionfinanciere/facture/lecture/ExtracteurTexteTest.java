@@ -3,6 +3,7 @@ package com.example.gestionfinanciere.facture.lecture;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -13,7 +14,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -53,17 +53,17 @@ class ExtracteurTexteTest {
 		assertEquals("EDF", lu.nomTiers());
 		assertEquals(LocalDate.of(2026, 6, 12), lu.dateEmission());
 		assertEquals(0, lu.montantTtc().compareTo(new java.math.BigDecimal("186.40")));
-		verify(ocr, never()).lire(any());
+		verify(ocr, never()).lire(any(), any());
 	}
 
 	// PDF scanné (pages sans texte) : chaque page, 3 au plus, passe par l'OCR.
 	@Test
 	void pdfScanne() throws IOException {
-		when(ocr.lire(any())).thenReturn(Optional.of("Total TTC 12,00"));
+		when(ocr.lire(any(), eq("image/png"))).thenReturn(Optional.of("Total TTC 12,00"));
 
 		String texte = extracteur.texte(pdfSansTexte(4), "application/pdf");
 
-		verify(ocr, times(ExtracteurTexte.PAGES_MAX)).lire(any());
+		verify(ocr, times(ExtracteurTexte.PAGES_MAX)).lire(any(), eq("image/png"));
 		assertTrue(texte.contains("Total TTC 12,00"));
 	}
 
@@ -71,26 +71,15 @@ class ExtracteurTexteTest {
 	@Test
 	void imageEtCasSansTexte() {
 		byte[] png = "PNG".getBytes(StandardCharsets.US_ASCII);
-		when(ocr.lire(png)).thenReturn(Optional.of("TOTAL 4,50"));
+		when(ocr.lire(png, "image/png")).thenReturn(Optional.of("TOTAL 4,50"));
 		assertEquals("TOTAL 4,50", extracteur.texte(png, "image/png"));
 
-		when(ocr.lire(png)).thenReturn(Optional.empty());
+		when(ocr.lire(png, "image/jpeg")).thenReturn(Optional.empty());
 		assertEquals("", extracteur.texte(png, "image/jpeg"));
 		assertEquals("", extracteur.texte("pas un pdf".getBytes(StandardCharsets.US_ASCII), "application/pdf"));
 		assertEquals("", extracteur.texte(png, "text/plain"));
 		assertEquals("", extracteur.texte(null, "image/png"));
 		assertEquals("", extracteur.texte(png, null));
-	}
-
-	// Tesseract absent du poste ou en erreur : aucun texte, jamais d'exception (-> « Lecture échouée »).
-	@Test
-	void tesseractAbsentOuEnErreur() {
-		byte[] image = { 1, 2, 3 };
-		assertEquals(Optional.empty(),
-				new TesseractOcr("programme-ocr-introuvable-us53", Duration.ofSeconds(5)).lire(image));
-		// Un programme qui existe mais refuse ces arguments (code de sortie non nul).
-		String java = ProcessHandle.current().info().command().orElse("java");
-		assertEquals(Optional.empty(), new TesseractOcr(java, Duration.ofSeconds(30)).lire(image));
 	}
 
 }

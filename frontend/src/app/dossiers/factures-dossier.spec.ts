@@ -4,7 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { SessionService } from '../session/session.service';
 import { LigneFacture, Sens, formaterDepot } from './facture.service';
-import { FacturesDossier, MESSAGE_TROP_DE_FICHIERS, resumeImport } from './factures-dossier';
+import { DELAI_SUIVI_LECTURE_MS, FacturesDossier, MESSAGE_TROP_DE_FICHIERS, resumeImport } from './factures-dossier';
 
 const TICKET: LigneFacture = {
   id: 2,
@@ -16,6 +16,8 @@ const TICKET: LigneFacture = {
   motif: null,
   statutsPossibles: ['EN_COURS', 'A_COMPLETER'],
   source: 'DEPOT_CLIENT',
+  lecture: null,
+  lectureAVerifier: false,
 };
 const ELECTRICITE: LigneFacture = {
   ...TICKET,
@@ -61,8 +63,8 @@ describe('US-12 Factures d’un dossier', () => {
   it('RG2 et RG3 : fichier, date de dépôt, déposée par, « Reçue », badge « Nouvelle »', async () => {
     const { page } = await afficher('ACHAT', [TICKET, ELECTRICITE]);
     expect(lignes(page)).toEqual([
-      ['ticket-fournitures.jpgNouvelle', '08/11/2026 à 10:05', 'Jean Dupont', 'Dépôt client', 'Reçue', expect.any(String)],
-      ['facture-electricite-octobre.pdf', '05/11/2026 à 10:00', 'Jean Dupont', 'Dépôt client', 'Reçue', expect.any(String)],
+      ['ticket-fournitures.jpgNouvelle', '08/11/2026 à 10:05', 'Jean Dupont', 'Dépôt client', 'Reçue', '—', expect.any(String)],
+      ['facture-electricite-octobre.pdf', '05/11/2026 à 10:00', 'Jean Dupont', 'Dépôt client', 'Reçue', '—', expect.any(String)],
     ]);
     expect(page.querySelectorAll('.badge--nouvelle')).toHaveLength(1);
     // US-13 RG1 : un clic sur le fichier ouvre son aperçu.
@@ -281,6 +283,83 @@ describe('US-12 Factures d’un dossier', () => {
   it('date de dépôt à l’heure de Paris', () => {
     expect(formaterDepot('2026-07-01T22:30:00Z')).toBe('02/07/2026 à 00:30');
   });
+
+  describe('US-53 Lecture automatique des factures fournisseurs', () => {
+    const LUE: LigneFacture = { ...ELECTRICITE, lecture: 'LUE', lectureAVerifier: true };
+    const ECHOUEE: LigneFacture = { ...TICKET, lecture: 'ECHOUEE' };
+    const EN_LECTURE: LigneFacture = { ...TICKET, id: 7, lecture: 'EN_COURS' };
+    const LISTE = '/api/dossiers/42/factures?sens=ACHAT';
+
+    afterEach(() => vi.useRealTimers());
+
+    it('RG6 : statut de la lecture et pastille « À vérifier » dans l’onglet fournisseurs', async () => {
+      const { page } = await afficher('ACHAT', [LUE, ECHOUEE]);
+      expect(page.querySelector('thead')?.textContent).toContain('Lecture');
+      expect(lignes(page).map((l) => l[5])).toEqual(['LueÀ vérifier', 'Lecture échouée']);
+      expect(page.querySelector('.pastille--lue')).not.toBeNull();
+      expect(page.querySelector('.pastille--lecture-echouee')).not.toBeNull();
+      expect(page.querySelectorAll('.badge--a-verifier')).toHaveLength(1);
+    });
+
+    it('factures clients : pas de colonne « Lecture »', async () => {
+      const { page } = await afficher('VENTE', [TICKET]);
+      expect(page.querySelector('thead')?.textContent).not.toContain('Lecture');
+      expect(lignes(page)[0]).toHaveLength(6);
+    });
+
+    it('RG1 : la liste se met à jour toute seule jusqu’à la fin de la lecture', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      const { fixture, page } = await afficher('ACHAT', [EN_LECTURE]);
+      expect(lignes(page)[0][5]).toBe('Lecture en cours');
+
+      // Échec passager : la liste reste affichée, nouvel essai plus tard.
+      vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
+      http.expectOne(LISTE).flush('', { status: 503, statusText: 'KO' });
+      await fixture.whenStable();
+      expect(lignes(page)[0][5]).toBe('Lecture en cours');
+
+      vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
+      http.expectOne(LISTE).flush({ factures: [EN_LECTURE], exemplesPossibles: false });
+      await fixture.whenStable();
+
+      vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
+      http.expectOne(LISTE).flush({ factures: [{ ...EN_LECTURE, lecture: 'LUE' }], exemplesPossibles: false });
+      await fixture.whenStable();
+      expect(page.textContent).not.toContain('Chargement…');
+      expect(lignes(page)[0][5]).toBe('Lue');
+
+      // Plus de lecture en cours : plus d'appel.
+      vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS * 3);
+      http.expectNone(LISTE);
+    });
+
+    it('pas de mise à jour pendant un changement de statut, ni après la fermeture', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      const { fixture, page } = await afficher('ACHAT', [EN_LECTURE]);
+      const select = page.querySelector<HTMLSelectElement>('#statut-7')!;
+      select.value = 'EN_COURS';
+      select.dispatchEvent(new Event('change'));
+      await fixture.whenStable();
+
+      vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
+      http.expectNone(LISTE);
+
+      // Changement commencé pendant qu'une mise à jour est partie : la réponse est ignorée.
+      select.value = '';
+      select.dispatchEvent(new Event('change'));
+      vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
+      const suivi = http.expectOne(LISTE);
+      select.value = 'EN_COURS';
+      select.dispatchEvent(new Event('change'));
+      suivi.flush({ factures: [{ ...EN_LECTURE, lecture: 'LUE' }], exemplesPossibles: false });
+      await fixture.whenStable();
+      expect(lignes(page)[0][5]).toBe('Lecture en cours');
+
+      fixture.destroy();
+      vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS * 3);
+      http.expectNone(LISTE);
+    });
+  });
 });
 
 describe('US-52 Importer des factures depuis le dossier', () => {
@@ -308,6 +387,8 @@ describe('US-52 Importer des factures depuis le dossier', () => {
     motif: null,
     statutsPossibles: ['EN_COURS', 'A_COMPLETER'],
     source: 'IMPORT_CABINET',
+    lecture: null,
+    lectureAVerifier: false,
   };
 
   function fichier(nom: string, type: string, taille = 10): File {

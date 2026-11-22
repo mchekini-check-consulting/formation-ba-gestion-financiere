@@ -13,6 +13,43 @@
     </button>
   </header>
 
+  @if (f.lecture; as l) {
+    <!-- US-53 : résultat de la lecture automatique (facture fournisseur) -->
+    <section class="lecture" aria-labelledby="titre-lecture">
+      <h2 id="titre-lecture">Lecture automatique</h2>
+      @switch (l.statut) {
+        @case ('EN_COURS') {
+          <p class="muted" role="status">Lecture en cours…</p>
+        }
+        @case ('ECHOUEE') {
+          <!-- CA4 -->
+          <p class="echec" role="status">Lecture échouée : les informations de cette facture sont à saisir.</p>
+        }
+        @default {
+          <dl class="champs">
+            @for (c of champs; track c) {
+              <div class="champ" [class.champ--doute]="l.aVerifier.includes(c)">
+                <dt>{{ libellesChamp[c] }}</dt>
+                <dd>
+                  @if (valeur(l, c); as v) {
+                    {{ v }}
+                    @if (l.aVerifier.includes(c)) {
+                      <!-- RG4, RG5 : lu avec un doute -->
+                      <span class="marque marque--a-verifier">À vérifier</span>
+                    }
+                  } @else {
+                    <!-- RG3 : non lu -->
+                    <span class="marque marque--a-renseigner">À renseigner</span>
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+        }
+      }
+    </section>
+  }
+
   <!-- RG1 : aperçu du PDF ou de l'image -->
   <section class="apercu">
     @if (lien(); as l) {
