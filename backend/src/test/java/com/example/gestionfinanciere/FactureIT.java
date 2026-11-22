@@ -207,4 +207,50 @@ class FactureIT {
 		assertThat(appel("GET", dossier + "/factures?sens=ACHAT", null, jeton).body()).contains("\"nouvelle\":true");
 	}
 
+	// US-52 : envoi d'un fichier en multipart, comme l'écran « Importer des factures ».
+	private HttpResponse<String> importer(String chemin, String nom, byte[] contenu, String jeton)
+			throws IOException, InterruptedException {
+		String limite = "----pointeo" + UUID.randomUUID();
+		byte[] debut = ("--" + limite + "\r\nContent-Disposition: form-data; name=\"fichier\"; filename=\"" + nom
+				+ "\"\r\nContent-Type: application/octet-stream\r\n\r\n").getBytes(StandardCharsets.UTF_8);
+		byte[] fin = ("\r\n--" + limite + "--\r\n").getBytes(StandardCharsets.UTF_8);
+		byte[] corps = new byte[debut.length + contenu.length + fin.length];
+		System.arraycopy(debut, 0, corps, 0, debut.length);
+		System.arraycopy(contenu, 0, corps, debut.length, contenu.length);
+		System.arraycopy(fin, 0, corps, debut.length + contenu.length, fin.length);
+		HttpRequest requete = HttpRequest.newBuilder(URI.create("http://localhost:" + port + chemin))
+				.header("Content-Type", "multipart/form-data; boundary=" + limite)
+				.header("Authorization", "Bearer " + jeton).POST(HttpRequest.BodyPublishers.ofByteArray(corps))
+				.build();
+		return http.send(requete, HttpResponse.BodyHandlers.ofString());
+	}
+
+	// US-52 CA1 (import « Reçue », « Import cabinet »), CA2 (mauvais format), CA3 (dossier d'un autre cabinet).
+	@Test
+	void importParLeCabinet() throws Exception {
+		String jeton = jeanConnecte();
+		String dossier = dossier(jeton);
+
+		HttpResponse<String> importee = importer(dossier + "/factures?sens=ACHAT", "facture-edf-juin.pdf",
+				"%PDF-1.7 facture".getBytes(StandardCharsets.US_ASCII), jeton);
+		assertThat(importee.statusCode()).isEqualTo(201);
+		assertThat(importee.body()).contains("\"nomFichier\":\"facture-edf-juin.pdf\"", "\"statut\":\"RECUE\"",
+				"\"source\":\"IMPORT_CABINET\"");
+
+		HttpResponse<String> achats = appel("GET", dossier + "/factures?sens=ACHAT", null, jeton);
+		assertThat(achats.body()).contains("facture-edf-juin.pdf", "\"source\":\"IMPORT_CABINET\"");
+		assertThat(appel("GET", dossier + "/factures?sens=VENTE", null, jeton).body())
+				.doesNotContain("facture-edf-juin.pdf");
+
+		HttpResponse<String> xlsx = importer(dossier + "/factures?sens=VENTE", "releve.xlsx",
+				new byte[] { 'P', 'K', 3, 4, 0, 0 }, jeton);
+		assertThat(xlsx.statusCode()).isEqualTo(400);
+		assertThat(xlsx.body()).contains("Format non accepté : PDF, JPG ou PNG uniquement");
+
+		String autre = jeanConnecte();
+		HttpResponse<String> refuse = importer(dossier + "/factures?sens=ACHAT", "edf.pdf",
+				"%PDF-1.7".getBytes(StandardCharsets.US_ASCII), autre);
+		assertThat(refuse.statusCode()).isEqualTo(404);
+	}
+
 }

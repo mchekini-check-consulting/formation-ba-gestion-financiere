@@ -14,7 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-// US-53 RG4 : niveau de confiance d'un champ lu sur une facture (V21__lecture_facture.sql) ;
+// US-53 RG4 : niveau de confiance d'un champ lu sur une facture (V23__lecture_facture.sql) ;
 // aVerifier : doute (confiance basse ou montants incohérents, RG5). Supprimé avec sa facture.
 @Entity
 @Table(name = "facture_champ_lu")

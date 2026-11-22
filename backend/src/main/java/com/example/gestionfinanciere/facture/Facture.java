@@ -56,6 +56,12 @@ public class Facture {
 		}
 	}
 
+	// US-52 RG4 (V22__source_facture.sql) : déposée par le dirigeant ou importée par le cabinet.
+	public enum Source {
+		DEPOT_CLIENT,
+		IMPORT_CABINET
+	}
+
 	// US-53 RG6 : statut de la lecture automatique d'une facture fournisseur.
 	public enum StatutLecture {
 		EN_COURS,
@@ -104,6 +110,10 @@ public class Facture {
 	@Column(name = "contenu")
 	private byte[] contenu;
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "source", nullable = false)
+	private Source source = Source.DEPOT_CLIENT;
+
 	// US-53 : lecture automatique (vide si la facture n'est pas lue : facture client, déposée avant l'US-53).
 	@Enumerated(EnumType.STRING)
 	@Column(name = "lecture_statut")
@@ -144,6 +154,14 @@ public class Facture {
 	private String compteContrepartie;
 
 	protected Facture() {
+	}
+
+	// US-52 : facture importée par un collaborateur du cabinet dans le dossier (RG4 « Import cabinet »).
+	public static Facture importee(Dossier dossier, Sens sens, String nomFichier, String typeFichier,
+			Instant importeeLe, Compte collaborateur, byte[] contenu) {
+		Facture facture = new Facture(dossier, sens, nomFichier, typeFichier, importeeLe, collaborateur, contenu);
+		facture.source = Source.IMPORT_CABINET;
+		return facture;
 	}
 
 	public Facture(Dossier dossier, Sens sens, String nomFichier, String typeFichier, Instant deposeeLe,
@@ -304,6 +322,10 @@ public class Facture {
 
 	public byte[] getContenu() {
 		return contenu == null ? null : contenu.clone();
+	}
+
+	public Source getSource() {
+		return source;
 	}
 
 }

@@ -136,4 +136,20 @@ class FactureTest {
 		assertNull(invitation.getAnnuleeLe());
 	}
 
+	// US-52 RG4 : déposée par le dirigeant par défaut, « Import cabinet » quand le cabinet l'importe.
+	@Test
+	void us52SourceDeLaFacture() {
+		Facture deposee = new Facture(dossier, Facture.Sens.ACHAT, "edf.pdf", "application/pdf", MAINTENANT, jean);
+		assertEquals(Facture.Source.DEPOT_CLIENT, deposee.getSource());
+
+		byte[] contenu = { 1, 2, 3 };
+		Facture importee = Facture.importee(dossier, Facture.Sens.VENTE, "fc-031.pdf", "application/pdf", MAINTENANT,
+				jean, contenu);
+		assertEquals(Facture.Source.IMPORT_CABINET, importee.getSource());
+		assertEquals(Facture.Sens.VENTE, importee.getSens());
+		assertEquals(Facture.Statut.RECUE, importee.getStatut());
+		assertSame(jean, importee.getDeposeePar());
+		assertArrayEquals(contenu, importee.getContenu());
+	}
+
 }

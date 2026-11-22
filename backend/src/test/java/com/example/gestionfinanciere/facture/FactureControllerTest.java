@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
 
 import com.example.gestionfinanciere.cabinet.Cabinet;
 import com.example.gestionfinanciere.compte.Compte;
@@ -40,7 +42,7 @@ class FactureControllerTest {
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean@test.fr", "x", "Jean Dupont");
 	private final ListeFactures liste = new ListeFactures(
 			List.of(new LigneFacture(1L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.RECUE, true, null,
-					Facture.Statut.RECUE.suivants(), null, false)),
+					Facture.Statut.RECUE.suivants(), Facture.Source.DEPOT_CLIENT, null, false)),
 			false);
 
 	private void connecte(Compte compte) {
@@ -153,7 +155,7 @@ class FactureControllerTest {
 	void us51ChangerStatut() {
 		connecte(jean);
 		LigneFacture enCours = new LigneFacture(5L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.EN_COURS,
-				false, null, Facture.Statut.EN_COURS.suivants(), null, false);
+				false, null, Facture.Statut.EN_COURS.suivants(), Facture.Source.DEPOT_CLIENT, null, false);
 		when(factures.changerStatut(jean, 42L, 5L, Facture.Statut.EN_COURS, null))
 				.thenReturn(new ResultatStatut(ResultatStatut.Issue.CHANGE, enCours));
 
@@ -219,6 +221,74 @@ class FactureControllerTest {
 		assertEquals(HttpStatus.CREATED, controller.ajouterExemples(AUTORISATION, "42").getStatusCode());
 		assertEquals(HttpStatus.NOT_FOUND, controller.ajouterExemples(AUTORISATION, "43").getStatusCode());
 		assertEquals(HttpStatus.NOT_FOUND, controller.ajouterExemples(AUTORISATION, "x").getStatusCode());
+	}
+
+	// ---------- US-52 Importer des factures depuis le dossier ----------
+
+	private static final byte[] PDF = "%PDF-1.7".getBytes(StandardCharsets.US_ASCII);
+
+	private static MockMultipartFile fichier(String nom, byte[] contenu) {
+		return new MockMultipartFile("fichier", nom, "application/octet-stream", contenu);
+	}
+
+	// CA1 : facture importée -> 201 avec la ligne de la liste (« Reçue », « Import cabinet »).
+	@Test
+	void us52Ca1Import() {
+		connecte(jean);
+		LigneFacture ligne = new LigneFacture(9L, "facture-edf-juin.pdf", Instant.EPOCH, "Jean Dupont",
+				Facture.Statut.RECUE, true, null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET, null, false);
+		when(factures.importer(jean, 42L, Facture.Sens.ACHAT, "facture-edf-juin.pdf", PDF))
+				.thenReturn(ResultatImport.importee(ligne));
+
+		ResponseEntity<Object> reponse = controller.importer(AUTORISATION, "42", "achat",
+				fichier("facture-edf-juin.pdf", PDF));
+
+		assertEquals(HttpStatus.CREATED, reponse.getStatusCode());
+		assertEquals(ligne, reponse.getBody());
+	}
+
+	// CA2 / RG2 : mêmes messages que le dépôt du dirigeant (US-15).
+	@Test
+	void us52Ca2FichierRefuse() {
+		connecte(jean);
+		ErreurResponse format = new ErreurResponse("Format non accepté : PDF, JPG ou PNG uniquement");
+		ErreurResponse taille = new ErreurResponse("Fichier trop volumineux : 10 Mo maximum");
+		when(factures.importer(any(), any(), any(), any(), any()))
+				.thenReturn(ResultatImport.refuse(ResultatImport.Statut.FORMAT_REFUSE));
+		ResponseEntity<Object> xlsx = controller.importer(AUTORISATION, "42", "VENTE", fichier("releve.xlsx", PDF));
+		assertEquals(HttpStatus.BAD_REQUEST, xlsx.getStatusCode());
+		assertEquals(format, xlsx.getBody());
+
+		assertEquals(format, controller.importer(AUTORISATION, "42", "VENTE", null).getBody());
+
+		ResponseEntity<Object> gros = controller.importer(AUTORISATION, "42", "ACHAT",
+				fichier("gros.pdf", new byte[(int) DepotFactureService.TAILLE_MAX + 1]));
+		assertEquals(HttpStatus.BAD_REQUEST, gros.getStatusCode());
+		assertEquals(taille, gros.getBody());
+
+		when(factures.importer(any(), any(), any(), any(), any()))
+				.thenReturn(ResultatImport.refuse(ResultatImport.Statut.TROP_VOLUMINEUX));
+		assertEquals(taille, controller.importer(AUTORISATION, "42", "ACHAT", fichier("a.pdf", PDF)).getBody());
+
+		ResponseEntity<Object> onglet = controller.importer(AUTORISATION, "42", "AUTRE", fichier("a.pdf", PDF));
+		assertEquals(HttpStatus.BAD_REQUEST, onglet.getStatusCode());
+		assertEquals(new ErreurResponse("Indiquez ACHAT ou VENTE"), onglet.getBody());
+	}
+
+	// CA3 / RG3 : dossier non attribué, d'un autre cabinet ou adresse invalide -> 404 ; sans session -> 401.
+	@Test
+	void us52Ca3DossierRefuse() {
+		connecte(jean);
+		when(factures.importer(any(), any(), any(), any(), any()))
+				.thenReturn(ResultatImport.refuse(ResultatImport.Statut.DOSSIER_INTROUVABLE));
+		for (String id : List.of("43", "abc")) {
+			ResponseEntity<Object> reponse = controller.importer(AUTORISATION, id, "ACHAT", fichier("a.pdf", PDF));
+			assertEquals(HttpStatus.NOT_FOUND, reponse.getStatusCode());
+			assertEquals(INTROUVABLE, reponse.getBody());
+		}
+		when(sessions.consulter(null)).thenReturn(ResultatSession.nonConnecte());
+		assertEquals(HttpStatus.UNAUTHORIZED,
+				controller.importer(null, "42", "ACHAT", fichier("a.pdf", PDF)).getStatusCode());
 	}
 
 }
