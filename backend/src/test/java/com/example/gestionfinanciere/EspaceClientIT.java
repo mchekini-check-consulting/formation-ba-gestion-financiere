@@ -9,11 +9,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -217,6 +220,56 @@ class EspaceClientIT {
 		assertThat(statut(dossier, edf, "{\"statut\":\"EN_COURS\"}", sophie).statusCode()).isEqualTo(403);
 		String autreCabinet = sessions.ouvrir(collaborateur(cabinet(), "Paul Martin", RoleCabinet.ADMINISTRATEUR));
 		assertThat(statut(dossier, edf, "{\"statut\":\"EN_COURS\"}", autreCabinet).statusCode()).isEqualTo(404);
+	}
+
+	// Attend la fin de la lecture automatique (arrière-plan) : page de la facture lue toutes les 200 ms,
+	// 30 secondes au plus.
+	private String apresLecture(Long dossier, Long facture, String jeton) {
+		AtomicReference<String> page = new AtomicReference<>("");
+		Awaitility.await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(200)).until(() -> {
+			page.set(appel("GET", "/dossiers/" + dossier + "/factures/" + facture, null, jeton).body());
+			return !page.get().contains("\"statut\":\"EN_COURS\"");
+		});
+		return page.get();
+	}
+
+	// US-53 : la facture fournisseur déposée par Sophie est lue toute seule ; résultat chez Lucie.
+	@Test
+	void us53LectureAutomatique() throws Exception {
+		Cabinet cabinet = cabinet();
+		String lucie = sessions.ouvrir(collaborateur(cabinet, "Lucie Moreau", RoleCabinet.ADMINISTRATEUR));
+		Long dossier = dossier(lucie, "Boulangerie Dupont");
+		Compte dirigeante = Compte.dirigeantInvite(dossier, unique() + "@boulangerie-test.fr", "x", "Sophie Dupont");
+		dirigeante.activer("x");
+		String sophie = sessions.ouvrir(comptes.save(dirigeante));
+		byte[] edfPdf;
+		try (var flux = getClass().getResourceAsStream("/exemples/facture-electricite-octobre.pdf")) {
+			edfPdf = flux.readAllBytes();
+		}
+
+		// RG1, RG6 : dépôt immédiat, lecture en arrière-plan.
+		Long edf = id(deposer("ACHAT", "facture-edf-juin.pdf", edfPdf, sophie));
+		Long illisible = id(deposer("ACHAT", "scan-flou.pdf", PDF, sophie));
+		Long vente = id(deposer("VENTE", "facture-client.pdf", edfPdf, sophie));
+
+		// CA1 : les 9 champs ; contrepartie proposée « À vérifier ».
+		assertThat(apresLecture(dossier, edf, lucie)).contains("\"statut\":\"LUE\"",
+				"\"typeTiers\":\"FOURNISSEUR\"", "\"nomTiers\":\"EDF\"", "\"numeroFacture\":\"F-2026-0611\"",
+				"\"dateEmission\":\"2026-06-12\"", "\"montantHt\":155.33", "\"montantTva\":31.07",
+				"\"tauxTva\":20.00", "\"montantTtc\":186.40", "\"compteContrepartie\":\"6061\"",
+				"\"aVerifier\":[\"COMPTE_CONTREPARTIE\"]", "\"aRenseigner\":[]");
+		// CA4 : rien de lisible -> « Lecture échouée ».
+		assertThat(apresLecture(dossier, illisible, lucie)).contains("\"statut\":\"ECHOUEE\"");
+		// Facture client : pas de lecture.
+		assertThat(appel("GET", "/dossiers/" + dossier + "/factures/" + vente, null, lucie).body())
+				.contains("\"lecture\":null");
+
+		// Liste : statut de lecture et pastille « À vérifier ».
+		assertThat(appel("GET", "/dossiers/" + dossier + "/factures?sens=ACHAT", null, lucie).body()).contains(
+				"\"lecture\":\"LUE\",\"lectureAVerifier\":true", "\"lecture\":\"ECHOUEE\",\"lectureAVerifier\":false");
+
+		// Suppression d'une facture lue : ses champs lus partent avec elle.
+		assertThat(appel("DELETE", "/espace-client/factures/" + illisible, null, sophie).statusCode()).isEqualTo(204);
 	}
 
 	// US-20 CA1, CA2, RG3 : attribution, accès limité du comptable, attribution automatique.

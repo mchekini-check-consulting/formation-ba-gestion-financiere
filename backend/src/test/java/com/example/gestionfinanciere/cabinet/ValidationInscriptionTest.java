@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere.cabinet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -85,4 +86,15 @@ class ValidationInscriptionTest {
 		assertEquals("123456789", ValidationInscription.siren("123.456.789"));
 	}
 
+	// Format d'adresse email : mêmes règles qu'avant (un @, un point dans le domaine, aucun espace).
+	@Test
+	void formatEmail() {
+		for (String valide : new String[] { "a@b.c", "lucie.martin@cabinet-test.fr", "x@sous.domaine.fr", "a@b..c" }) {
+			assertTrue(ValidationInscription.emailValide(valide), valide);
+		}
+		for (String invalide : new String[] { "@b.c", "a@b@c.fr", "a b@c.fr", "a@bc", "a@.bc", "a@bc.", "a@",
+				"a".repeat(250) + "@b.fr" }) {
+			assertFalse(ValidationInscription.emailValide(invalide), invalide);
+		}
+	}
 }

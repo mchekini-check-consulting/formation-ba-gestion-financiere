@@ -4,12 +4,14 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.dossier.Dossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
+import com.example.gestionfinanciere.facture.lecture.DemandeLecture;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.Loggable;
 
@@ -41,11 +43,14 @@ public class DepotFactureService {
 	private final FactureRepository factures;
 	private final DossierRepository dossiers;
 	private final Clock horloge;
+	private final ApplicationEventPublisher evenements;
 
-	public DepotFactureService(FactureRepository factures, DossierRepository dossiers, Clock horloge) {
+	public DepotFactureService(FactureRepository factures, DossierRepository dossiers, Clock horloge,
+			ApplicationEventPublisher evenements) {
 		this.factures = factures;
 		this.dossiers = dossiers;
 		this.horloge = horloge;
+		this.evenements = evenements;
 	}
 
 	// US-16 RG1 : les dépôts du dirigeant dans un onglet, les plus récents d'abord.
@@ -88,8 +93,14 @@ public class DepotFactureService {
 		if (type.isEmpty() || dossier.isEmpty()) {
 			return ResultatDepot.refuse(ResultatDepot.Statut.FORMAT_REFUSE);
 		}
-		Facture facture = factures.save(new Facture(dossier.get(), sens, nom(nomFichier), type.get(),
-				horloge.instant(), dirigeant, contenu));
+		Facture nouvelle = new Facture(dossier.get(), sens, nom(nomFichier), type.get(), horloge.instant(), dirigeant,
+				contenu);
+		// US-53 RG1 : une facture fournisseur est lue dès son dépôt, en arrière-plan.
+		boolean aLire = nouvelle.demarrerLecture();
+		Facture facture = factures.save(nouvelle);
+		if (aLire) {
+			evenements.publishEvent(new DemandeLecture(facture.getId()));
+		}
 		return ResultatDepot.deposee(FactureDeposee.de(facture));
 	}
 

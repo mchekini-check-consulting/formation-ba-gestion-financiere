@@ -42,7 +42,7 @@ class FactureControllerTest {
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean@test.fr", "x", "Jean Dupont");
 	private final ListeFactures liste = new ListeFactures(
 			List.of(new LigneFacture(1L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.RECUE, true, null,
-					Facture.Statut.RECUE.suivants(), Facture.Source.DEPOT_CLIENT)),
+					Facture.Statut.RECUE.suivants(), Facture.Source.DEPOT_CLIENT, null, false)),
 			false);
 
 	private void connecte(Compte compte) {
@@ -118,7 +118,7 @@ class FactureControllerTest {
 	@Test
 	void us13NomEtTypeDuFichier() {
 		connecte(jean);
-		VueFacture vue = new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT);
+		VueFacture vue = new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null);
 		when(factures.consulter(jean, 42L, 5L)).thenReturn(Optional.of(vue));
 		assertEquals(vue, controller.consulter(AUTORISATION, "42", "5").getBody());
 	}
@@ -155,7 +155,7 @@ class FactureControllerTest {
 	void us51ChangerStatut() {
 		connecte(jean);
 		LigneFacture enCours = new LigneFacture(5L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.EN_COURS,
-				false, null, Facture.Statut.EN_COURS.suivants(), Facture.Source.DEPOT_CLIENT);
+				false, null, Facture.Statut.EN_COURS.suivants(), Facture.Source.DEPOT_CLIENT, null, false);
 		when(factures.changerStatut(jean, 42L, 5L, Facture.Statut.EN_COURS, null))
 				.thenReturn(new ResultatStatut(ResultatStatut.Issue.CHANGE, enCours));
 
@@ -236,7 +236,7 @@ class FactureControllerTest {
 	void us52Ca1Import() {
 		connecte(jean);
 		LigneFacture ligne = new LigneFacture(9L, "facture-edf-juin.pdf", Instant.EPOCH, "Jean Dupont",
-				Facture.Statut.RECUE, true, null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET);
+				Facture.Statut.RECUE, true, null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET, null, false);
 		when(factures.importer(jean, 42L, Facture.Sens.ACHAT, "facture-edf-juin.pdf", PDF))
 				.thenReturn(ResultatImport.importee(ligne));
 

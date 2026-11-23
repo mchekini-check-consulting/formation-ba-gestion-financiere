@@ -9,12 +9,23 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
 endobj
 4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
 endobj
 5 0 obj
-<< /Length 159 >>
+<< /Length 567 >>
 stream
-BT /F1 16 Tf 72 760 Td 22 TL (Facture d'exemple (mode test)) ' (Fournisseur : Energie Exemple) ' (Electricite - octobre 2026) ' (Montant : 184,20 EUR TTC) ' ET
+BT
+72 770 Td
+/F1 20 Tf (EDF) Tj 0 -30 Td
+/F1 12 Tf (Facture n° F-2026-0611 du 12/06/2026) Tj 0 -22 Td
+/F1 12 Tf (Client : Boulangerie Dupont) Tj 0 -22 Td
+/F1 12 Tf (Electricité - mai 2026                155,33 EUR) Tj 0 -22 Td
+/F1 12 Tf (Total HT                                    155,33 EUR) Tj 0 -22 Td
+/F1 12 Tf (TVA 20 %                                     31,07 EUR) Tj 0 -22 Td
+/F1 14 Tf (Total TTC                                   186,40 EUR) Tj 0 -24 Td
+/F1 10 Tf (Prélevé le 15/06/2026) Tj 0 -20 Td
+/F1 9 Tf (Facture d'exemple \(mode test\)) Tj 0 -19 Td
+ET
 endstream
 endobj
 xref
@@ -24,9 +35,9 @@ xref
 0000000058 00000 n 
 0000000115 00000 n 
 0000000241 00000 n 
-0000000311 00000 n 
+0000000338 00000 n 
 trailer
 << /Size 6 /Root 1 0 R >>
 startxref
-521
+956
 %%EOF

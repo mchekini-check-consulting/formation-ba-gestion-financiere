@@ -21,7 +21,6 @@ public final class ValidationInscription {
 	public static final String CGU_NON_ACCEPTEES = "Vous devez accepter les CGU pour créer votre compte";
 
 	static final int DOSSIERS_MAX = 100_000;
-	private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 	private static final Pattern SIREN = Pattern.compile("^\\d{9}$");
 	private static final Pattern SEPARATEURS = Pattern.compile("[\\s.\\-]");
 
@@ -97,7 +96,15 @@ public final class ValidationInscription {
 
 	// Format de l'email, déjà remis en forme par email(...).
 	public static boolean emailValide(String email) {
-		return email.length() <= 254 && EMAIL.matcher(email).matches();
+		// « x@y.z » : un seul @, rien avant ni après manquant, un point à l'intérieur du domaine, aucun
+		// espace (vérifié sans expression régulière : temps proportionnel à la longueur).
+		int arobase = email.indexOf('@');
+		if (email.length() > 254 || arobase < 1 || arobase != email.lastIndexOf('@')
+				|| email.chars().anyMatch(Character::isWhitespace)) {
+			return false;
+		}
+		String domaine = email.substring(arobase + 1);
+		return domaine.length() >= 3 && domaine.lastIndexOf('.', domaine.length() - 2) >= 1;
 	}
 
 	public static boolean estVide(String valeur) {

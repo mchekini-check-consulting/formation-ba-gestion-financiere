@@ -52,14 +52,90 @@ export interface LigneFacture {
   motif: string | null;
   statutsPossibles: Statut[];
   source: Source;
+  /** US-53 : statut de la lecture automatique ; null pour une facture jamais lue (facture client…). */
+  lecture: StatutLecture | null;
+  /** US-53 : pastille « À vérifier » (au moins un champ lu avec un doute ou non lu). */
+  lectureAVerifier: boolean;
 }
 
-/** US-13 : en-tête de la page d'aperçu. */
+/** US-53 RG6 : statut de la lecture automatique d'une facture fournisseur. */
+export type StatutLecture = 'EN_COURS' | 'LUE' | 'ECHOUEE';
+
+export const LIBELLES_LECTURE: Record<StatutLecture, string> = {
+  EN_COURS: 'Lecture en cours',
+  LUE: 'Lue',
+  ECHOUEE: 'Lecture échouée',
+};
+
+export const PASTILLES_LECTURE: Record<StatutLecture, string> = {
+  EN_COURS: 'pastille--lecture-en-cours',
+  LUE: 'pastille--lue',
+  ECHOUEE: 'pastille--lecture-echouee',
+};
+
+/** US-53 RG2 : champs lus sur une facture fournisseur. */
+export type ChampFacture =
+  | 'TYPE_TIERS'
+  | 'NOM_TIERS'
+  | 'NUMERO_FACTURE'
+  | 'DATE_EMISSION'
+  | 'MONTANT_HT'
+  | 'MONTANT_TVA'
+  | 'TAUX_TVA'
+  | 'MONTANT_TTC'
+  | 'COMPTE_CONTREPARTIE';
+
+export const CHAMPS: ChampFacture[] = [
+  'TYPE_TIERS',
+  'NOM_TIERS',
+  'NUMERO_FACTURE',
+  'DATE_EMISSION',
+  'MONTANT_HT',
+  'MONTANT_TVA',
+  'TAUX_TVA',
+  'MONTANT_TTC',
+  'COMPTE_CONTREPARTIE',
+];
+
+export const LIBELLES_CHAMP: Record<ChampFacture, string> = {
+  TYPE_TIERS: 'Type de tiers',
+  NOM_TIERS: 'Nom du tiers',
+  NUMERO_FACTURE: 'Numéro de facture',
+  DATE_EMISSION: "Date d'émission",
+  MONTANT_HT: 'Montant HT',
+  MONTANT_TVA: 'Montant TVA',
+  TAUX_TVA: 'Taux de TVA',
+  MONTANT_TTC: 'Montant TTC',
+  COMPTE_CONTREPARTIE: 'Compte de contrepartie',
+};
+
+/**
+ * US-53 RG2 à RG6 : résultat de la lecture. aVerifier : champs lus avec un doute (RG4, RG5) ;
+ * aRenseigner : champs non lus (RG3). Champs vides tant que la lecture est en cours ou si elle a échoué.
+ */
+export interface Lecture {
+  statut: StatutLecture;
+  typeTiers: 'FOURNISSEUR' | 'CLIENT' | null;
+  nomTiers: string | null;
+  numeroFacture: string | null;
+  dateEmission: string | null;
+  montantHt: number | null;
+  montantTva: number | null;
+  tauxTva: number | null;
+  montantTtc: number | null;
+  compteContrepartie: string | null;
+  libelleContrepartie: string | null;
+  aVerifier: ChampFacture[];
+  aRenseigner: ChampFacture[];
+}
+
+/** US-13 : en-tête de la page d'aperçu ; US-53 : résultat de la lecture (null : jamais lue). */
 export interface VueFacture {
   id: number;
   nomFichier: string;
   typeFichier: string;
   sens: Sens;
+  lecture: Lecture | null;
 }
 
 /** exemplesPossibles : mode test seulement (dev, qualif), jamais en preprod ni en prod. */
@@ -117,4 +193,39 @@ export function formaterDepot(date: string): string {
   const jour = d.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
   const heure = d.toLocaleTimeString('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' });
   return `${jour} à ${heure}`;
+}
+
+const EUROS = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+
+/** US-53 : valeur d'un champ lu, prête à afficher ; null si le champ n'a pas été lu (« À renseigner »). */
+export function valeurChamp(lecture: Lecture, champ: ChampFacture): string | null {
+  switch (champ) {
+    case 'TYPE_TIERS':
+      return lecture.typeTiers === null ? null : lecture.typeTiers === 'CLIENT' ? 'Client' : 'Fournisseur';
+    case 'NOM_TIERS':
+      return lecture.nomTiers;
+    case 'NUMERO_FACTURE':
+      return lecture.numeroFacture;
+    case 'DATE_EMISSION':
+      return lecture.dateEmission === null ? null : lecture.dateEmission.split('-').reverse().join('/');
+    case 'MONTANT_HT':
+      return montant(lecture.montantHt);
+    case 'MONTANT_TVA':
+      return montant(lecture.montantTva);
+    case 'TAUX_TVA':
+      return lecture.tauxTva === null ? null : `${lecture.tauxTva.toLocaleString('fr-FR')} %`;
+    case 'MONTANT_TTC':
+      return montant(lecture.montantTtc);
+    case 'COMPTE_CONTREPARTIE':
+      if (lecture.compteContrepartie === null) {
+        return null;
+      }
+      return lecture.libelleContrepartie
+        ? `${lecture.compteContrepartie} – ${lecture.libelleContrepartie}`
+        : lecture.compteContrepartie;
+  }
+}
+
+function montant(valeur: number | null): string | null {
+  return valeur === null ? null : EUROS.format(valeur);
 }

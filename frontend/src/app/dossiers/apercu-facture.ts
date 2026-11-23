@@ -3,7 +3,15 @@ import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
-import { FactureService, VueFacture } from './facture.service';
+import {
+  CHAMPS,
+  ChampFacture,
+  FactureService,
+  LIBELLES_CHAMP,
+  Lecture,
+  VueFacture,
+  valeurChamp,
+} from './facture.service';
 
 /** US-13 RG3 : facture d'un dossier sans droits, inexistante ou adresse tapée à la main. */
 export const MESSAGE_FACTURE_INTROUVABLE = 'Facture introuvable ou accès non autorisé';
@@ -23,6 +31,7 @@ export function affichage(typeFichier: string): Affichage {
  * US-13 Aperçu et téléchargement d'une facture. Page réservée aux personnes connectées (RG3 :
  * sans connexion, retour à l'écran de connexion) ; le fichier n'est envoyé par le backend qu'avec
  * la session et les droits sur le dossier. Ouvrir l'aperçu retire le badge « Nouvelle ».
+ * US-53 : champs lus automatiquement sur une facture fournisseur, « À vérifier » ou « À renseigner ».
  */
 @Component({
   imports: [RouterLink],
@@ -39,6 +48,8 @@ export class ApercuFacture implements OnInit, OnDestroy {
   protected readonly lien = signal<string | null>(null);
   protected readonly erreur = signal<string | null>(null);
   protected readonly telechargementEnCours = signal(false);
+  protected readonly champs = CHAMPS;
+  protected readonly libellesChamp = LIBELLES_CHAMP;
   private adresseFichier: string | null = null;
 
   ngOnInit(): void {
@@ -91,6 +102,10 @@ export class ApercuFacture implements OnInit, OnDestroy {
         this.echec(err);
       },
     });
+  }
+
+  protected valeur(lecture: Lecture, champ: ChampFacture): string | null {
+    return valeurChamp(lecture, champ);
   }
 
   protected affichage(facture: VueFacture): Affichage {

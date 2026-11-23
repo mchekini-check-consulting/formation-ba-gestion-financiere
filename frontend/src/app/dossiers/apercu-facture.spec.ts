@@ -4,10 +4,37 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { SessionService } from '../session/session.service';
 import { ApercuFacture, MESSAGE_FACTURE_INTROUVABLE, affichage } from './apercu-facture';
-import { VueFacture } from './facture.service';
+import { Lecture, VueFacture, valeurChamp } from './facture.service';
 
-const TICKET: VueFacture = { id: 5, nomFichier: 'ticket-fournitures.png', typeFichier: 'image/png', sens: 'ACHAT' };
-const VENTE: VueFacture = { id: 6, nomFichier: 'facture-client-0042.pdf', typeFichier: 'application/pdf', sens: 'VENTE' };
+const TICKET: VueFacture = {
+  id: 5,
+  nomFichier: 'ticket-fournitures.png',
+  typeFichier: 'image/png',
+  sens: 'ACHAT',
+  lecture: null,
+};
+const VENTE: VueFacture = {
+  id: 6,
+  nomFichier: 'facture-client-0042.pdf',
+  typeFichier: 'application/pdf',
+  sens: 'VENTE',
+  lecture: null,
+};
+const LECTURE: Lecture = {
+  statut: 'LUE',
+  typeTiers: 'FOURNISSEUR',
+  nomTiers: 'EDF',
+  numeroFacture: 'F-2026-0611',
+  dateEmission: '2026-06-12',
+  montantHt: 155.33,
+  montantTva: 31.07,
+  tauxTva: 20,
+  montantTtc: 186.4,
+  compteContrepartie: '6061',
+  libelleContrepartie: 'Fournitures non stockables',
+  aVerifier: ['COMPTE_CONTREPARTIE'],
+  aRenseigner: [],
+};
 const FICHIER = '/api/dossiers/42/factures/5/fichier';
 
 describe('US-13 Aperçu et téléchargement d’une facture', () => {
@@ -134,5 +161,69 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
     fixture.componentInstance.telecharger();
     http.expectNone(`${FICHIER}?telechargement=true`);
     expect(creer).not.toHaveBeenCalled();
+  });
+
+  describe('US-53 Lecture automatique', () => {
+    function champs(page: HTMLElement) {
+      return Array.from(page.querySelectorAll('.champ')).map((c) =>
+        c.textContent?.replace(/\s+/g, ' ').replace(/\u00a0|\u202f/g, ' ').trim(),
+      );
+    }
+
+    it('CA1 : les 9 champs lus ; RG4 « À vérifier »', async () => {
+      const { page } = await ouvrir({ ...TICKET, lecture: LECTURE });
+      expect(page.querySelector('h2')?.textContent).toBe('Lecture automatique');
+      expect(champs(page)).toEqual([
+        'Type de tiers Fournisseur',
+        'Nom du tiers EDF',
+        'Numéro de facture F-2026-0611',
+        "Date d'émission 12/06/2026",
+        'Montant HT 155,33 €',
+        'Montant TVA 31,07 €',
+        'Taux de TVA 20 %',
+        'Montant TTC 186,40 €',
+        'Compte de contrepartie 6061 – Fournitures non stockables À vérifier',
+      ]);
+      expect(page.querySelectorAll('.champ--doute')).toHaveLength(1);
+    });
+
+    it('RG3 : champs non lus « À renseigner »', async () => {
+      const incomplete: Lecture = {
+        ...LECTURE,
+        typeTiers: null,
+        nomTiers: null,
+        dateEmission: null,
+        tauxTva: null,
+        montantTtc: null,
+        compteContrepartie: null,
+        aVerifier: [],
+        aRenseigner: ['TYPE_TIERS', 'NOM_TIERS', 'DATE_EMISSION', 'TAUX_TVA', 'MONTANT_TTC', 'COMPTE_CONTREPARTIE'],
+      };
+      const { page } = await ouvrir({ ...TICKET, lecture: incomplete });
+      expect(page.querySelectorAll('.marque--a-renseigner')).toHaveLength(6);
+      expect(page.querySelector('.marque--a-verifier')).toBeNull();
+    });
+
+    it('lecture en cours', async () => {
+      const { page } = await ouvrir({ ...TICKET, lecture: { ...LECTURE, statut: 'EN_COURS' } });
+      expect(page.querySelector('.lecture')?.textContent).toContain('Lecture en cours…');
+      expect(page.querySelector('.champs')).toBeNull();
+    });
+
+    it('CA4 : lecture échouée', async () => {
+      const { page } = await ouvrir({ ...TICKET, lecture: { ...LECTURE, statut: 'ECHOUEE' } });
+      expect(page.querySelector('.echec')?.textContent).toContain('Lecture échouée');
+    });
+
+    it('facture jamais lue : pas de bloc « Lecture automatique »', async () => {
+      const { page } = await ouvrir();
+      expect(page.querySelector('.lecture')).toBeNull();
+    });
+
+    it('compte sans libellé, facture client, montant non lu', () => {
+      expect(valeurChamp({ ...LECTURE, libelleContrepartie: null }, 'COMPTE_CONTREPARTIE')).toBe('6061');
+      expect(valeurChamp({ ...LECTURE, typeTiers: 'CLIENT' }, 'TYPE_TIERS')).toBe('Client');
+      expect(valeurChamp({ ...LECTURE, montantHt: null }, 'MONTANT_HT')).toBeNull();
+    });
   });
 });
