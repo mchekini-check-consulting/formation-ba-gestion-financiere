@@ -132,8 +132,9 @@ class ClaudeOcrTest {
 
 		assertTrue(envoi.isPresent());
 		assertEquals(BetaBase64ImageSource.MediaType.IMAGE_JPEG, envoi.get().type());
-		assertTrue(envoi.get().contenu().length <= ClaudeOcr.TAILLE_MAX);
-		BufferedImage reduite = ImageIO.read(new java.io.ByteArrayInputStream(envoi.get().contenu()));
+		byte[] jpeg = java.util.Base64.getDecoder().decode(envoi.get().base64());
+		assertTrue(jpeg.length <= ClaudeOcr.TAILLE_MAX);
+		BufferedImage reduite = ImageIO.read(new java.io.ByteArrayInputStream(jpeg));
 		assertEquals(ClaudeOcr.COTE_MAX, reduite.getWidth());
 
 		assertEquals(Optional.empty(), ClaudeOcr.preparer(new byte[ClaudeOcr.TAILLE_MAX + 1], "image/png"));

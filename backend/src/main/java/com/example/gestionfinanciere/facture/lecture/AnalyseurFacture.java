@@ -40,9 +40,9 @@ public final class AnalyseurFacture {
 	private static final List<BigDecimal> TAUX_CONNUS = List.of(new BigDecimal("20.00"), new BigDecimal("10.00"),
 			new BigDecimal("5.50"), new BigDecimal("2.10"));
 
-	// Montant « 1 234,56 », « 1.234,56 » ou « 186.40 », jamais un pourcentage.
-	private static final Pattern MONTANT = Pattern
-			.compile("(?<![\\d,.])(\\d{1,3}(?:[ .]\\d{3})++|\\d++)[,.](\\d{2})(?![\\d,.])(?!\\s*+%)");
+	// Montant « 1 234,56 », « 1.234,56 » ou « 186.40 », jamais un pourcentage : lu caractère par caractère
+	// (pas d'expression régulière, temps de lecture proportionnel à la longueur de la ligne).
+	private static final String CHIFFRES_ET_SEPARATEURS = "0123456789,.";
 	private static final Pattern POURCENTAGE = Pattern.compile("(\\d{1,2}(?:[,.]\\d{1,2})?+)\\s*+%");
 	private static final Pattern DATE_CHIFFRES = Pattern.compile("(?<!\\d)(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{4}|\\d{2})(?!\\d)");
 	private static final Pattern DATE_LETTRES = Pattern.compile(
@@ -209,11 +209,53 @@ public final class AnalyseurFacture {
 
 	static List<BigDecimal> montantsDe(String ligne) {
 		List<BigDecimal> valeurs = new ArrayList<>();
-		Matcher m = MONTANT.matcher(ligne);
-		while (m.find()) {
-			valeurs.add(new BigDecimal(m.group(1).replaceAll("[ .]", "") + "." + m.group(2)));
+		int debut = 0;
+		while (debut < ligne.length()) {
+			int fin = finDeMontant(ligne, debut);
+			if (fin < 0) {
+				debut++;
+			} else {
+				String entier = ligne.substring(debut, fin - 3).replace(" ", "").replace(".", "");
+				valeurs.add(new BigDecimal(entier + "." + ligne.substring(fin - 2, fin)));
+				debut = fin;
+			}
 		}
 		return valeurs;
+	}
+
+	// Fin du montant qui commence à « debut » (chiffres, groupes de milliers, 2 décimales), -1 sinon.
+	private static int finDeMontant(String ligne, int debut) {
+		if (!chiffre(ligne, debut) || parmi(ligne, debut - 1, CHIFFRES_ET_SEPARATEURS)) {
+			return -1;
+		}
+		int i = debut;
+		while (chiffre(ligne, i)) {
+			i++;
+		}
+		while (parmi(ligne, i, " .") && chiffre(ligne, i + 1) && chiffre(ligne, i + 2) && chiffre(ligne, i + 3)) {
+			i += 4;
+		}
+		if (!parmi(ligne, i, ",.") || !chiffre(ligne, i + 1) || !chiffre(ligne, i + 2)) {
+			return -1;
+		}
+		int fin = i + 3;
+		return parmi(ligne, fin, CHIFFRES_ET_SEPARATEURS) || suiviDePourcent(ligne, fin) ? -1 : fin;
+	}
+
+	private static boolean suiviDePourcent(String ligne, int position) {
+		int i = position;
+		while (i < ligne.length() && Character.isWhitespace(ligne.charAt(i))) {
+			i++;
+		}
+		return parmi(ligne, i, "%");
+	}
+
+	private static boolean chiffre(String ligne, int i) {
+		return i >= 0 && i < ligne.length() && ligne.charAt(i) >= '0' && ligne.charAt(i) <= '9';
+	}
+
+	private static boolean parmi(String ligne, int i, String caracteres) {
+		return i >= 0 && i < ligne.length() && caracteres.indexOf(ligne.charAt(i)) >= 0;
 	}
 
 	private static boolean mot(String texte, String mot) {
