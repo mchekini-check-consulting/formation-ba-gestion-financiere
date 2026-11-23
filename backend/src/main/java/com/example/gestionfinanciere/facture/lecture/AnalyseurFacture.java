@@ -42,18 +42,18 @@ public final class AnalyseurFacture {
 
 	// Montant « 1 234,56 », « 1.234,56 » ou « 186.40 », jamais un pourcentage.
 	private static final Pattern MONTANT = Pattern
-			.compile("(?<![\\d,.])(\\d{1,3}(?:[ .]\\d{3})+|\\d+)[,.](\\d{2})(?![\\d,.])(?!\\s*%)");
-	private static final Pattern POURCENTAGE = Pattern.compile("(\\d{1,2}(?:[,.]\\d{1,2})?)\\s*%");
+			.compile("(?<![\\d,.])(\\d{1,3}(?:[ .]\\d{3})++|\\d++)[,.](\\d{2})(?![\\d,.])(?!\\s*+%)");
+	private static final Pattern POURCENTAGE = Pattern.compile("(\\d{1,2}(?:[,.]\\d{1,2})?+)\\s*+%");
 	private static final Pattern DATE_CHIFFRES = Pattern.compile("(?<!\\d)(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{4}|\\d{2})(?!\\d)");
 	private static final Pattern DATE_LETTRES = Pattern.compile(
-			"(?<!\\d)(\\d{1,2})(?:er)?\\s+(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\\s+(\\d{4})");
+			"(?<!\\d)(\\d{1,2})(?:er)?+\\s++(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\\s++(\\d{4})");
 	private static final List<String> MOIS = List.of("janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet",
 			"aout", "septembre", "octobre", "novembre", "decembre");
 	private static final Pattern NUMERO_FACTURE = Pattern.compile(
-			"(?:facture|invoice)\\s*(?:n\\s?[°o]\\.?|num(?:ero)?\\.?|#)\\s*:?\\s*([a-z0-9][a-z0-9\\-_/.]{2,40})");
-	private static final Pattern NUMERO = Pattern.compile("(?:^|\\s)n\\s?[°o]\\.?\\s*:?\\s*([a-z0-9][a-z0-9\\-_/.]{2,40})");
+			"(?:facture|invoice)\\s*+(?:n\\s?+[°o]\\.?+|num(?:ero)?+\\.?+|#)\\s*+:?+\\s*+([a-z0-9][a-z0-9\\-_/.]{2,40}+)");
+	private static final Pattern NUMERO = Pattern.compile("(?:^|\\s)n\\s?+[°o]\\.?+\\s*+:?+\\s*+([a-z0-9][a-z0-9\\-_/.]{2,40}+)");
 	private static final Pattern TIERS_ANNONCE = Pattern
-			.compile("(?:fournisseur|emetteur|vendeur|societe)\\s*:\\s*([^\\n]{2,80})");
+			.compile("(?:fournisseur|emetteur|vendeur|societe)\\s*+:\\s*+([^\\n]{2,80}+)");
 
 	// RG3 : fournisseurs reconnus à coup sûr (nom tel qu'affiché, mot cherché dans le texte).
 	private static final Map<String, String> FOURNISSEURS_CONNUS = new LinkedHashMap<>();
@@ -285,9 +285,18 @@ public final class AnalyseurFacture {
 		return premierAvecChiffre(NUMERO.matcher(tout)).map(n -> new Lu<>(n, DEVINE)).orElse(null);
 	}
 
+	// « FA-2026-001. » -> « FA-2026-001 » (sans expression régulière : pas de risque de lenteur).
+	private static String sansSeparateursFinaux(String numero) {
+		int fin = numero.length();
+		while (fin > 0 && ".-_/".indexOf(numero.charAt(fin - 1)) >= 0) {
+			fin--;
+		}
+		return numero.substring(0, fin);
+	}
+
 	private static Optional<String> premierAvecChiffre(Matcher m) {
 		while (m.find()) {
-			String numero = m.group(1).replaceAll("[.\\-_/]+$", "").toUpperCase(Locale.ROOT);
+			String numero = sansSeparateursFinaux(m.group(1)).toUpperCase(Locale.ROOT);
 			if (numero.chars().anyMatch(Character::isDigit) && numero.length() >= 3) {
 				return Optional.of(numero);
 			}
