@@ -68,16 +68,16 @@ class LectureFactureServiceTest {
 		ReflectionTestUtils.setField(dossier, "id", 42L);
 	}
 
-	// RG1 : seules les factures fournisseurs sont lues.
+	// US-53 RG1 et US-54 RG1 : factures fournisseurs et factures clients sont lues ; jamais sans fichier.
 	@Test
-	void rg1SeulesLesFacturesFournisseurs() {
+	void rg1FacturesFournisseursEtClients() {
 		Facture achat = facture(Facture.Sens.ACHAT);
 		assertTrue(achat.demarrerLecture());
 		assertEquals(Facture.StatutLecture.EN_COURS, achat.getLectureStatut());
 
 		Facture vente = facture(Facture.Sens.VENTE);
-		assertFalse(vente.demarrerLecture());
-		assertNull(vente.getLectureStatut());
+		assertTrue(vente.demarrerLecture());
+		assertEquals(Facture.StatutLecture.EN_COURS, vente.getLectureStatut());
 
 		Facture sansFichier = new Facture(dossier, Facture.Sens.ACHAT, "x.pdf", "application/pdf", MAINTENANT, jean,
 				null);
@@ -89,14 +89,17 @@ class LectureFactureServiceTest {
 		Facture enCours = facture(Facture.Sens.ACHAT);
 		enCours.demarrerLecture();
 		when(factures.findById(5L)).thenReturn(Optional.of(enCours));
-		assertEquals("edf.pdf", service.fichierALire(5L).orElseThrow().nomFichier());
+		FactureALire aLire = service.factureALire(5L).orElseThrow();
+		assertEquals("edf.pdf", aLire.fichier().nomFichier());
+		assertEquals(Facture.Sens.ACHAT, aLire.sens());
+		assertEquals("Boulangerie Martin", aLire.entrepriseDuDossier());
 
 		// Déjà lue, jamais mise en lecture ou supprimée : rien à lire.
 		enCours.terminerLecture(ResultatLecture.illisible(), MAINTENANT);
-		assertTrue(service.fichierALire(5L).isEmpty());
+		assertTrue(service.factureALire(5L).isEmpty());
 		when(factures.findById(6L)).thenReturn(Optional.of(facture(Facture.Sens.VENTE)));
-		assertTrue(service.fichierALire(6L).isEmpty());
-		assertTrue(service.fichierALire(7L).isEmpty());
+		assertTrue(service.factureALire(6L).isEmpty());
+		assertTrue(service.factureALire(7L).isEmpty());
 	}
 
 	// CA1, RG4 : champs enregistrés avec leur confiance ; log sans aucune valeur lue.
@@ -188,7 +191,7 @@ class LectureFactureServiceTest {
 
 		service.enregistrer(8L, ResultatLecture.illisible(), Duration.ZERO);
 		verify(champs, never()).supprimerDeLaFacture(8L);
-		// Jamais lue (facture client) : pas de bloc lecture.
+		// Jamais lue (facture déposée avant l'US-53) : pas de bloc lecture.
 		assertNull(VueFacture.de(facture(Facture.Sens.VENTE), List.of()).lecture());
 	}
 
@@ -198,24 +201,63 @@ class LectureFactureServiceTest {
 		LectureFactureService lectures = mock(LectureFactureService.class);
 		ExtracteurTexte extracteur = mock(ExtracteurTexte.class);
 		LanceurLecture lanceur = new LanceurLecture(lectures, extracteur);
-		FichierFacture fichier = new FichierFacture("edf.pdf", "application/pdf", new byte[] { 1 });
-		when(lectures.fichierALire(5L)).thenReturn(Optional.of(fichier));
+		FichierFacture pdf = new FichierFacture("edf.pdf", "application/pdf", new byte[] { 1 });
+		FactureALire fichier = new FactureALire(pdf, Facture.Sens.ACHAT, "Boulangerie Martin");
+		when(lectures.factureALire(5L)).thenReturn(Optional.of(fichier));
 		when(extracteur.texte(any(), any())).thenReturn(EDF);
 
 		lanceur.lancer(new DemandeLecture(5L));
 		ArgumentCaptor<ResultatLecture> resultat = ArgumentCaptor.forClass(ResultatLecture.class);
 		verify(lectures).enregistrer(org.mockito.ArgumentMatchers.eq(5L), resultat.capture(), any());
 		assertTrue(resultat.getValue().lisible());
+		assertEquals("FOURNISSEUR", resultat.getValue().typeTiers());
 
-		when(lectures.fichierALire(6L)).thenReturn(Optional.of(fichier));
+		// US-54 : facture client lue comme telle.
+		when(lectures.factureALire(9L))
+				.thenReturn(Optional.of(new FactureALire(pdf, Facture.Sens.VENTE, "Boulangerie Martin")));
+		lanceur.lancer(new DemandeLecture(9L));
+		verify(lectures).enregistrer(org.mockito.ArgumentMatchers.eq(9L), resultat.capture(), any());
+		assertEquals("CLIENT", resultat.getValue().typeTiers());
+
+		when(lectures.factureALire(6L)).thenReturn(Optional.of(fichier));
 		when(extracteur.texte(any(), any())).thenThrow(new IllegalStateException("panne"));
 		lanceur.lancer(new DemandeLecture(6L));
 		verify(lectures).enregistrer(org.mockito.ArgumentMatchers.eq(6L), resultat.capture(), any());
 		assertFalse(resultat.getValue().lisible());
 
-		when(lectures.fichierALire(7L)).thenReturn(Optional.empty());
+		when(lectures.factureALire(7L)).thenReturn(Optional.empty());
 		lanceur.lancer(new DemandeLecture(7L));
 		verify(lectures, never()).enregistrer(org.mockito.ArgumentMatchers.eq(7L), any(), any());
 	}
 
+	// US-54 CA2 : plusieurs taux : « Multiple », détail par taux enregistré puis remplacé à la lecture suivante.
+	@Test
+	void us54Ca2DetailTvaEnregistre() {
+		Facture facture = facture(Facture.Sens.VENTE);
+		facture.demarrerLecture();
+		when(factures.findById(5L)).thenReturn(Optional.of(facture));
+
+		service.enregistrer(5L, AnalyseurFacture.analyserFactureClient("""
+				Facture n° F-2026-020 du 10/06/2026
+				Client : Mairie de Lyon
+				TVA 20 % sur 100,00 : 20,00
+				TVA 5,5 % sur 50,00 : 2,75
+				Total HT 150,00
+				Total TVA 22,75
+				Total TTC 172,75
+				""", "Boulangerie Martin"), Duration.ZERO);
+
+		VueFacture.Lecture vue = VueFacture.de(facture, List.of()).lecture();
+		assertEquals("CLIENT", vue.typeTiers());
+		assertEquals("Mairie de Lyon", vue.nomTiers());
+		assertTrue(vue.tauxMultiple());
+		assertNull(vue.tauxTva());
+		assertEquals(2, vue.detailTva().size());
+		assertEquals(new BigDecimal("5.50"), vue.detailTva().get(1).taux());
+		assertFalse(vue.aRenseigner().contains(ChampFacture.TAUX_TVA));
+
+		facture.terminerLecture(ResultatLecture.illisible(), MAINTENANT);
+		assertFalse(facture.isTauxTvaMultiple());
+		assertTrue(facture.getDetailTva().isEmpty());
+	}
 }

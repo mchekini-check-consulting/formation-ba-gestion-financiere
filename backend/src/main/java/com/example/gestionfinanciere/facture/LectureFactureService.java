@@ -36,12 +36,12 @@ public class LectureFactureService {
 		this.horloge = horloge;
 	}
 
-	// Le fichier d'une facture en attente de lecture ; vide si elle a été supprimée ou déjà lue.
+	// La facture en attente de lecture ; vide si elle a été supprimée ou déjà lue.
 	@Transactional(readOnly = true)
-	public Optional<FichierFacture> fichierALire(Long factureId) {
+	public Optional<FactureALire> factureALire(Long factureId) {
 		return factures.findById(factureId)
 				.filter(f -> f.getLectureStatut() == Facture.StatutLecture.EN_COURS && f.getContenu() != null)
-				.map(FichierFacture::de);
+				.map(FactureALire::de);
 	}
 
 	// RG2 à RG6 : enregistre le résultat ; chaque champ lu garde son niveau de confiance (RG4).
@@ -62,8 +62,10 @@ public class LectureFactureService {
 		EvenementMetier evenement = EvenementMetier.de(EVENEMENT, facture.getLectureStatut())
 				.avec(CHAMP_FACTURE, factureId).avec("dossierId", facture.getDossier().getId())
 				.avec("dureeMs", duree.toMillis());
+		evenement.avec("sens", facture.getSens());
 		if (resultat.lisible()) {
-			evenement.avec("aVerifier", resultat.aVerifier().size()).avec("aRenseigner", resultat.aRenseigner().size());
+			evenement.avec("aVerifier", resultat.aVerifier().size()).avec("aRenseigner", resultat.aRenseigner().size())
+					.avec("tauxMultiple", resultat.tauxMultiple());
 		}
 		evenement.journaliser(resultat.lisible());
 	}

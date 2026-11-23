@@ -179,4 +179,120 @@ class AnalyseurFactureTest {
 		assertTrue(illisible.aVerifier().isEmpty());
 	}
 
+	// ---------- US-54 Lire automatiquement une facture client ----------
+
+	// CA1 : facture F-2026-014 de la Boulangerie Dupont à la Mairie de Lyon.
+	private static final String MAIRIE = """
+			Boulangerie Dupont
+			12 rue des Lilas, 69003 Lyon
+			Facture n° F-2026-014 du 03/06/2026
+			Client : Mairie de Lyon
+			Livraison de viennoiseries – réception du 1er juin     1 200,00 €
+			Total HT                          1 200,00 €
+			TVA 20 %                            240,00 €
+			Total TTC                         1 440,00 €
+			""";
+
+	// CA1 : Client, Mairie de Lyon, F-2026-014, 03/06/2026, 1 200,00 €, 240,00 €, 20 %, 1 440,00 €, compte de produit.
+	@Test
+	void us54Ca1FactureClient() {
+		ResultatLecture lu = AnalyseurFacture.analyserFactureClient(MAIRIE, "Boulangerie Dupont");
+
+		assertTrue(lu.lisible());
+		assertEquals("CLIENT", lu.typeTiers());
+		assertEquals("Mairie de Lyon", lu.nomTiers());
+		assertEquals("F-2026-014", lu.numeroFacture());
+		assertEquals(LocalDate.of(2026, 6, 3), lu.dateEmission());
+		assertEquals(euros("1200.00"), lu.montantHt());
+		assertEquals(euros("240.00"), lu.montantTva());
+		assertEquals(euros("20.00"), lu.tauxTva());
+		assertEquals(euros("1440.00"), lu.montantTtc());
+		// RG2 : compte de produit (« livraison de » -> ventes de marchandises), toujours à vérifier.
+		assertEquals("707", lu.compteContrepartie());
+		assertEquals("Ventes de marchandises", AnalyseurFacture.LIBELLES_COMPTES.get("707"));
+		assertEquals(Set.of(ChampFacture.COMPTE_CONTREPARTIE), lu.aVerifier());
+		assertEquals(Set.of(), lu.aRenseigner());
+		assertFalse(lu.tauxMultiple());
+		assertTrue(lu.detailTva().isEmpty());
+	}
+
+	// RG3 : le tiers est le destinataire, jamais l'entreprise du dossier ; nom sur la ligne suivante.
+	@Test
+	void us54Rg3Destinataire() {
+		ResultatLecture suivante = AnalyseurFacture.analyserFactureClient("""
+				Facturé à :
+				SARL Martin Rénovation
+				Facture n° 2026-77 du 10/06/2026
+				Honoraires de conseil   500,00
+				Total TTC 600,00
+				""", "Cabinet Conseil Durand");
+		assertEquals("SARL Martin Rénovation", suivante.nomTiers());
+		assertEquals("706", suivante.compteContrepartie());
+
+		// « Client : » suivi du nom de l'entreprise du dossier ou d'un numéro : ignoré, puis le vrai destinataire.
+		ResultatLecture ignores = AnalyseurFacture.analyserFactureClient("""
+				Client : Boulangerie Dupont SARL
+				Client n° 4521
+				Destinataire : Café des Arts
+				Location de vitrine   80,00
+				Total TTC 96,00
+				""", "Boulangerie Dupont");
+		assertEquals("Café des Arts", ignores.nomTiers());
+		assertEquals("708", ignores.compteContrepartie());
+
+		// Aucun destinataire lisible : « À renseigner » ; compte par défaut 706, « À vérifier ».
+		ResultatLecture absent = AnalyseurFacture.analyserFactureClient("Boulangerie Dupont\nTotal TTC 12,00\n",
+				null);
+		assertNull(absent.nomTiers());
+		assertTrue(absent.aRenseigner().contains(ChampFacture.NOM_TIERS));
+		assertEquals(AnalyseurFacture.PRODUIT_PAR_DEFAUT, absent.compteContrepartie());
+		assertTrue(absent.aVerifier().contains(ChampFacture.COMPTE_CONTREPARTIE));
+	}
+
+	// CA2 : 100 € HT à 20 % et 50 € HT à 5,5 % : taux « Multiple » (vide) et détail par taux conservé.
+	@Test
+	void us54Ca2PlusieursTaux() {
+		ResultatLecture lu = AnalyseurFacture.analyserFactureClient("""
+				Facture n° F-2026-020 du 10/06/2026
+				Client : Mairie de Lyon
+				Buffet (prestation)      20 %     100,00
+				Pains                    5,5 %     50,00
+				TVA 20 % sur 100,00 : 20,00
+				TVA 5,5 % sur 50,00 : 2,75
+				Total HT 150,00
+				Total TVA 22,75
+				Total TTC 172,75
+				""", "Boulangerie Dupont");
+
+		assertTrue(lu.tauxMultiple());
+		assertNull(lu.tauxTva());
+		assertEquals(List.of(new TvaParTaux(euros("20.00"), euros("100.00"), euros("20.00")),
+				new TvaParTaux(euros("5.50"), euros("50.00"), euros("2.75"))), lu.detailTva());
+		assertEquals(euros("22.75"), lu.montantTva());
+		// La TVA des taux fait la TVA totale : taux sûr, ni « À vérifier » ni « À renseigner ».
+		assertFalse(lu.aVerifier().contains(ChampFacture.TAUX_TVA));
+		assertFalse(lu.aRenseigner().contains(ChampFacture.TAUX_TVA));
+	}
+
+	// CA2 : détail sans base (lignes « TVA x % » seules) ; TVA des taux différente du total : « À vérifier ».
+	@Test
+	void us54Ca2DetailIncoherent() {
+		ResultatLecture lu = AnalyseurFacture.analyser("""
+				Metro
+				TVA 20 %   10,00
+				TVA 10 %    3,00
+				Remise 50 %
+				Total TVA 15,00
+				Total TTC 80,00
+				""");
+
+		assertEquals(List.of(new TvaParTaux(euros("20.00"), null, euros("10.00")),
+				new TvaParTaux(euros("10.00"), null, euros("3.00"))), lu.detailTva());
+		assertTrue(lu.aVerifier().contains(ChampFacture.TAUX_TVA));
+		assertEquals("FOURNISSEUR", lu.typeTiers());
+		// Un seul taux, même répété : pas de détail (le taux reste le champ « Taux de TVA » habituel).
+		assertEquals(1, AnalyseurFacture.detailTva(List.of("TVA 20 % 31,07", "TVA 20 % sur 155,33 : 31,07")).size());
+		assertTrue(AnalyseurFacture.analyser(EDF).detailTva().isEmpty());
+		assertEquals(euros("20.00"), AnalyseurFacture.analyser(EDF).tauxTva());
+	}
 }

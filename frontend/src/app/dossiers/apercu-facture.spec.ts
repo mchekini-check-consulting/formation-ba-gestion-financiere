@@ -29,6 +29,8 @@ const LECTURE: Lecture = {
   montantHt: 155.33,
   montantTva: 31.07,
   tauxTva: 20,
+  tauxMultiple: false,
+  detailTva: [],
   montantTtc: 186.4,
   compteContrepartie: '6061',
   libelleContrepartie: 'Fournitures non stockables',
@@ -218,6 +220,40 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
     it('facture jamais lue : pas de bloc « Lecture automatique »', async () => {
       const { page } = await ouvrir();
       expect(page.querySelector('.lecture')).toBeNull();
+    });
+
+    it('US-54 CA1 : facture client lue', async () => {
+      const client: Lecture = {
+        ...LECTURE,
+        typeTiers: 'CLIENT',
+        nomTiers: 'Mairie de Lyon',
+        compteContrepartie: '707',
+        libelleContrepartie: 'Ventes de marchandises',
+      };
+      const { page } = await ouvrir({ ...VENTE, id: 5, lecture: client });
+      expect(champs(page).slice(0, 2)).toEqual(['Type de tiers Client', 'Nom du tiers Mairie de Lyon']);
+      expect(page.querySelector('.detail-tva')).toBeNull();
+    });
+
+    it('US-54 CA2 : plusieurs taux de TVA, « Multiple » et détail par taux', async () => {
+      const multiple: Lecture = {
+        ...LECTURE,
+        tauxTva: null,
+        tauxMultiple: true,
+        detailTva: [
+          { taux: 20, baseHt: 100, montantTva: 20 },
+          { taux: 5.5, baseHt: null, montantTva: 2.75 },
+        ],
+      };
+      const { page } = await ouvrir({ ...TICKET, lecture: multiple });
+      expect(champs(page)).toContain('Taux de TVA Multiple');
+      const lignesTva = Array.from(page.querySelectorAll('.detail-tva tbody tr')).map((tr) =>
+        Array.from(tr.querySelectorAll('td')).map((td) => td.textContent?.replace(/\s/g, ' ').trim()),
+      );
+      expect(lignesTva).toEqual([
+        ['20 %', '100,00 €', '20,00 €'],
+        ['5,5 %', '—', '2,75 €'],
+      ]);
     });
 
     it('compte sans libellé, facture client, montant non lu', () => {
