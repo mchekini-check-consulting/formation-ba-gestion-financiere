@@ -74,7 +74,8 @@ class ConnexionIT {
 	@Test
 	void dirigeantDeDemonstrationVoitSesDepots() throws Exception {
 		String corps = seConnecter("sophie.martin@boulangerie-test.fr", MOT_DE_PASSE_DEMO).body();
-		String jeton = corps.replaceAll(".*\"jeton\":\"([^\"]+)\".*", "$1");
+		int debutJeton = corps.indexOf("\"jeton\":\"") + "\"jeton\":\"".length();
+		String jeton = corps.substring(debutJeton, corps.indexOf('"', debutJeton));
 		HttpRequest requete = HttpRequest
 				.newBuilder(URI.create("http://localhost:" + port + "/espace-client/factures?sens=ACHAT"))
 				.header("Authorization", "Bearer " + jeton)
