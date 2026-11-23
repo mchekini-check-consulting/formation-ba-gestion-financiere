@@ -103,8 +103,10 @@ class FactureIT {
 				"\"nomFichier\":\"facture-electricite-octobre.pdf\"", "\"nouvelle\":false");
 		assertThat(achats.body()).doesNotContain("facture-client-0042.pdf");
 
-		// Sans « sens » : factures fournisseurs (onglet par défaut).
-		assertThat(appel("GET", dossier + "/factures", null, jeton).body()).isEqualTo(achats.body());
+		// Sans « sens » : factures fournisseurs (onglet par défaut). Le statut de lecture (US-53) peut avoir
+		// avancé entre les deux appels (lecture en arrière-plan) : comparé sans lui.
+		assertThat(sansLecture(appel("GET", dossier + "/factures", null, jeton).body()))
+				.isEqualTo(sansLecture(achats.body()));
 
 		HttpResponse<String> ventes = appel("GET", dossier + "/factures?sens=VENTE", null, jeton);
 		assertThat(ventes.body()).contains("facture-client-0042.pdf").doesNotContain("ticket-fournitures.png");
@@ -141,6 +143,10 @@ class FactureIT {
 			requete.header("Authorization", "Bearer " + jeton);
 		}
 		return http.send(requete.build(), HttpResponse.BodyHandlers.ofByteArray());
+	}
+
+	private static String sansLecture(String json) {
+		return json.replaceAll("\"lecture\":(null|\"[A-Z_]+\"),\"lectureAVerifier\":(true|false)", "");
 	}
 
 	private static String debut(byte[] contenu, int taille) {
