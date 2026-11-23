@@ -60,7 +60,7 @@ public final class AnalyseurFacture {
 	// Contrepartie proposée : premier mot-clé trouvé -> compte du plan comptable.
 	private static final Map<String, String> COMPTES_PAR_MOT = new LinkedHashMap<>();
 	// Libellés des comptes proposés (page de la facture).
-	public static final Map<String, String> LIBELLES_COMPTES = new LinkedHashMap<>();
+	private static final Map<String, String> LIBELLES_COMPTES = new LinkedHashMap<>();
 	static final String COMPTE_PAR_DEFAUT = "607";
 
 	static {
@@ -108,8 +108,13 @@ public final class AnalyseurFacture {
 	private record Lu<T>(T valeur, double confiance) {
 	}
 
+	// Libellé d'un compte proposé (page de la facture) ; null si le compte n'est pas connu.
+	public static String libelleCompte(String compte) {
+		return LIBELLES_COMPTES.get(compte);
+	}
+
 	public static ResultatLecture analyser(String texte) {
-		String propre = texte == null ? "" : texte.replace(' ', ' ').replace(' ', ' ');
+		String propre = texte == null ? "" : texte.replace('\u00A0', ' ').replace('\u202F', ' ');
 		List<String> lignes = propre.lines().map(String::strip).filter(l -> !l.isEmpty()).toList();
 		String tout = sansAccents(String.join("\n", lignes).toLowerCase(Locale.ROOT));
 
@@ -173,33 +178,42 @@ public final class AnalyseurFacture {
 		Lu<BigDecimal> plusGrand = null;
 		for (String ligne : lignes) {
 			List<BigDecimal> valeurs = montantsDe(ligne);
-			if (valeurs.isEmpty()) {
-				continue;
-			}
-			BigDecimal dernier = valeurs.get(valeurs.size() - 1);
-			String bas = sansAccents(ligne.toLowerCase(Locale.ROOT));
-			boolean total = bas.contains("total") || bas.contains("montant");
-			if (mot(bas, "ttc") || bas.contains("net a payer") || bas.contains("total a payer")) {
-				trouves.ttc = meilleur(trouves.ttc, new Lu<>(dernier, SUR));
-			} else if (mot(bas, "ht") || bas.contains("hors taxe")) {
-				trouves.ht = meilleur(trouves.ht, new Lu<>(dernier, total ? SUR : PROBABLE));
-			} else if (mot(bas, "tva")) {
-				trouves.tva = meilleur(trouves.tva, new Lu<>(dernier, total || POURCENTAGE.matcher(bas).find() ? SUR
-						: PROBABLE));
-			} else if (total) {
-				// Ticket : « TOTAL 12,50 » sans « TTC ».
-				trouves.ttc = meilleur(trouves.ttc, new Lu<>(dernier, DEVINE));
-			}
-			for (BigDecimal valeur : valeurs) {
-				if (plusGrand == null || valeur.compareTo(plusGrand.valeur()) > 0) {
-					plusGrand = new Lu<>(valeur, FAIBLE);
-				}
+			if (!valeurs.isEmpty()) {
+				ranger(trouves, sansAccents(ligne.toLowerCase(Locale.ROOT)), valeurs.get(valeurs.size() - 1));
+				plusGrand = plusGrand(plusGrand, valeurs);
 			}
 		}
 		if (trouves.ttc == null && trouves.ht == null && trouves.tva == null) {
 			trouves.ttc = plusGrand;
 		}
 		return trouves;
+	}
+
+	// Dernier montant de la ligne rangé en TTC, HT ou TVA selon les mots de la ligne.
+	private static void ranger(Montants trouves, String bas, BigDecimal dernier) {
+		boolean total = bas.contains("total") || bas.contains("montant");
+		if (mot(bas, "ttc") || bas.contains("net a payer") || bas.contains("total a payer")) {
+			trouves.ttc = meilleur(trouves.ttc, new Lu<>(dernier, SUR));
+		} else if (mot(bas, "ht") || bas.contains("hors taxe")) {
+			trouves.ht = meilleur(trouves.ht, new Lu<>(dernier, total ? SUR : PROBABLE));
+		} else if (mot(bas, "tva")) {
+			boolean sur = total || POURCENTAGE.matcher(bas).find();
+			trouves.tva = meilleur(trouves.tva, new Lu<>(dernier, sur ? SUR : PROBABLE));
+		} else if (total) {
+			// Ticket : « TOTAL 12,50 » sans « TTC ».
+			trouves.ttc = meilleur(trouves.ttc, new Lu<>(dernier, DEVINE));
+		}
+	}
+
+	// Plus grand montant vu (TTC de secours quand aucun total n'est annoncé).
+	private static Lu<BigDecimal> plusGrand(Lu<BigDecimal> actuel, List<BigDecimal> valeurs) {
+		Lu<BigDecimal> plusGrand = actuel;
+		for (BigDecimal valeur : valeurs) {
+			if (plusGrand == null || valeur.compareTo(plusGrand.valeur()) > 0) {
+				plusGrand = new Lu<>(valeur, FAIBLE);
+			}
+		}
+		return plusGrand;
 	}
 
 	// Le plus sûr ; à confiance égale, le dernier (les totaux sont en bas de la facture).
@@ -276,16 +290,18 @@ public final class AnalyseurFacture {
 				ailleurs = ailleurs == null ? new Lu<>(taux, DEVINE) : ailleurs;
 			}
 		}
-		if (ailleurs != null) {
-			return ailleurs;
+		return ailleurs != null ? ailleurs : tauxCalcule(montants);
+	}
+
+	// Taux connu le plus proche de TVA / HT (à 0,5 point près), sinon vide.
+	private static Lu<BigDecimal> tauxCalcule(Montants montants) {
+		if (montants.ht == null || montants.tva == null || montants.ht.valeur().signum() <= 0) {
+			return null;
 		}
-		if (montants.ht != null && montants.tva != null && montants.ht.valeur().signum() > 0) {
-			BigDecimal calcule = montants.tva.valeur().multiply(CENT).divide(montants.ht.valeur(), 2,
-					RoundingMode.HALF_UP);
-			for (BigDecimal connu : TAUX_CONNUS) {
-				if (calcule.subtract(connu).abs().compareTo(new BigDecimal("0.5")) <= 0) {
-					return new Lu<>(connu, DEVINE);
-				}
+		BigDecimal calcule = montants.tva.valeur().multiply(CENT).divide(montants.ht.valeur(), 2, RoundingMode.HALF_UP);
+		for (BigDecimal connu : TAUX_CONNUS) {
+			if (calcule.subtract(connu).abs().compareTo(new BigDecimal("0.5")) <= 0) {
+				return new Lu<>(connu, DEVINE);
 			}
 		}
 		return null;
