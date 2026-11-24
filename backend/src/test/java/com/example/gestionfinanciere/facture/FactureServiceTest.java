@@ -125,11 +125,9 @@ class FactureServiceTest {
 				liste.stream().map(Facture::getTypeFichier).toList());
 		assertEquals("%PDF", new String(liste.get(0).getContenu(), 0, 4, StandardCharsets.US_ASCII));
 		assertEquals("PNG", new String(liste.get(1).getContenu(), 1, 3, StandardCharsets.US_ASCII));
-		// US-53 RG1 : les deux factures fournisseurs partent en lecture, pas la facture client.
-		assertEquals(List.of(Facture.StatutLecture.EN_COURS, Facture.StatutLecture.EN_COURS),
-				liste.stream().map(Facture::getLectureStatut).limit(2).toList());
-		assertNull(liste.get(2).getLectureStatut());
-		verify(evenements, org.mockito.Mockito.times(2)).publishEvent(any(Object.class));
+		// US-53 RG1 et US-54 RG1 : les factures fournisseurs et la facture client partent en lecture.
+		assertTrue(liste.stream().allMatch(f -> f.getLectureStatut() == Facture.StatutLecture.EN_COURS));
+		verify(evenements, org.mockito.Mockito.times(3)).publishEvent(any(Object.class));
 	}
 
 	@Test
@@ -343,16 +341,20 @@ class FactureServiceTest {
 		verify(evenements).publishEvent(new DemandeLecture(9L));
 	}
 
-	// US-53 RG1 : une facture client importée n'est pas lue.
+	// US-54 RG1 : une facture client importée est lue elle aussi.
 	@Test
-	void us52ImportFactureClientNonLue() {
-		when(factures.save(any(Facture.class))).thenAnswer(appel -> appel.getArgument(0));
+	void us54ImportFactureClientLue() {
+		when(factures.save(any(Facture.class))).thenAnswer(appel -> {
+			Facture facture = appel.getArgument(0);
+			ReflectionTestUtils.setField(facture, "id", 10L);
+			return facture;
+		});
 
 		ResultatImport resultat = service(false).importer(jean, 42L, Facture.Sens.VENTE, "vente.pdf", PDF);
 
 		assertEquals(ResultatImport.Statut.IMPORTEE, resultat.statut());
-		assertNull(resultat.facture().lecture());
-		verify(evenements, never()).publishEvent(any(Object.class));
+		assertEquals(Facture.StatutLecture.EN_COURS, resultat.facture().lecture());
+		verify(evenements).publishEvent(new DemandeLecture(10L));
 	}
 
 	// CA2 et RG2 : ni PDF, ni JPG, ni PNG ; ou plus de 10 Mo.

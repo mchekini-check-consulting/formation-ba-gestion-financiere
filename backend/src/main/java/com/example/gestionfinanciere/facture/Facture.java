@@ -3,10 +3,12 @@ package com.example.gestionfinanciere.facture;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.annotations.DynamicUpdate;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,6 +18,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 import com.example.gestionfinanciere.compte.Compte;
@@ -153,6 +157,14 @@ public class Facture {
 	@Column(name = "compte_contrepartie")
 	private String compteContrepartie;
 
+	// US-54 CA2 : plusieurs taux de TVA (taux_tva vide, « Multiple ») et détail par taux.
+	@Column(name = "taux_tva_multiple")
+	private Boolean tauxTvaMultiple;
+
+	@OneToMany(mappedBy = "facture", cascade = CascadeType.ALL, orphanRemoval = true)
+	@OrderBy("taux desc")
+	private List<TvaLue> detailTva = new ArrayList<>();
+
 	protected Facture() {
 	}
 
@@ -200,11 +212,11 @@ public class Facture {
 	}
 
 	/**
-	 * US-53 RG1 : une facture fournisseur avec son fichier est mise en lecture dès son arrivée.
-	 * Vrai si la lecture est demandée ; faux pour une facture client ou sans fichier.
+	 * US-53 RG1 (factures fournisseurs) et US-54 RG1 (factures clients) : une facture avec son fichier
+	 * est mise en lecture dès son arrivée. Vrai si la lecture est demandée ; faux sans fichier.
 	 */
 	public boolean demarrerLecture() {
-		if (sens != Sens.ACHAT || contenu == null) {
+		if (contenu == null) {
 			return false;
 		}
 		lectureStatut = StatutLecture.EN_COURS;
@@ -214,9 +226,11 @@ public class Facture {
 	// US-53 RG2 à RG6 : résultat de la lecture ; illisible -> « Lecture échouée » (CA4), aucun champ.
 	public void terminerLecture(ResultatLecture resultat, Instant quand) {
 		lectureTermineeLe = quand;
+		detailTva.clear();
 		if (!resultat.lisible()) {
 			lectureStatut = StatutLecture.ECHOUEE;
 			lectureAVerifier = null;
+			tauxTvaMultiple = null;
 			return;
 		}
 		lectureStatut = StatutLecture.LUE;
@@ -230,6 +244,8 @@ public class Facture {
 		tauxTva = resultat.tauxTva();
 		montantTtc = resultat.montantTtc();
 		compteContrepartie = resultat.compteContrepartie();
+		tauxTvaMultiple = resultat.tauxMultiple();
+		resultat.detailTva().forEach(lue -> detailTva.add(new TvaLue(this, lue)));
 	}
 
 	public Long getId() {
@@ -318,6 +334,14 @@ public class Facture {
 
 	public String getCompteContrepartie() {
 		return compteContrepartie;
+	}
+
+	public boolean isTauxTvaMultiple() {
+		return Boolean.TRUE.equals(tauxTvaMultiple);
+	}
+
+	public List<TvaLue> getDetailTva() {
+		return List.copyOf(detailTva);
 	}
 
 	public byte[] getContenu() {

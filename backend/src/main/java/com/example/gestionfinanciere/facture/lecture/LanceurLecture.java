@@ -8,11 +8,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+import com.example.gestionfinanciere.facture.Facture;
+import com.example.gestionfinanciere.facture.FactureALire;
 import com.example.gestionfinanciere.facture.FichierFacture;
 import com.example.gestionfinanciere.facture.LectureFactureService;
 
 /**
- * US-53 RG1 et RG6 : lecture en arrière-plan (asynchrone), lancée une fois le dépôt enregistré.
+ * US-53 RG1 et RG6, US-54 RG1 : lecture en arrière-plan (asynchrone), lancée une fois le dépôt enregistré.
  * La personne qui dépose n'attend pas : la facture reste « Lecture en cours » jusqu'au résultat.
  * Toute erreur pendant la lecture : « Lecture échouée » (CA4), jamais une lecture bloquée.
  */
@@ -34,14 +36,19 @@ public class LanceurLecture {
 	}
 
 	void lire(Long factureId) {
-		Optional<FichierFacture> fichier = lectures.fichierALire(factureId);
-		if (fichier.isEmpty()) {
+		Optional<FactureALire> aLire = lectures.factureALire(factureId);
+		if (aLire.isEmpty()) {
 			return;
 		}
 		long debut = System.nanoTime();
 		ResultatLecture resultat;
 		try {
-			resultat = AnalyseurFacture.analyser(extracteur.texte(fichier.get().contenu(), fichier.get().typeFichier()));
+			FichierFacture fichier = aLire.get().fichier();
+			String texte = extracteur.texte(fichier.contenu(), fichier.typeFichier());
+			// US-54 : facture client, le tiers est le destinataire et la contrepartie un compte de produit.
+			resultat = aLire.get().sens() == Facture.Sens.VENTE
+					? AnalyseurFacture.analyserFactureClient(texte, aLire.get().entrepriseDuDossier())
+					: AnalyseurFacture.analyser(texte);
 		} catch (RuntimeException e) {
 			resultat = ResultatLecture.illisible();
 		}

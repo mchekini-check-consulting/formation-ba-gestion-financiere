@@ -45,6 +45,28 @@
               </div>
             }
           </dl>
+          @if (l.tauxMultiple) {
+            <!-- US-54 CA2 : plusieurs taux de TVA, détail par taux -->
+            <table class="detail-tva">
+              <caption>Détail de la TVA</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Taux</th>
+                  <th scope="col">Base HT</th>
+                  <th scope="col">TVA</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (t of l.detailTva; track t.taux) {
+                  <tr>
+                    <td>{{ taux(t.taux) }}</td>
+                    <td>{{ montant(t.baseHt) }}</td>
+                    <td>{{ montant(t.montantTva) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
         }
       }
     </section>

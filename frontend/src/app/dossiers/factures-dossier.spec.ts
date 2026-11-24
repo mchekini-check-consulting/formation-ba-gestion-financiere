@@ -301,10 +301,10 @@ describe('US-12 Factures d’un dossier', () => {
       expect(page.querySelectorAll('.badge--a-verifier')).toHaveLength(1);
     });
 
-    it('factures clients : pas de colonne « Lecture »', async () => {
-      const { page } = await afficher('VENTE', [TICKET]);
-      expect(page.querySelector('thead')?.textContent).not.toContain('Lecture');
-      expect(lignes(page)[0]).toHaveLength(6);
+    it('US-54 RG1 : statut de la lecture aussi dans l’onglet Factures clients', async () => {
+      const { page } = await afficher('VENTE', [{ ...TICKET, lecture: 'LUE', lectureAVerifier: true }]);
+      expect(page.querySelector('thead')?.textContent).toContain('Lecture');
+      expect(lignes(page)[0][5]).toBe('LueÀ vérifier');
     });
 
     it('RG1 : la liste se met à jour toute seule jusqu’à la fin de la lecture', async () => {

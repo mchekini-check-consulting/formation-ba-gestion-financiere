@@ -260,9 +260,9 @@ class EspaceClientIT {
 				"\"aVerifier\":[\"COMPTE_CONTREPARTIE\"]", "\"aRenseigner\":[]");
 		// CA4 : rien de lisible -> « Lecture échouée ».
 		assertThat(apresLecture(dossier, illisible, lucie)).contains("\"statut\":\"ECHOUEE\"");
-		// Facture client : pas de lecture.
-		assertThat(appel("GET", "/dossiers/" + dossier + "/factures/" + vente, null, lucie).body())
-				.contains("\"lecture\":null");
+		// US-54 : facture client lue aussi ; le tiers n'est jamais l'entreprise du dossier (RG3).
+		assertThat(apresLecture(dossier, vente, lucie)).contains("\"statut\":\"LUE\"", "\"typeTiers\":\"CLIENT\"")
+				.doesNotContain("\"nomTiers\":\"Boulangerie Dupont\"");
 
 		// Liste : statut de lecture et pastille « À vérifier ».
 		assertThat(appel("GET", "/dossiers/" + dossier + "/factures?sens=ACHAT", null, lucie).body()).contains(

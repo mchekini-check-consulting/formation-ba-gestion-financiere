@@ -10,6 +10,8 @@ import {
   LIBELLES_CHAMP,
   Lecture,
   VueFacture,
+  montantOuTiret,
+  taux,
   valeurChamp,
 } from './facture.service';
 
@@ -31,7 +33,8 @@ export function affichage(typeFichier: string): Affichage {
  * US-13 Aperçu et téléchargement d'une facture. Page réservée aux personnes connectées (RG3 :
  * sans connexion, retour à l'écran de connexion) ; le fichier n'est envoyé par le backend qu'avec
  * la session et les droits sur le dossier. Ouvrir l'aperçu retire le badge « Nouvelle ».
- * US-53 : champs lus automatiquement sur une facture fournisseur, « À vérifier » ou « À renseigner ».
+ * US-53 et US-54 : champs lus automatiquement sur une facture fournisseur ou client, « À vérifier »
+ * ou « À renseigner » ; détail de la TVA d'une facture à plusieurs taux (US-54 CA2).
  */
 @Component({
   imports: [RouterLink],
@@ -106,6 +109,14 @@ export class ApercuFacture implements OnInit, OnDestroy {
 
   protected valeur(lecture: Lecture, champ: ChampFacture): string | null {
     return valeurChamp(lecture, champ);
+  }
+
+  protected taux(valeur: number): string {
+    return taux(valeur);
+  }
+
+  protected montant(valeur: number | null): string {
+    return montantOuTiret(valeur);
   }
 
   protected affichage(facture: VueFacture): Affichage {

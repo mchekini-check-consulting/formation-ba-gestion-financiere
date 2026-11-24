@@ -69,8 +69,8 @@ interface Changement {
 
 /**
  * US-12 Factures d'un onglet du dossier (US-11 RG2) ; US-51 statut de traitement de chaque facture ;
- * US-52 « Importer des factures » par le cabinet ; US-53 statut de la lecture automatique des
- * factures fournisseurs, suivi tout seul tant qu'une lecture est en cours. */
+ * US-52 « Importer des factures » par le cabinet ; US-53 et US-54 statut de la lecture automatique
+ * des factures fournisseurs et clients, suivi tout seul tant qu'une lecture est en cours. */
 @Component({
   imports: [RouterLink],
   selector: 'app-factures-dossier',

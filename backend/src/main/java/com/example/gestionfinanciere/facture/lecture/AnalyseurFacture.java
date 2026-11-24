@@ -21,6 +21,9 @@ import com.example.gestionfinanciere.facture.ChampFacture;
 
 /**
  * US-53 : repère les champs d'une facture fournisseur dans son texte (lu dans le PDF ou par l'OCR).
+ * US-54 : même lecture pour une facture client ; le tiers est alors le destinataire (RG3), jamais
+ * l'entreprise du dossier qui l'émet, et la contrepartie un compte de produit (RG2). Plusieurs taux de
+ * TVA (CA2, les deux sens) : taux vide (« Multiple ») et détail par taux.
  * Chaque champ reçoit un niveau de confiance : sous {@link #SEUIL}, il est « À vérifier » (RG4) ;
  * HT + TVA différent du TTC : les trois montants sont « À vérifier » (RG5) ; tiers introuvable :
  * vide, « À renseigner » (RG3) ; aucun montant : « Lecture échouée » (CA4).
@@ -30,6 +33,7 @@ public final class AnalyseurFacture {
 	// RG4 : sous ce niveau de confiance, le champ est « À vérifier ».
 	public static final double SEUIL = 0.8;
 	public static final String FOURNISSEUR = "FOURNISSEUR";
+	public static final String CLIENT = "CLIENT";
 
 	private static final double SUR = 0.95;
 	private static final double PROBABLE = 0.85;
@@ -54,14 +58,23 @@ public final class AnalyseurFacture {
 	private static final Pattern NUMERO = Pattern.compile("(?:^|\\s)n\\s?+[°o]\\.?+\\s*+:?+\\s*+([a-z0-9][a-z0-9\\-_/.]{2,40}+)");
 	private static final Pattern TIERS_ANNONCE = Pattern
 			.compile("(?:fournisseur|emetteur|vendeur|societe)\\s*+:\\s*+([^\\n]{2,80}+)");
+	// US-54 RG3 : destinataire d'une facture client (« Client : ... », « Facturé à », « Destinataire »).
+	private static final Pattern DESTINATAIRE_ANNONCE = Pattern.compile(
+			"^(?:client|destinataire|factur(?:e|ee) a|adresse a|livre a|a l'?\\s?attention de)(?![a-z])\\s*:?\\s*(.{0,80})$");
+	private static final Pattern NUMERO_SEUL = Pattern.compile("^(?:n\\s?[°o]|code|ref|numero)(?![a-z]).*");
+	private static final BigDecimal TAUX_MAX = new BigDecimal("30");
+	private static final BigDecimal ECART_TAUX = new BigDecimal("0.02");
 
 	// RG3 : fournisseurs reconnus à coup sûr (nom tel qu'affiché, mot cherché dans le texte).
 	private static final Map<String, String> FOURNISSEURS_CONNUS = new LinkedHashMap<>();
 	// Contrepartie proposée : premier mot-clé trouvé -> compte du plan comptable.
 	private static final Map<String, String> COMPTES_PAR_MOT = new LinkedHashMap<>();
+	// US-54 RG2 : compte de produit proposé pour une facture client.
+	private static final Map<String, String> PRODUITS_PAR_MOT = new LinkedHashMap<>();
 	// Libellés des comptes proposés (page de la facture).
 	private static final Map<String, String> LIBELLES_COMPTES = new LinkedHashMap<>();
 	static final String COMPTE_PAR_DEFAUT = "607";
+	static final String PRODUIT_PAR_DEFAUT = "706";
 
 	static {
 		for (String nom : List.of("EDF", "Engie", "TotalEnergies", "Veolia", "Orange", "SFR", "Free", "Bouygues Telecom",
@@ -77,6 +90,19 @@ public final class AnalyseurFacture {
 		LIBELLES_COMPTES.put("625", "Déplacements, missions et réceptions");
 		LIBELLES_COMPTES.put("626", "Frais postaux et de télécommunications");
 		LIBELLES_COMPTES.put(COMPTE_PAR_DEFAUT, "Achats de marchandises");
+		LIBELLES_COMPTES.put(PRODUIT_PAR_DEFAUT, "Prestations de services");
+		LIBELLES_COMPTES.put("707", "Ventes de marchandises");
+		LIBELLES_COMPTES.put("708", "Produits des activités annexes");
+		for (String mot : List.of("location", "loyer", "refacturation", "frais de port", "commission")) {
+			PRODUITS_PAR_MOT.put(mot, "708");
+		}
+		for (String mot : List.of("marchandise", "marchandises", "article", "articles", "vente de", "livraison de")) {
+			PRODUITS_PAR_MOT.put(mot, "707");
+		}
+		for (String mot : List.of("prestation", "prestations", "service", "services", "honoraires", "conseil",
+				"formation", "maintenance", "intervention", "main d'oeuvre", "installation", "reparation")) {
+			PRODUITS_PAR_MOT.put(mot, PRODUIT_PAR_DEFAUT);
+		}
 		for (String mot : List.of("edf", "engie", "totalenergies", "veolia", "electricite", "gaz", "eau", "energie",
 				"carburant", "gazole")) {
 			COMPTES_PAR_MOT.put(mot, "6061");
@@ -113,7 +139,17 @@ public final class AnalyseurFacture {
 		return LIBELLES_COMPTES.get(compte);
 	}
 
+	// US-53 : facture fournisseur.
 	public static ResultatLecture analyser(String texte) {
+		return analyser(texte, false, null);
+	}
+
+	// US-54 : facture client émise par l'entreprise du dossier (son nom n'est jamais pris pour le client).
+	public static ResultatLecture analyserFactureClient(String texte, String entrepriseDuDossier) {
+		return analyser(texte, true, entrepriseDuDossier);
+	}
+
+	private static ResultatLecture analyser(String texte, boolean client, String entrepriseDuDossier) {
 		String propre = texte == null ? "" : texte.replace('\u00A0', ' ').replace('\u202F', ' ');
 		List<String> lignes = propre.lines().map(String::strip).filter(l -> !l.isEmpty()).toList();
 		String tout = sansAccents(String.join("\n", lignes).toLowerCase(Locale.ROOT));
@@ -122,11 +158,14 @@ public final class AnalyseurFacture {
 		if (montants.ht == null && montants.tva == null && montants.ttc == null) {
 			return ResultatLecture.illisible();
 		}
-		Lu<String> tiers = tiers(lignes, tout);
+		Lu<String> tiers = client ? destinataire(lignes, entrepriseDuDossier) : tiers(lignes, tout);
 		Lu<String> numero = numero(tout);
 		Lu<LocalDate> date = date(lignes);
-		Lu<BigDecimal> taux = taux(lignes, montants);
-		Lu<String> compte = compte(tout);
+		List<TvaParTaux> detail = detailTva(lignes);
+		boolean plusieursTaux = detail.size() > 1;
+		Lu<BigDecimal> taux = plusieursTaux ? tauxMultiple(detail, montants) : taux(lignes, montants);
+		Lu<String> compte = client ? compte(tout, PRODUITS_PAR_MOT, PRODUIT_PAR_DEFAUT)
+				: compte(tout, COMPTES_PAR_MOT, COMPTE_PAR_DEFAUT);
 
 		Map<ChampFacture, Double> confiances = new EnumMap<>(ChampFacture.class);
 		confiances.put(ChampFacture.TYPE_TIERS, 1.0);
@@ -150,9 +189,9 @@ public final class AnalyseurFacture {
 				.add(montants.tva.valeur()).subtract(montants.ttc.valeur()).abs().compareTo(ECART_TOLERE) > 0) {
 			aVerifier.addAll(List.of(ChampFacture.MONTANT_HT, ChampFacture.MONTANT_TVA, ChampFacture.MONTANT_TTC));
 		}
-		return new ResultatLecture(true, FOURNISSEUR, valeur(tiers), valeur(numero), valeur(date),
+		return new ResultatLecture(true, client ? CLIENT : FOURNISSEUR, valeur(tiers), valeur(numero), valeur(date),
 				valeur(montants.ht), valeur(montants.tva), valeur(taux), valeur(montants.ttc), valeur(compte),
-				confiances, aVerifier);
+				confiances, aVerifier, plusieursTaux ? detail : List.of());
 	}
 
 	private static <T> void noter(Map<ChampFacture, Double> confiances, ChampFacture champ, Lu<T> lu) {
@@ -307,6 +346,75 @@ public final class AnalyseurFacture {
 		return null;
 	}
 
+	// ---- US-54 CA2 : TVA par taux. Ligne avec un taux et un couple base / TVA cohérent (base x taux
+	// = TVA), ou ligne « TVA x % » avec un seul montant (TVA sans base). Premier détail trouvé par taux.
+
+	static List<TvaParTaux> detailTva(List<String> lignes) {
+		Map<BigDecimal, TvaParTaux> parTaux = new LinkedHashMap<>();
+		for (String ligne : lignes) {
+			Matcher pourcentage = POURCENTAGE.matcher(ligne);
+			if (!pourcentage.find()) {
+				continue;
+			}
+			BigDecimal taux = new BigDecimal(pourcentage.group(1).replace(',', '.')).setScale(2, RoundingMode.HALF_UP);
+			if (taux.signum() <= 0 || taux.compareTo(TAUX_MAX) > 0 || parTaux.containsKey(taux)) {
+				continue;
+			}
+			List<BigDecimal> valeurs = montantsDe(ligne);
+			Optional<TvaParTaux> lue = baseEtTva(taux, valeurs);
+			if (lue.isEmpty() && valeurs.size() == 1 && mot(sansAccents(ligne.toLowerCase(Locale.ROOT)), "tva")) {
+				lue = Optional.of(new TvaParTaux(taux, null, valeurs.get(0)));
+			}
+			lue.ifPresent(tva -> parTaux.put(taux, tva));
+		}
+		return parTaux.values().stream().sorted((a, b) -> b.taux().compareTo(a.taux())).toList();
+	}
+
+	private static Optional<TvaParTaux> baseEtTva(BigDecimal taux, List<BigDecimal> valeurs) {
+		for (int i = 0; i < valeurs.size(); i++) {
+			BigDecimal attendue = valeurs.get(i).multiply(taux).divide(CENT, 2, RoundingMode.HALF_UP);
+			for (int j = i + 1; j < valeurs.size(); j++) {
+				if (attendue.subtract(valeurs.get(j)).abs().compareTo(ECART_TAUX) <= 0) {
+					return Optional.of(new TvaParTaux(taux, valeurs.get(i), valeurs.get(j)));
+				}
+			}
+		}
+		return Optional.empty();
+	}
+
+	// Taux « Multiple » (valeur vide) : sûr si la TVA des taux fait la TVA totale, sinon « À vérifier ».
+	private static Lu<BigDecimal> tauxMultiple(List<TvaParTaux> detail, Montants montants) {
+		BigDecimal somme = detail.stream().map(TvaParTaux::montantTva).reduce(BigDecimal.ZERO, BigDecimal::add);
+		boolean coherent = montants.tva != null
+				&& somme.subtract(montants.tva.valeur()).abs().compareTo(ECART_TOLERE) <= 0;
+		return new Lu<>(null, coherent ? SUR : DEVINE);
+	}
+
+	// ---- US-54 RG3 : destinataire d'une facture client, jamais l'entreprise du dossier ; sinon vide.
+
+	private static Lu<String> destinataire(List<String> lignes, String entrepriseDuDossier) {
+		String entreprise = entrepriseDuDossier == null ? ""
+				: sansAccents(entrepriseDuDossier.toLowerCase(Locale.ROOT)).strip();
+		for (int i = 0; i < lignes.size(); i++) {
+			String ligne = lignes.get(i);
+			Matcher m = DESTINATAIRE_ANNONCE.matcher(sansAccents(ligne.toLowerCase(Locale.ROOT)));
+			if (!m.matches()) {
+				continue;
+			}
+			// Nom sur la même ligne (« Client : Mairie de Lyon ») ou sur la suivante (« Facturé à : »).
+			String nom = m.group(1).isBlank() && i + 1 < lignes.size() ? lignes.get(i + 1)
+					: ligne.substring(Math.min(m.start(1), ligne.length()));
+			nom = nom.strip();
+			String nomBas = sansAccents(nom.toLowerCase(Locale.ROOT));
+			boolean unNom = nom.length() >= 2 && nomBas.chars().anyMatch(Character::isLetter)
+					&& !NUMERO_SEUL.matcher(nomBas).matches();
+			if (unNom && (entreprise.isEmpty() || !nomBas.contains(entreprise))) {
+				return new Lu<>(nom, PROBABLE);
+			}
+		}
+		return null;
+	}
+
 	// ---- Tiers (RG3) : fournisseur connu, sinon nom annoncé (« Fournisseur : ... »), sinon vide.
 
 	private static Lu<String> tiers(List<String> lignes, String tout) {
@@ -406,15 +514,15 @@ public final class AnalyseurFacture {
 		}
 	}
 
-	// ---- Contrepartie : compte proposé selon le type de dépense, toujours « À vérifier ».
+	// ---- Contrepartie : compte proposé selon la dépense (US-53) ou la vente (US-54), toujours « À vérifier ».
 
-	private static Lu<String> compte(String tout) {
-		for (Map.Entry<String, String> regle : COMPTES_PAR_MOT.entrySet()) {
+	private static Lu<String> compte(String tout, Map<String, String> comptesParMot, String parDefaut) {
+		for (Map.Entry<String, String> regle : comptesParMot.entrySet()) {
 			if (mot(tout, Pattern.quote(regle.getKey()))) {
 				return new Lu<>(regle.getValue(), DEVINE);
 			}
 		}
-		return new Lu<>(COMPTE_PAR_DEFAUT, FAIBLE);
+		return new Lu<>(parDefaut, FAIBLE);
 	}
 
 	static String sansAccents(String texte) {

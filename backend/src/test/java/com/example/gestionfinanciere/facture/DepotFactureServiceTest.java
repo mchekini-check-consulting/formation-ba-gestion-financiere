@@ -101,9 +101,9 @@ class DepotFactureServiceTest {
 		ArgumentCaptor<Facture> enregistree = ArgumentCaptor.forClass(Facture.class);
 		verify(factures).save(enregistree.capture());
 		assertEquals(Facture.Sens.VENTE, enregistree.getValue().getSens());
-		// US-53 RG1 : une facture client n'est pas lue.
-		assertNull(enregistree.getValue().getLectureStatut());
-		verify(evenements, never()).publishEvent(any(Object.class));
+		// US-54 RG1 : une facture client déposée est lue elle aussi.
+		assertEquals(Facture.StatutLecture.EN_COURS, enregistree.getValue().getLectureStatut());
+		verify(evenements).publishEvent(any(DemandeLecture.class));
 	}
 
 	// US-15 CA2 / RG1 : le vrai type compte, pas le nom ; plus de 10 Mo refusé.
