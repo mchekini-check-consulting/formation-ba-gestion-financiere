@@ -56,7 +56,7 @@ public record VueFacture(Long id, String nomFichier, String typeFichier, Facture
 		return new Lecture(statut, facture.getTypeTiers(), facture.getNomTiers(), facture.getNumeroFacture(),
 				facture.getDateEmission(), facture.getMontantHt(), facture.getMontantTva(), facture.getTauxTva(),
 				facture.isTauxTvaMultiple(), facture.getDetailTva().stream().map(TvaLue::enValeur).toList(),
-				facture.getMontantTtc(), compte, compte == null ? null : AnalyseurFacture.LIBELLES_COMPTES.get(compte),
+				facture.getMontantTtc(), compte, compte == null ? null : AnalyseurFacture.libelleCompte(compte),
 				aVerifier, List.copyOf(aRenseigner));
 	}
 

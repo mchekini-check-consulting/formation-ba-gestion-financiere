@@ -44,20 +44,20 @@ public final class AnalyseurFacture {
 	private static final List<BigDecimal> TAUX_CONNUS = List.of(new BigDecimal("20.00"), new BigDecimal("10.00"),
 			new BigDecimal("5.50"), new BigDecimal("2.10"));
 
-	// Montant « 1 234,56 », « 1.234,56 » ou « 186.40 », jamais un pourcentage.
-	private static final Pattern MONTANT = Pattern
-			.compile("(?<![\\d,.])(\\d{1,3}(?:[ .]\\d{3})+|\\d+)[,.](\\d{2})(?![\\d,.])(?!\\s*%)");
-	private static final Pattern POURCENTAGE = Pattern.compile("(\\d{1,2}(?:[,.]\\d{1,2})?)\\s*%");
+	// Montant « 1 234,56 », « 1.234,56 » ou « 186.40 », jamais un pourcentage : lu caractère par caractère
+	// (pas d'expression régulière, temps de lecture proportionnel à la longueur de la ligne).
+	private static final String CHIFFRES_ET_SEPARATEURS = "0123456789,.";
+	private static final Pattern POURCENTAGE = Pattern.compile("(\\d{1,2}(?:[,.]\\d{1,2})?+)\\s*+%");
 	private static final Pattern DATE_CHIFFRES = Pattern.compile("(?<!\\d)(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{4}|\\d{2})(?!\\d)");
 	private static final Pattern DATE_LETTRES = Pattern.compile(
-			"(?<!\\d)(\\d{1,2})(?:er)?\\s+(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\\s+(\\d{4})");
+			"(?<!\\d)(\\d{1,2})(?:er)?+\\s++(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\\s++(\\d{4})");
 	private static final List<String> MOIS = List.of("janvier", "fevrier", "mars", "avril", "mai", "juin", "juillet",
 			"aout", "septembre", "octobre", "novembre", "decembre");
 	private static final Pattern NUMERO_FACTURE = Pattern.compile(
-			"(?:facture|invoice)\\s*(?:n\\s?[°o]\\.?|num(?:ero)?\\.?|#)\\s*:?\\s*([a-z0-9][a-z0-9\\-_/.]{2,40})");
-	private static final Pattern NUMERO = Pattern.compile("(?:^|\\s)n\\s?[°o]\\.?\\s*:?\\s*([a-z0-9][a-z0-9\\-_/.]{2,40})");
+			"(?:facture|invoice)\\s*+(?:n\\s?+[°o]\\.?+|num(?:ero)?+\\.?+|#)\\s*+:?+\\s*+([a-z0-9][a-z0-9\\-_/.]{2,40}+)");
+	private static final Pattern NUMERO = Pattern.compile("(?:^|\\s)n\\s?+[°o]\\.?+\\s*+:?+\\s*+([a-z0-9][a-z0-9\\-_/.]{2,40}+)");
 	private static final Pattern TIERS_ANNONCE = Pattern
-			.compile("(?:fournisseur|emetteur|vendeur|societe)\\s*:\\s*([^\\n]{2,80})");
+			.compile("(?:fournisseur|emetteur|vendeur|societe)\\s*+:\\s*+([^\\n]{2,80}+)");
 	// US-54 RG3 : destinataire d'une facture client (« Client : ... », « Facturé à », « Destinataire »).
 	private static final Pattern DESTINATAIRE_ANNONCE = Pattern.compile(
 			"^(?:client|destinataire|factur(?:e|ee) a|adresse a|livre a|a l'?\\s?attention de)(?![a-z])\\s*:?\\s*(.{0,80})$");
@@ -72,7 +72,7 @@ public final class AnalyseurFacture {
 	// US-54 RG2 : compte de produit proposé pour une facture client.
 	private static final Map<String, String> PRODUITS_PAR_MOT = new LinkedHashMap<>();
 	// Libellés des comptes proposés (page de la facture).
-	public static final Map<String, String> LIBELLES_COMPTES = new LinkedHashMap<>();
+	private static final Map<String, String> LIBELLES_COMPTES = new LinkedHashMap<>();
 	static final String COMPTE_PAR_DEFAUT = "607";
 	static final String PRODUIT_PAR_DEFAUT = "706";
 
@@ -134,6 +134,11 @@ public final class AnalyseurFacture {
 	private record Lu<T>(T valeur, double confiance) {
 	}
 
+	// Libellé d'un compte proposé (page de la facture) ; null si le compte n'est pas connu.
+	public static String libelleCompte(String compte) {
+		return LIBELLES_COMPTES.get(compte);
+	}
+
 	// US-53 : facture fournisseur.
 	public static ResultatLecture analyser(String texte) {
 		return analyser(texte, false, null);
@@ -145,7 +150,7 @@ public final class AnalyseurFacture {
 	}
 
 	private static ResultatLecture analyser(String texte, boolean client, String entrepriseDuDossier) {
-		String propre = texte == null ? "" : texte.replace(' ', ' ').replace(' ', ' ');
+		String propre = texte == null ? "" : texte.replace('\u00A0', ' ').replace('\u202F', ' ');
 		List<String> lignes = propre.lines().map(String::strip).filter(l -> !l.isEmpty()).toList();
 		String tout = sansAccents(String.join("\n", lignes).toLowerCase(Locale.ROOT));
 
@@ -212,33 +217,42 @@ public final class AnalyseurFacture {
 		Lu<BigDecimal> plusGrand = null;
 		for (String ligne : lignes) {
 			List<BigDecimal> valeurs = montantsDe(ligne);
-			if (valeurs.isEmpty()) {
-				continue;
-			}
-			BigDecimal dernier = valeurs.get(valeurs.size() - 1);
-			String bas = sansAccents(ligne.toLowerCase(Locale.ROOT));
-			boolean total = bas.contains("total") || bas.contains("montant");
-			if (mot(bas, "ttc") || bas.contains("net a payer") || bas.contains("total a payer")) {
-				trouves.ttc = meilleur(trouves.ttc, new Lu<>(dernier, SUR));
-			} else if (mot(bas, "ht") || bas.contains("hors taxe")) {
-				trouves.ht = meilleur(trouves.ht, new Lu<>(dernier, total ? SUR : PROBABLE));
-			} else if (mot(bas, "tva")) {
-				trouves.tva = meilleur(trouves.tva, new Lu<>(dernier, total || POURCENTAGE.matcher(bas).find() ? SUR
-						: PROBABLE));
-			} else if (total) {
-				// Ticket : « TOTAL 12,50 » sans « TTC ».
-				trouves.ttc = meilleur(trouves.ttc, new Lu<>(dernier, DEVINE));
-			}
-			for (BigDecimal valeur : valeurs) {
-				if (plusGrand == null || valeur.compareTo(plusGrand.valeur()) > 0) {
-					plusGrand = new Lu<>(valeur, FAIBLE);
-				}
+			if (!valeurs.isEmpty()) {
+				ranger(trouves, sansAccents(ligne.toLowerCase(Locale.ROOT)), valeurs.get(valeurs.size() - 1));
+				plusGrand = plusGrand(plusGrand, valeurs);
 			}
 		}
 		if (trouves.ttc == null && trouves.ht == null && trouves.tva == null) {
 			trouves.ttc = plusGrand;
 		}
 		return trouves;
+	}
+
+	// Dernier montant de la ligne rangé en TTC, HT ou TVA selon les mots de la ligne.
+	private static void ranger(Montants trouves, String bas, BigDecimal dernier) {
+		boolean total = bas.contains("total") || bas.contains("montant");
+		if (mot(bas, "ttc") || bas.contains("net a payer") || bas.contains("total a payer")) {
+			trouves.ttc = meilleur(trouves.ttc, new Lu<>(dernier, SUR));
+		} else if (mot(bas, "ht") || bas.contains("hors taxe")) {
+			trouves.ht = meilleur(trouves.ht, new Lu<>(dernier, total ? SUR : PROBABLE));
+		} else if (mot(bas, "tva")) {
+			boolean sur = total || POURCENTAGE.matcher(bas).find();
+			trouves.tva = meilleur(trouves.tva, new Lu<>(dernier, sur ? SUR : PROBABLE));
+		} else if (total) {
+			// Ticket : « TOTAL 12,50 » sans « TTC ».
+			trouves.ttc = meilleur(trouves.ttc, new Lu<>(dernier, DEVINE));
+		}
+	}
+
+	// Plus grand montant vu (TTC de secours quand aucun total n'est annoncé).
+	private static Lu<BigDecimal> plusGrand(Lu<BigDecimal> actuel, List<BigDecimal> valeurs) {
+		Lu<BigDecimal> plusGrand = actuel;
+		for (BigDecimal valeur : valeurs) {
+			if (plusGrand == null || valeur.compareTo(plusGrand.valeur()) > 0) {
+				plusGrand = new Lu<>(valeur, FAIBLE);
+			}
+		}
+		return plusGrand;
 	}
 
 	// Le plus sûr ; à confiance égale, le dernier (les totaux sont en bas de la facture).
@@ -248,11 +262,53 @@ public final class AnalyseurFacture {
 
 	static List<BigDecimal> montantsDe(String ligne) {
 		List<BigDecimal> valeurs = new ArrayList<>();
-		Matcher m = MONTANT.matcher(ligne);
-		while (m.find()) {
-			valeurs.add(new BigDecimal(m.group(1).replaceAll("[ .]", "") + "." + m.group(2)));
+		int debut = 0;
+		while (debut < ligne.length()) {
+			int fin = finDeMontant(ligne, debut);
+			if (fin < 0) {
+				debut++;
+			} else {
+				String entier = ligne.substring(debut, fin - 3).replace(" ", "").replace(".", "");
+				valeurs.add(new BigDecimal(entier + "." + ligne.substring(fin - 2, fin)));
+				debut = fin;
+			}
 		}
 		return valeurs;
+	}
+
+	// Fin du montant qui commence à « debut » (chiffres, groupes de milliers, 2 décimales), -1 sinon.
+	private static int finDeMontant(String ligne, int debut) {
+		if (!chiffre(ligne, debut) || parmi(ligne, debut - 1, CHIFFRES_ET_SEPARATEURS)) {
+			return -1;
+		}
+		int i = debut;
+		while (chiffre(ligne, i)) {
+			i++;
+		}
+		while (parmi(ligne, i, " .") && chiffre(ligne, i + 1) && chiffre(ligne, i + 2) && chiffre(ligne, i + 3)) {
+			i += 4;
+		}
+		if (!parmi(ligne, i, ",.") || !chiffre(ligne, i + 1) || !chiffre(ligne, i + 2)) {
+			return -1;
+		}
+		int fin = i + 3;
+		return parmi(ligne, fin, CHIFFRES_ET_SEPARATEURS) || suiviDePourcent(ligne, fin) ? -1 : fin;
+	}
+
+	private static boolean suiviDePourcent(String ligne, int position) {
+		int i = position;
+		while (i < ligne.length() && Character.isWhitespace(ligne.charAt(i))) {
+			i++;
+		}
+		return parmi(ligne, i, "%");
+	}
+
+	private static boolean chiffre(String ligne, int i) {
+		return i >= 0 && i < ligne.length() && ligne.charAt(i) >= '0' && ligne.charAt(i) <= '9';
+	}
+
+	private static boolean parmi(String ligne, int i, String caracteres) {
+		return i >= 0 && i < ligne.length() && caracteres.indexOf(ligne.charAt(i)) >= 0;
 	}
 
 	private static boolean mot(String texte, String mot) {
@@ -273,16 +329,18 @@ public final class AnalyseurFacture {
 				ailleurs = ailleurs == null ? new Lu<>(taux, DEVINE) : ailleurs;
 			}
 		}
-		if (ailleurs != null) {
-			return ailleurs;
+		return ailleurs != null ? ailleurs : tauxCalcule(montants);
+	}
+
+	// Taux connu le plus proche de TVA / HT (à 0,5 point près), sinon vide.
+	private static Lu<BigDecimal> tauxCalcule(Montants montants) {
+		if (montants.ht == null || montants.tva == null || montants.ht.valeur().signum() <= 0) {
+			return null;
 		}
-		if (montants.ht != null && montants.tva != null && montants.ht.valeur().signum() > 0) {
-			BigDecimal calcule = montants.tva.valeur().multiply(CENT).divide(montants.ht.valeur(), 2,
-					RoundingMode.HALF_UP);
-			for (BigDecimal connu : TAUX_CONNUS) {
-				if (calcule.subtract(connu).abs().compareTo(new BigDecimal("0.5")) <= 0) {
-					return new Lu<>(connu, DEVINE);
-				}
+		BigDecimal calcule = montants.tva.valeur().multiply(CENT).divide(montants.ht.valeur(), 2, RoundingMode.HALF_UP);
+		for (BigDecimal connu : TAUX_CONNUS) {
+			if (calcule.subtract(connu).abs().compareTo(new BigDecimal("0.5")) <= 0) {
+				return new Lu<>(connu, DEVINE);
 			}
 		}
 		return null;
@@ -393,9 +451,18 @@ public final class AnalyseurFacture {
 		return premierAvecChiffre(NUMERO.matcher(tout)).map(n -> new Lu<>(n, DEVINE)).orElse(null);
 	}
 
+	// « FA-2026-001. » -> « FA-2026-001 » (sans expression régulière : pas de risque de lenteur).
+	private static String sansSeparateursFinaux(String numero) {
+		int fin = numero.length();
+		while (fin > 0 && ".-_/".indexOf(numero.charAt(fin - 1)) >= 0) {
+			fin--;
+		}
+		return numero.substring(0, fin);
+	}
+
 	private static Optional<String> premierAvecChiffre(Matcher m) {
 		while (m.find()) {
-			String numero = m.group(1).replaceAll("[.\\-_/]+$", "").toUpperCase(Locale.ROOT);
+			String numero = sansSeparateursFinaux(m.group(1)).toUpperCase(Locale.ROOT);
 			if (numero.chars().anyMatch(Character::isDigit) && numero.length() >= 3) {
 				return Optional.of(numero);
 			}

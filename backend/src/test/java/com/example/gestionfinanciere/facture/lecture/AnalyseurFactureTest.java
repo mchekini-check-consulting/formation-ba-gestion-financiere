@@ -209,7 +209,7 @@ class AnalyseurFactureTest {
 		assertEquals(euros("1440.00"), lu.montantTtc());
 		// RG2 : compte de produit (« livraison de » -> ventes de marchandises), toujours à vérifier.
 		assertEquals("707", lu.compteContrepartie());
-		assertEquals("Ventes de marchandises", AnalyseurFacture.LIBELLES_COMPTES.get("707"));
+		assertEquals("Ventes de marchandises", AnalyseurFacture.libelleCompte("707"));
 		assertEquals(Set.of(ChampFacture.COMPTE_CONTREPARTIE), lu.aVerifier());
 		assertEquals(Set.of(), lu.aRenseigner());
 		assertFalse(lu.tauxMultiple());

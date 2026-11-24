@@ -9,11 +9,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -219,17 +222,15 @@ class EspaceClientIT {
 		assertThat(statut(dossier, edf, "{\"statut\":\"EN_COURS\"}", autreCabinet).statusCode()).isEqualTo(404);
 	}
 
-	// Attend la fin de la lecture automatique (arrière-plan) : page de la facture lue toutes les 200 ms.
-	private String apresLecture(Long dossier, Long facture, String jeton) throws Exception {
-		String page = "";
-		for (int essai = 0; essai < 150; essai++) {
-			page = appel("GET", "/dossiers/" + dossier + "/factures/" + facture, null, jeton).body();
-			if (!page.contains("\"statut\":\"EN_COURS\"")) {
-				return page;
-			}
-			Thread.sleep(200);
-		}
-		return page;
+	// Attend la fin de la lecture automatique (arrière-plan) : page de la facture lue toutes les 200 ms,
+	// 30 secondes au plus.
+	private String apresLecture(Long dossier, Long facture, String jeton) {
+		AtomicReference<String> page = new AtomicReference<>("");
+		Awaitility.await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(200)).until(() -> {
+			page.set(appel("GET", "/dossiers/" + dossier + "/factures/" + facture, null, jeton).body());
+			return !page.get().contains("\"statut\":\"EN_COURS\"");
+		});
+		return page.get();
 	}
 
 	// US-53 : la facture fournisseur déposée par Sophie est lue toute seule ; résultat chez Lucie.

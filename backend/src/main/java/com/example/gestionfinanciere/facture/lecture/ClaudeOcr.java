@@ -88,7 +88,7 @@ public class ClaudeOcr implements MoteurOcr {
 		BetaImageBlockParam image = BetaImageBlockParam.builder()
 				.source(BetaBase64ImageSource.builder()
 						.mediaType(envoi.type())
-						.data(Base64.getEncoder().encodeToString(envoi.contenu()))
+						.data(envoi.base64())
 						.build())
 				.build();
 		return MessageCreateParams.builder()
@@ -120,7 +120,12 @@ public class ClaudeOcr implements MoteurOcr {
 		return texte.isEmpty() || AUCUN_TEXTE.equals(texte) ? Optional.empty() : Optional.of(texte);
 	}
 
-	record ImageAEnvoyer(byte[] contenu, BetaBase64ImageSource.MediaType type) {
+	// Image déjà encodée en base64 (texte) : comparable et affichable sans tableau d'octets.
+	record ImageAEnvoyer(String base64, BetaBase64ImageSource.MediaType type) {
+
+		static ImageAEnvoyer de(byte[] contenu, BetaBase64ImageSource.MediaType type) {
+			return new ImageAEnvoyer(Base64.getEncoder().encodeToString(contenu), type);
+		}
 	}
 
 	// Type accepté par Claude ; image trop lourde (photo de téléphone) : réduite et convertie en JPEG.
@@ -130,9 +135,9 @@ public class ClaudeOcr implements MoteurOcr {
 			return Optional.empty();
 		}
 		if (image.length <= TAILLE_MAX) {
-			return Optional.of(new ImageAEnvoyer(image, type));
+			return Optional.of(ImageAEnvoyer.de(image, type));
 		}
-		return reduire(image).map(jpeg -> new ImageAEnvoyer(jpeg, BetaBase64ImageSource.MediaType.IMAGE_JPEG));
+		return reduire(image).map(jpeg -> ImageAEnvoyer.de(jpeg, BetaBase64ImageSource.MediaType.IMAGE_JPEG));
 	}
 
 	private static Optional<byte[]> reduire(byte[] image) {

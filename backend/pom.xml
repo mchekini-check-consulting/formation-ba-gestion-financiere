@@ -93,6 +93,12 @@
 			<artifactId>testcontainers-junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- Attente d'un traitement en arrière-plan dans les tests (version gérée par Spring Boot) -->
+		<dependency>
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<!-- US-53 : texte des factures PDF (et rendu en image des PDF scannés pour la lecture par Claude) -->
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
