@@ -211,7 +211,7 @@ const EUROS = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR
 export function valeurChamp(lecture: Lecture, champ: ChampFacture): string | null {
   switch (champ) {
     case 'TYPE_TIERS':
-      return lecture.typeTiers === null ? null : lecture.typeTiers === 'CLIENT' ? 'Client' : 'Fournisseur';
+      return typeTiers(lecture);
     case 'NOM_TIERS':
       return lecture.nomTiers;
     case 'NUMERO_FACTURE':
@@ -223,20 +223,36 @@ export function valeurChamp(lecture: Lecture, champ: ChampFacture): string | nul
     case 'MONTANT_TVA':
       return montant(lecture.montantTva);
     case 'TAUX_TVA':
-      if (lecture.tauxMultiple) {
-        return 'Multiple';
-      }
-      return lecture.tauxTva === null ? null : taux(lecture.tauxTva);
+      return tauxLu(lecture);
     case 'MONTANT_TTC':
       return montant(lecture.montantTtc);
     case 'COMPTE_CONTREPARTIE':
-      if (lecture.compteContrepartie === null) {
-        return null;
-      }
-      return lecture.libelleContrepartie
-        ? `${lecture.compteContrepartie} – ${lecture.libelleContrepartie}`
-        : lecture.compteContrepartie;
+      return compteLu(lecture);
   }
+}
+
+function typeTiers(lecture: Lecture): string | null {
+  if (lecture.typeTiers === null) {
+    return null;
+  }
+  return lecture.typeTiers === 'CLIENT' ? 'Client' : 'Fournisseur';
+}
+
+/** US-54 CA2 : « Multiple » quand la facture a plusieurs taux de TVA. */
+function tauxLu(lecture: Lecture): string | null {
+  if (lecture.tauxMultiple) {
+    return 'Multiple';
+  }
+  return lecture.tauxTva === null ? null : taux(lecture.tauxTva);
+}
+
+function compteLu(lecture: Lecture): string | null {
+  if (lecture.compteContrepartie === null) {
+    return null;
+  }
+  return lecture.libelleContrepartie
+    ? `${lecture.compteContrepartie} – ${lecture.libelleContrepartie}`
+    : lecture.compteContrepartie;
 }
 
 function montant(valeur: number | null): string | null {
