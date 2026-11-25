@@ -74,6 +74,18 @@ applications:
         value: {dev: mailpit, qualif: mailpit, preprod: "", prod: ""}
       - key: MAIL_FROM
         value: noreply@pointeo.fr
+      # Kafka de la plateforme (consigne du formateur) : adresse du bootstrap et topics du projet,
+      # chaque projet n'a accès qu'à ses propres topics ; topic créé au premier envoi.
+      # Le backend y publie « facture traitée » à chaque validation (facture/EvenementsFactureKafka).
+      # preprod/prod : vide = rien n'est envoyé, en attendant un Kafka sur ces environnements.
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        value:
+          dev: kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+          qualif: kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+          preprod: ""
+          prod: ""
+      - key: KAFKA_TOPIC_FACTURE
+        value: facture
   - name: gateway
     type: gateway
     # Pas d'image/tag : fourni par la plateforme (petit Traefik autonome),

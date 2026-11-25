@@ -21,6 +21,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.gestionfinanciere.cabinet.Cabinet;
@@ -50,9 +51,10 @@ class CorrectionFactureServiceTest {
 	private final Cabinet cabinet = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
 	private final Compte lucie = Compte.administrateurDe(cabinet, "lucie@cabinet-test.fr", "x", "Lucie Bernard");
 	private final Dossier dossier = new Dossier(cabinet, "Boulangerie Martin", "812345679", lucie, MAINTENANT);
+	private final ApplicationEventPublisher evenements = mock(ApplicationEventPublisher.class);
 	private final CorrectionFactureService service = new CorrectionFactureService(factures, champsLus, historique,
 			corrections, comptes, dossiers, new VuesFacture(champsLus, comptes, corrections),
-			new HorlogeReglable(MAINTENANT));
+			new HorlogeReglable(MAINTENANT), evenements);
 
 	private Facture facture;
 	private ChampLu ttcDouteux;
@@ -107,6 +109,8 @@ class CorrectionFactureServiceTest {
 		assertEquals(MAINTENANT, correction.getValue().getModifieLe());
 		assertEquals(Facture.Statut.TRAITEE, resultat.facture().statut());
 		assertEquals("Achats non stockés de matières et fournitures", resultat.facture().lecture().libelleContrepartie());
+		// Kafka : événement « facture traitée » (envoyé après l'enregistrement).
+		verify(evenements).publishEvent(new FactureTraitee(5L, 42L, facture.getSens(), MAINTENANT));
 	}
 
 	// RG2 et RG8 : seul le champ modifié n'est plus « À vérifier » ; le statut ne change pas.
@@ -128,6 +132,7 @@ class CorrectionFactureServiceTest {
 		verify(corrections).save(correction.capture());
 		assertEquals("NOM_TIERS", correction.getValue().getChamps());
 		verify(historique, never()).save(any());
+		verify(evenements, never()).publishEvent(any(Object.class));
 		assertEquals(List.of(ChampFacture.MONTANT_TTC), resultat.facture().lecture().aVerifier());
 	}
 
@@ -174,6 +179,7 @@ class CorrectionFactureServiceTest {
 		assertEquals(ResultatCorrection.Issue.INVALIDE, resultat.issue());
 		assertEquals("Montants incohérents : HT + TVA ≠ TTC", resultat.message());
 		assertEquals(Facture.Statut.RECUE, facture.getStatut());
+		verify(evenements, never()).publishEvent(any(Object.class));
 	}
 
 	// CA4 et RG7 : facture en « Lecture échouée », saisie à la main puis validée.
