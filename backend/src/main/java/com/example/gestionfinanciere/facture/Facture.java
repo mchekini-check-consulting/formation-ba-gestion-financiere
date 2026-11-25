@@ -248,6 +248,35 @@ public class Facture {
 		resultat.detailTva().forEach(lue -> detailTva.add(new TvaLue(this, lue)));
 	}
 
+	/**
+	 * US-55 RG8 : une facture traitée (validée) est en lecture seule, comme le sera une facture exportée
+	 * (US-40) ; pendant la lecture automatique, la fiche attend son résultat pour ne pas être écrasée.
+	 */
+	public boolean isModifiable() {
+		return statut != Statut.TRAITEE && lectureStatut != StatutLecture.EN_COURS;
+	}
+
+	// US-55 RG2 et RG7 : champs corrigés ou saisis à la main par le comptable (valeurs déjà nettoyées).
+	void corriger(InformationsFacture infos) {
+		typeTiers = infos.typeTiers();
+		nomTiers = infos.nomTiers();
+		numeroFacture = infos.numeroFacture();
+		dateEmission = infos.dateEmission();
+		montantHt = infos.montantHt();
+		montantTva = infos.montantTva();
+		tauxTva = infos.tauxTva();
+		montantTtc = infos.montantTtc();
+		compteContrepartie = infos.compteContrepartie();
+	}
+
+	// US-53 : pastille « À vérifier » de la liste, mise à jour après une correction (US-55) ; seulement
+	// pour une facture lue, une facture jamais lue ou en lecture échouée n'a pas de pastille.
+	void mettreAJourAVerifier(boolean resteAVerifier) {
+		if (lectureStatut == StatutLecture.LUE) {
+			lectureAVerifier = resteAVerifier;
+		}
+	}
+
 	public Long getId() {
 		return id;
 	}

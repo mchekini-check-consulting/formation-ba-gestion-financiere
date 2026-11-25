@@ -1,4 +1,5 @@
 // US-13 Aperçu d'une facture : mêmes couleurs et composants que le dossier.
+// US-55 : fiche facture, le document à gauche et les informations à droite (l'un sous l'autre sur petit écran).
 $creme: #fcfdff;
 $or: #1d4ed8;
 $bord: #dbe4f0;
@@ -8,7 +9,24 @@ $gris: #42526b;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  max-width: 960px;
+  max-width: 1400px;
+}
+
+.fiche-facture {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+
+  @media (max-width: 1000px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .retour {
@@ -91,7 +109,7 @@ h1 {
   border-radius: 16px;
 
   h2 {
-    margin: 0 0 12px;
+    margin: 0 0 8px;
     font-size: 18px;
     font-weight: 700;
   }
@@ -101,51 +119,6 @@ h1 {
   margin: 0;
   color: #9b1c1c;
   font-weight: 600;
-}
-
-.champs {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px 24px;
-  margin: 0;
-}
-
-.champ {
-  dt {
-    color: $gris;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  dd {
-    margin: 2px 0 0;
-    font-size: 15px;
-    overflow-wrap: anywhere;
-  }
-
-  &--doute dd {
-    color: #9b1c1c;
-  }
-}
-
-.marque {
-  margin-left: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-
-  &--a-verifier {
-    background: #fde8e8;
-    color: #9b1c1c;
-  }
-
-  &--a-renseigner {
-    margin-left: 0;
-    background: #fff1db;
-    color: #7a4100;
-  }
 }
 
 // US-54 CA2 : détail de la TVA par taux.

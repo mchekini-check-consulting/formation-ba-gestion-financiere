@@ -152,7 +152,10 @@ class FactureServiceTest {
 		Facture facture = avecFichier(null);
 		when(factures.findByIdAndDossierId(5L, 42L)).thenReturn(Optional.of(facture));
 
-		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null)),
+		// US-55 : fiche « Reçue », modifiable, sans informations (facture jamais lue).
+		VueFacture.Fiche fiche = new VueFacture.Fiche(Facture.Statut.RECUE, null, true,
+				new InformationsFacture(null, null, null, null, null, null, null, null, null));
+		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null, fiche)),
 				service(false).consulter(jean, 42L, 5L));
 		assertTrue(LigneFacture.de(facture).nouvelle());
 

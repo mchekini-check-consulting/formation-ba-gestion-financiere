@@ -13,38 +13,43 @@
     </button>
   </header>
 
-  @if (f.lecture; as l) {
-    <!-- US-53 : résultat de la lecture automatique (facture fournisseur) -->
-    <section class="lecture" aria-labelledby="titre-lecture">
-      <h2 id="titre-lecture">Lecture automatique</h2>
-      @switch (l.statut) {
-        @case ('EN_COURS') {
-          <p class="muted" role="status">Lecture en cours…</p>
+  <div class="fiche-facture">
+    <!-- RG1 : aperçu du PDF ou de l'image -->
+    <section class="apercu">
+      @if (lien(); as l) {
+        @switch (affichage(f)) {
+          @case ('pdf') {
+            <iframe [src]="cadre(l)" [title]="'Aperçu de ' + f.nomFichier"></iframe>
+          }
+          @case ('image') {
+            <img [src]="cadre(l)" [alt]="'Aperçu de ' + f.nomFichier" />
+          }
+          @default {
+            <p class="muted">Aperçu indisponible pour ce type de fichier : utilisez « Télécharger ».</p>
+          }
         }
-        @case ('ECHOUEE') {
-          <!-- CA4 -->
-          <p class="echec" role="status">Lecture échouée : les informations de cette facture sont à saisir.</p>
-        }
-        @default {
-          <dl class="champs">
-            @for (c of champs; track c) {
-              <div class="champ" [class.champ--doute]="l.aVerifier.includes(c)">
-                <dt>{{ libellesChamp[c] }}</dt>
-                <dd>
-                  @if (valeur(l, c); as v) {
-                    {{ v }}
-                    @if (l.aVerifier.includes(c)) {
-                      <!-- RG4, RG5 : lu avec un doute -->
-                      <span class="marque marque--a-verifier">À vérifier</span>
-                    }
-                  } @else {
-                    <!-- RG3 : non lu -->
-                    <span class="marque marque--a-renseigner">À renseigner</span>
-                  }
-                </dd>
-              </div>
+      } @else {
+        <p class="muted">Chargement de l'aperçu…</p>
+      }
+    </section>
+
+    <div class="colonne">
+      @if (f.lecture; as l) {
+        <!-- US-53 : état de la lecture automatique -->
+        <section class="lecture" aria-labelledby="titre-lecture">
+          <h2 id="titre-lecture">Lecture automatique</h2>
+          @switch (l.statut) {
+            @case ('EN_COURS') {
+              <p class="muted" role="status">Lecture en cours…</p>
             }
-          </dl>
+            @case ('ECHOUEE') {
+              <!-- US-53 CA4, US-55 RG7 : saisie à la main dans la fiche -->
+              <p class="echec" role="status">Lecture échouée : les informations de cette facture sont à saisir.</p>
+            }
+            @default {
+              <p class="muted">Informations lues automatiquement : vérifiez les champs signalés.</p>
+            }
+          }
           @if (l.tauxMultiple) {
             <!-- US-54 CA2 : plusieurs taux de TVA, détail par taux -->
             <table class="detail-tva">
@@ -67,29 +72,13 @@
               </tbody>
             </table>
           }
-        }
+        </section>
       }
-    </section>
-  }
 
-  <!-- RG1 : aperçu du PDF ou de l'image -->
-  <section class="apercu">
-    @if (lien(); as l) {
-      @switch (affichage(f)) {
-        @case ('pdf') {
-          <iframe [src]="cadre(l)" [title]="'Aperçu de ' + f.nomFichier"></iframe>
-        }
-        @case ('image') {
-          <img [src]="cadre(l)" [alt]="'Aperçu de ' + f.nomFichier" />
-        }
-        @default {
-          <p class="muted">Aperçu indisponible pour ce type de fichier : utilisez « Télécharger ».</p>
-        }
-      }
-    } @else {
-      <p class="muted">Chargement de l'aperçu…</p>
-    }
-  </section>
+      <!-- US-55 : informations à vérifier, corriger et valider -->
+      <app-fiche-facture [dossierId]="dossierId()" [facture]="f" (misAJour)="ficheMiseAJour($event)" />
+    </div>
+  </div>
 } @else {
   <p class="muted">Chargement…</p>
 }

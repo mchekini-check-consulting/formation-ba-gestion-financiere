@@ -48,6 +48,11 @@ public class ChampLu {
 		this.aVerifier = aVerifier;
 	}
 
+	// US-55 RG2 : corrigé ou validé par le comptable, le champ n'est plus « À vérifier ».
+	void marquerVerifie() {
+		aVerifier = false;
+	}
+
 	public Long getId() {
 		return id;
 	}

@@ -1,0 +1,176 @@
+// US-55 Fiche facture : mêmes couleurs et composants que l'aperçu de la facture.
+$creme: #fcfdff;
+$or: #1d4ed8;
+$bord: #dbe4f0;
+$gris: #42526b;
+
+.fiche {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  background: $creme;
+  border: 1px solid $bord;
+  border-radius: 16px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+.fiche__entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.statut {
+  color: $gris;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px 16px;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    color: $gris;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  input,
+  select {
+    padding: 8px 10px;
+    border: 1px solid $bord;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 14px;
+
+    &:disabled {
+      background: #f3f5f9;
+      color: $gris;
+    }
+  }
+
+  // RG2 : champs à vérifier ou à renseigner mis en évidence.
+  &--a-verifier {
+    input,
+    select {
+      border-color: #d93025;
+      background: #fff5f5;
+    }
+  }
+
+  &--a-renseigner {
+    input,
+    select {
+      border-color: #e0a100;
+      background: #fffaf0;
+    }
+  }
+}
+
+.marque {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--a-verifier {
+    background: #fde8e8;
+    color: #9b1c1c;
+  }
+
+  &--a-renseigner {
+    background: #fff1db;
+    color: #7a4100;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.bouton {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: $or;
+  color: $creme;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--secondaire {
+    border: 1px solid $or;
+    background: transparent;
+    color: $or;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.complement {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    color: $gris;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  input {
+    padding: 8px 10px;
+    border: 1px solid $bord;
+    border-radius: 8px;
+    font: inherit;
+  }
+}
+
+.muted {
+  margin: 0;
+  color: $gris;
+  font-size: 13px;
+}
+
+.alerte {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #8c1d18;
+  font-size: 14px;
+}
+
+.succes {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #e7f6ec;
+  color: #1e6b3a;
+  font-size: 14px;
+}

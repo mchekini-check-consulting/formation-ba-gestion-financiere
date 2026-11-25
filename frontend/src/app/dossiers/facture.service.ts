@@ -139,13 +139,47 @@ export interface Lecture {
   aRenseigner: ChampFacture[];
 }
 
-/** US-13 : en-tête de la page d'aperçu ; US-53 : résultat de la lecture (null : jamais lue). */
+/**
+ * US-55 RG1 : champs de la fiche facture, tels que le comptable les corrige (corps de l'enregistrement et
+ * de la validation). Montants et taux en nombres, date au format « 2026-06-12 ».
+ */
+export interface InformationsFacture {
+  typeTiers: 'FOURNISSEUR' | 'CLIENT' | null;
+  nomTiers: string | null;
+  numeroFacture: string | null;
+  dateEmission: string | null;
+  montantHt: number | null;
+  montantTva: number | null;
+  tauxTva: number | null;
+  montantTtc: number | null;
+  compteContrepartie: string | null;
+}
+
+/**
+ * US-55 : statut de traitement (US-51) et motif de « À compléter » ; modifiable faux pour une facture
+ * traitée (RG8) ou en cours de lecture ; valeurs actuelles des champs (lues, corrigées ou saisies, RG7).
+ */
+export interface Fiche {
+  statutTraitement: Statut;
+  motif: string | null;
+  modifiable: boolean;
+  informations: InformationsFacture;
+}
+
+/** US-13 : en-tête de la page d'aperçu ; US-53 : résultat de la lecture (null : jamais lue) ; US-55 : fiche. */
 export interface VueFacture {
   id: number;
   nomFichier: string;
   typeFichier: string;
   sens: Sens;
   lecture: Lecture | null;
+  fiche: Fiche;
+}
+
+/** US-55 : fiche à jour et, après une validation, la prochaine facture à traiter de l'onglet (RG6). */
+export interface ReponseFiche {
+  facture: VueFacture;
+  suivante: number | null;
 }
 
 /** exemplesPossibles : mode test seulement (dev, qualif), jamais en preprod ni en prod. */
@@ -187,8 +221,23 @@ export class FactureService {
   }
 
   /** US-51 : changer le statut ; le motif n'est utile que pour « À compléter » (RG3). */
-  changerStatut(dossierId: number, factureId: number, statut: Statut, motif: string | null): Observable<LigneFacture> {
+  changerStatut(
+    dossierId: number | string,
+    factureId: number,
+    statut: Statut,
+    motif: string | null,
+  ): Observable<LigneFacture> {
     return this.http.patch<LigneFacture>(`${this.url}/${dossierId}/factures/${factureId}/statut`, { statut, motif });
+  }
+
+  /** US-55 RG2 : enregistrer les champs corrigés, sans valider. */
+  enregistrer(dossierId: number | string, factureId: number, informations: InformationsFacture): Observable<ReponseFiche> {
+    return this.http.put<ReponseFiche>(`${this.url}/${dossierId}/factures/${factureId}/informations`, informations);
+  }
+
+  /** US-55 RG3 à RG6 : enregistrer puis valider ; refus (400) avec le message à afficher. */
+  valider(dossierId: number | string, factureId: number, informations: InformationsFacture): Observable<ReponseFiche> {
+    return this.http.post<ReponseFiche>(`${this.url}/${dossierId}/factures/${factureId}/validation`, informations);
   }
 
   /** Mode test : factures d'exemple, le dépôt (US-15) n'existant pas encore. */

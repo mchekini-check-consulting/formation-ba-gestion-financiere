@@ -2,9 +2,27 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { SessionService } from '../session/session.service';
 import { ApercuFacture, MESSAGE_FACTURE_INTROUVABLE, affichage } from './apercu-facture';
-import { Lecture, VueFacture, valeurChamp } from './facture.service';
+import { Fiche, Lecture, VueFacture, valeurChamp } from './facture.service';
+
+const FICHE_VIDE: Fiche = {
+  statutTraitement: 'RECUE',
+  motif: null,
+  modifiable: true,
+  informations: {
+    typeTiers: null,
+    nomTiers: null,
+    numeroFacture: null,
+    dateEmission: null,
+    montantHt: null,
+    montantTva: null,
+    tauxTva: null,
+    montantTtc: null,
+    compteContrepartie: null,
+  },
+};
 
 const TICKET: VueFacture = {
   id: 5,
@@ -12,6 +30,7 @@ const TICKET: VueFacture = {
   typeFichier: 'image/png',
   sens: 'ACHAT',
   lecture: null,
+  fiche: FICHE_VIDE,
 };
 const VENTE: VueFacture = {
   id: 6,
@@ -19,6 +38,7 @@ const VENTE: VueFacture = {
   typeFichier: 'application/pdf',
   sens: 'VENTE',
   lecture: null,
+  fiche: FICHE_VIDE,
 };
 const LECTURE: Lecture = {
   statut: 'LUE',
@@ -38,6 +58,11 @@ const LECTURE: Lecture = {
   aRenseigner: [],
 };
 const FICHIER = '/api/dossiers/42/factures/5/fichier';
+const PLAN = '/api/dossiers/42/plan-comptable';
+const PLAN_DOSSIER = {
+  comptes: [{ numero: '606', libelle: 'Achats non stockés', sousCompte: false, actif: true }],
+  parDefaut: [],
+};
 
 describe('US-13 Aperçu et téléchargement d’une facture', () => {
   let http: HttpTestingController;
@@ -56,7 +81,7 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
         provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: convertToParamMap({ id: '42', factureId: '5' }) } },
+          useValue: { paramMap: of(convertToParamMap({ id: '42', factureId: '5' })) },
         },
       ],
     }).compileComponents();
@@ -80,6 +105,8 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
     const fichier = http.expectOne(FICHIER);
     expect(fichier.request.responseType).toBe('blob');
     fichier.flush(new Blob(['x'], { type: facture.typeFichier }));
+    // US-55 : la fiche charge le plan comptable du dossier (RG3).
+    http.expectOne(PLAN).flush(PLAN_DOSSIER);
     await fixture.whenStable();
     return { fixture, page };
   }
@@ -145,6 +172,7 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
     http.expectOne('/api/dossiers/42/factures/5').flush(TICKET);
     await fixture.whenStable();
     http.expectOne(FICHIER).flush(null, { status: 503, statusText: 'Unavailable' });
+    http.match(PLAN).forEach((plan) => plan.flush(PLAN_DOSSIER));
     await fixture.whenStable();
     expect((fixture.nativeElement as HTMLElement).querySelector('[role=alert]')?.textContent).toContain(
       'momentanément indisponible',
@@ -165,74 +193,76 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
     expect(creer).not.toHaveBeenCalled();
   });
 
-  describe('US-53 Lecture automatique', () => {
-    function champs(page: HTMLElement) {
-      return Array.from(page.querySelectorAll('.champ')).map((c) =>
-        c.textContent?.replace(/\s+/g, ' ').replace(/\u00a0|\u202f/g, ' ').trim(),
+  describe('US-53 Lecture automatique et US-55 fiche facture', () => {
+    function valeurs(page: HTMLElement) {
+      return Array.from(page.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.champ input, .champ select')).map(
+        (champ) => champ.value,
       );
     }
 
-    it('CA1 : les 9 champs lus ; RG4 « À vérifier »', async () => {
-      const { page } = await ouvrir({ ...TICKET, lecture: LECTURE });
-      expect(page.querySelector('h2')?.textContent).toBe('Lecture automatique');
-      expect(champs(page)).toEqual([
-        'Type de tiers Fournisseur',
-        'Nom du tiers EDF',
-        'Numéro de facture F-2026-0611',
-        "Date d'émission 12/06/2026",
-        'Montant HT 155,33 €',
-        'Montant TVA 31,07 €',
-        'Taux de TVA 20 %',
-        'Montant TTC 186,40 €',
-        'Compte de contrepartie 6061 – Fournitures non stockables À vérifier',
+    it('US-53 CA1, US-55 RG1 : les 9 champs lus dans la fiche, à côté du document ; RG2 « À vérifier »', async () => {
+      const { page } = await ouvrir({
+        ...TICKET,
+        lecture: LECTURE,
+        fiche: {
+          ...FICHE_VIDE,
+          informations: {
+            typeTiers: 'FOURNISSEUR',
+            nomTiers: 'EDF',
+            numeroFacture: 'F-2026-0611',
+            dateEmission: '2026-06-12',
+            montantHt: 155.33,
+            montantTva: 31.07,
+            tauxTva: 20,
+            montantTtc: 186.4,
+            compteContrepartie: '6061',
+          },
+        },
+      });
+      expect(page.querySelector('.fiche-facture .apercu img')).not.toBeNull();
+      expect(page.querySelector('.lecture h2')?.textContent).toBe('Lecture automatique');
+      expect(valeurs(page)).toEqual([
+        'FOURNISSEUR',
+        'EDF',
+        'F-2026-0611',
+        '2026-06-12',
+        '155,33',
+        '31,07',
+        '20',
+        '186,40',
+        '6061',
       ]);
-      expect(page.querySelectorAll('.champ--doute')).toHaveLength(1);
+      expect(page.querySelectorAll('.champ--a-verifier')).toHaveLength(1);
+      // RG3 : contrepartie lue hors du plan comptable du dossier, signalée.
+      expect(page.querySelector('#fiche-COMPTE_CONTREPARTIE')?.textContent).toContain(
+        '6061 (absent du plan comptable)',
+      );
     });
 
-    it('RG3 : champs non lus « À renseigner »', async () => {
-      const incomplete: Lecture = {
-        ...LECTURE,
-        typeTiers: null,
-        nomTiers: null,
-        dateEmission: null,
-        tauxTva: null,
-        montantTtc: null,
-        compteContrepartie: null,
-        aVerifier: [],
-        aRenseigner: ['TYPE_TIERS', 'NOM_TIERS', 'DATE_EMISSION', 'TAUX_TVA', 'MONTANT_TTC', 'COMPTE_CONTREPARTIE'],
-      };
-      const { page } = await ouvrir({ ...TICKET, lecture: incomplete });
-      expect(page.querySelectorAll('.marque--a-renseigner')).toHaveLength(6);
-      expect(page.querySelector('.marque--a-verifier')).toBeNull();
-    });
-
-    it('lecture en cours', async () => {
-      const { page } = await ouvrir({ ...TICKET, lecture: { ...LECTURE, statut: 'EN_COURS' } });
+    it('lecture en cours : fiche en attente, non modifiable', async () => {
+      const { page } = await ouvrir({
+        ...TICKET,
+        lecture: { ...LECTURE, statut: 'EN_COURS' },
+        fiche: { ...FICHE_VIDE, modifiable: false },
+      });
       expect(page.querySelector('.lecture')?.textContent).toContain('Lecture en cours…');
-      expect(page.querySelector('.champs')).toBeNull();
+      expect(page.querySelector<HTMLInputElement>('#fiche-NOM_TIERS')?.disabled).toBe(true);
+      expect(page.querySelector('.actions')).toBeNull();
     });
 
-    it('CA4 : lecture échouée', async () => {
-      const { page } = await ouvrir({ ...TICKET, lecture: { ...LECTURE, statut: 'ECHOUEE' } });
+    it('US-53 CA4, US-55 RG7 : lecture échouée, champs à saisir dans la même fiche', async () => {
+      const { page } = await ouvrir({ ...TICKET, lecture: { ...LECTURE, statut: 'ECHOUEE', aVerifier: [] } });
       expect(page.querySelector('.echec')?.textContent).toContain('Lecture échouée');
+      expect(page.querySelectorAll('.marque--a-renseigner')).toHaveLength(9);
+      expect(page.querySelector<HTMLInputElement>('#fiche-NOM_TIERS')?.disabled).toBe(false);
     });
 
-    it('facture jamais lue : pas de bloc « Lecture automatique »', async () => {
+    it('facture lue : invitation à vérifier ; jamais lue : pas de bloc « Lecture automatique »', async () => {
+      const lue = await ouvrir({ ...TICKET, lecture: LECTURE });
+      expect(lue.page.querySelector('.lecture')?.textContent).toContain('vérifiez les champs signalés');
       const { page } = await ouvrir();
       expect(page.querySelector('.lecture')).toBeNull();
-    });
-
-    it('US-54 CA1 : facture client lue', async () => {
-      const client: Lecture = {
-        ...LECTURE,
-        typeTiers: 'CLIENT',
-        nomTiers: 'Mairie de Lyon',
-        compteContrepartie: '707',
-        libelleContrepartie: 'Ventes de marchandises',
-      };
-      const { page } = await ouvrir({ ...VENTE, id: 5, lecture: client });
-      expect(champs(page).slice(0, 2)).toEqual(['Type de tiers Client', 'Nom du tiers Mairie de Lyon']);
-      expect(page.querySelector('.detail-tva')).toBeNull();
+      expect(page.querySelector('app-fiche-facture')).not.toBeNull();
     });
 
     it('US-54 CA2 : plusieurs taux de TVA, « Multiple » et détail par taux', async () => {
@@ -246,7 +276,7 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
         ],
       };
       const { page } = await ouvrir({ ...TICKET, lecture: multiple });
-      expect(champs(page)).toContain('Taux de TVA Multiple');
+      expect(page.querySelector<HTMLInputElement>('#fiche-TAUX_TVA')?.value).toBe('Multiple');
       const lignesTva = Array.from(page.querySelectorAll('.detail-tva tbody tr')).map((tr) =>
         Array.from(tr.querySelectorAll('td')).map((td) => td.textContent?.replace(/\s/g, ' ').trim()),
       );
@@ -256,10 +286,24 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
       ]);
     });
 
+    it('US-55 : la fiche mise à jour remplace celle de la page', async () => {
+      const { fixture, page } = await ouvrir();
+      (fixture.componentInstance as unknown as { ficheMiseAJour(f: VueFacture): void }).ficheMiseAJour({
+        ...TICKET,
+        fiche: { ...FICHE_VIDE, statutTraitement: 'TRAITEE', modifiable: false },
+      });
+      await fixture.whenStable();
+      expect(page.textContent).toContain('Statut : Traitée');
+      expect(page.textContent).toContain('Facture traitée : ses informations ne sont plus modifiables.');
+    });
+
     it('compte sans libellé, facture client, montant non lu', () => {
       expect(valeurChamp({ ...LECTURE, libelleContrepartie: null }, 'COMPTE_CONTREPARTIE')).toBe('6061');
       expect(valeurChamp({ ...LECTURE, typeTiers: 'CLIENT' }, 'TYPE_TIERS')).toBe('Client');
       expect(valeurChamp({ ...LECTURE, montantHt: null }, 'MONTANT_HT')).toBeNull();
+      expect(valeurChamp(LECTURE, 'COMPTE_CONTREPARTIE')).toBe('6061 – Fournitures non stockables');
+      expect(valeurChamp({ ...LECTURE, tauxMultiple: true }, 'TAUX_TVA')).toBe('Multiple');
+      expect(valeurChamp(LECTURE, 'DATE_EMISSION')).toBe('12/06/2026');
     });
   });
 });

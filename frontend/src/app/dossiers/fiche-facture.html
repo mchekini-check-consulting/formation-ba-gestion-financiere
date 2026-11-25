@@ -1,0 +1,134 @@
+<section class="fiche" aria-labelledby="titre-fiche">
+  <header class="fiche__entete">
+    <h2 id="titre-fiche">Informations de la facture</h2>
+    <span class="statut">Statut : {{ statut() }}</span>
+  </header>
+
+  @if (fiche().motif; as m) {
+    <p class="muted motif">Motif « À compléter » : {{ m }}</p>
+  }
+  @if (!fiche().modifiable && fiche().statutTraitement === 'TRAITEE') {
+    <!-- RG8 -->
+    <p class="muted" role="status">Facture traitée : ses informations ne sont plus modifiables.</p>
+  }
+
+  <form [formGroup]="formulaire" (ngSubmit)="valider(false)" novalidate>
+    <div class="champs">
+      @for (c of champs; track c) {
+        <div
+          class="champ"
+          [class.champ--a-verifier]="aVerifier(c)"
+          [class.champ--a-renseigner]="aRenseigner(c)"
+        >
+          <label [for]="'fiche-' + c">
+            {{ libelles[c] }}
+            @if (aVerifier(c)) {
+              <span class="marque marque--a-verifier">À vérifier</span>
+            } @else if (aRenseigner(c)) {
+              <span class="marque marque--a-renseigner">À renseigner</span>
+            }
+          </label>
+          @switch (c) {
+            @case ('TYPE_TIERS') {
+              <select [id]="'fiche-' + c" formControlName="typeTiers">
+                <option value="">—</option>
+                <option value="FOURNISSEUR">Fournisseur</option>
+                <option value="CLIENT">Client</option>
+              </select>
+            }
+            @case ('DATE_EMISSION') {
+              <input [id]="'fiche-' + c" type="date" formControlName="dateEmission" />
+            }
+            @case ('TAUX_TVA') {
+              @if (facture().lecture?.tauxMultiple) {
+                <!-- US-54 CA2 : plusieurs taux, détail sous la fiche -->
+                <input [id]="'fiche-' + c" type="text" value="Multiple" disabled />
+              } @else {
+                <input [id]="'fiche-' + c" type="text" inputmode="decimal" formControlName="tauxTva" />
+              }
+            }
+            @case ('COMPTE_CONTREPARTIE') {
+              <!-- RG3 : comptes actifs du plan comptable du dossier -->
+              <select [id]="'fiche-' + c" formControlName="compteContrepartie">
+                <option value="">—</option>
+                @if (horsPlan(); as h) {
+                  <option [value]="h">{{ h }} (absent du plan comptable)</option>
+                }
+                @for (compte of comptes(); track compte.numero) {
+                  <option [value]="compte.numero">{{ compte.numero }} – {{ compte.libelle }}</option>
+                }
+              </select>
+              @if (planIndisponible()) {
+                <small class="muted">Plan comptable indisponible : réessayez plus tard.</small>
+              }
+            }
+            @case ('NOM_TIERS') {
+              <input [id]="'fiche-' + c" type="text" formControlName="nomTiers" />
+            }
+            @case ('NUMERO_FACTURE') {
+              <input [id]="'fiche-' + c" type="text" formControlName="numeroFacture" />
+            }
+            @default {
+              <input
+                [id]="'fiche-' + c"
+                type="text"
+                inputmode="decimal"
+                [formControlName]="controles[c]"
+              />
+            }
+          }
+        </div>
+      }
+    </div>
+
+    @if (erreur(); as e) {
+      <p class="alerte" role="alert">{{ e }}</p>
+    }
+    @if (succes(); as s) {
+      <p class="succes" role="status">{{ s }}</p>
+    }
+
+    @if (fiche().modifiable) {
+      @if (demandeComplement()) {
+        <!-- CA5 : demander l'information au client -->
+        <div class="complement">
+          <label for="fiche-motif">Motif (visible par le client)</label>
+          <input id="fiche-motif" type="text" maxlength="255" [formControl]="motif" />
+          <div class="actions">
+            <button type="button" class="bouton" [disabled]="envoi()" (click)="passerACompleter()">
+              Confirmer « À compléter »
+            </button>
+            <button type="button" class="bouton bouton--secondaire" (click)="annulerComplement()">
+              Annuler
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="actions">
+          <button type="submit" class="bouton" [disabled]="envoi()">Valider</button>
+          <button type="button" class="bouton" [disabled]="envoi()" (click)="valider(true)">
+            Valider et passer à la suivante
+          </button>
+          <button
+            type="button"
+            class="bouton bouton--secondaire"
+            [disabled]="envoi()"
+            (click)="enregistrer()"
+          >
+            Enregistrer
+          </button>
+          @if (peutCompleter()) {
+            <button
+              type="button"
+              class="bouton bouton--secondaire"
+              [disabled]="envoi()"
+              (click)="ouvrirComplement()"
+            >
+              Passer en « À compléter »
+            </button>
+          }
+        </div>
+      }
+    }
+  </form>
+</section>

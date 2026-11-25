@@ -2,18 +2,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
-import {
-  CHAMPS,
-  ChampFacture,
-  FactureService,
-  LIBELLES_CHAMP,
-  Lecture,
-  VueFacture,
-  montantOuTiret,
-  taux,
-  valeurChamp,
-} from './facture.service';
+import { Subscription, switchMap, tap } from 'rxjs';
+import { FactureService, VueFacture, montantOuTiret, taux } from './facture.service';
+import { FicheFacture } from './fiche-facture';
 
 /** US-13 RG3 : facture d'un dossier sans droits, inexistante ou adresse tapée à la main. */
 export const MESSAGE_FACTURE_INTROUVABLE = 'Facture introuvable ou accès non autorisé';
@@ -35,9 +26,11 @@ export function affichage(typeFichier: string): Affichage {
  * la session et les droits sur le dossier. Ouvrir l'aperçu retire le badge « Nouvelle ».
  * US-53 et US-54 : champs lus automatiquement sur une facture fournisseur ou client, « À vérifier »
  * ou « À renseigner » ; détail de la TVA d'une facture à plusieurs taux (US-54 CA2).
+ * US-55 : fiche facture, le document à côté des informations à vérifier, corriger et valider ;
+ * « Valider et passer à la suivante » ouvre une autre facture sur la même page (adresse suivie).
  */
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, FicheFacture],
   selector: 'app-apercu-facture',
   templateUrl: './apercu-facture.html',
   styleUrl: './apercu-facture.scss',
@@ -51,21 +44,21 @@ export class ApercuFacture implements OnInit, OnDestroy {
   protected readonly lien = signal<string | null>(null);
   protected readonly erreur = signal<string | null>(null);
   protected readonly telechargementEnCours = signal(false);
-  protected readonly champs = CHAMPS;
-  protected readonly libellesChamp = LIBELLES_CHAMP;
   private adresseFichier: string | null = null;
+  private chargement?: Subscription;
 
   ngOnInit(): void {
-    const parametres = this.route.snapshot.paramMap;
-    const dossierId = parametres.get('id') ?? '';
-    const factureId = parametres.get('factureId') ?? '';
-    this.dossierId.set(dossierId);
-    this.factures
-      .consulter(dossierId, factureId)
+    this.chargement = this.route.paramMap
       .pipe(
-        switchMap((facture) => {
-          this.facture.set(facture);
-          return this.factures.fichier(dossierId, factureId, false);
+        tap((parametres) => this.reinitialiser(parametres.get('id') ?? '')),
+        switchMap((parametres) => {
+          const factureId = parametres.get('factureId') ?? '';
+          return this.factures.consulter(this.dossierId(), factureId).pipe(
+            switchMap((facture) => {
+              this.facture.set(facture);
+              return this.factures.fichier(this.dossierId(), factureId, false);
+            }),
+          );
         }),
       )
       .subscribe({
@@ -78,8 +71,28 @@ export class ApercuFacture implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.chargement?.unsubscribe();
+    this.liberer();
+  }
+
+  /** US-55 : fiche enregistrée, validée ou passée « À compléter ». */
+  protected ficheMiseAJour(facture: VueFacture): void {
+    this.facture.set(facture);
+  }
+
+  // Nouvelle facture affichée (ouverture ou « Valider et passer à la suivante ») : page remise à zéro.
+  private reinitialiser(dossierId: string): void {
+    this.dossierId.set(dossierId);
+    this.facture.set(null);
+    this.lien.set(null);
+    this.erreur.set(null);
+    this.liberer();
+  }
+
+  private liberer(): void {
     if (this.adresseFichier) {
       URL.revokeObjectURL(this.adresseFichier);
+      this.adresseFichier = null;
     }
   }
 
@@ -105,10 +118,6 @@ export class ApercuFacture implements OnInit, OnDestroy {
         this.echec(err);
       },
     });
-  }
-
-  protected valeur(lecture: Lecture, champ: ChampFacture): string | null {
-    return valeurChamp(lecture, champ);
   }
 
   protected taux(valeur: number): string {

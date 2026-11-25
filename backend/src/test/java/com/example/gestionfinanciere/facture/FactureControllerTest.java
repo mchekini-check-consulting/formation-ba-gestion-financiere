@@ -118,7 +118,7 @@ class FactureControllerTest {
 	@Test
 	void us13NomEtTypeDuFichier() {
 		connecte(jean);
-		VueFacture vue = new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null);
+		VueFacture vue = new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null, null);
 		when(factures.consulter(jean, 42L, 5L)).thenReturn(Optional.of(vue));
 		assertEquals(vue, controller.consulter(AUTORISATION, "42", "5").getBody());
 	}

@@ -11,7 +11,19 @@ import com.example.gestionfinanciere.facture.lecture.TvaParTaux;
 
 // US-13 : en-tête de la page d'aperçu (nom et type du fichier, onglet du dossier).
 // US-53 : résultat de la lecture automatique ; vide pour une facture jamais lue.
-public record VueFacture(Long id, String nomFichier, String typeFichier, Facture.Sens sens, Lecture lecture) {
+// US-55 : fiche facture, avec les informations à vérifier, corriger et valider.
+public record VueFacture(Long id, String nomFichier, String typeFichier, Facture.Sens sens, Lecture lecture,
+		Fiche fiche) {
+
+	/**
+	 * US-55 : statut de traitement (US-51), nommé statutTraitement pour ne pas le confondre avec celui de
+	 * la lecture, et motif de « À compléter » ; modifiable faux pour une facture traitée (RG8) ou en
+	 * cours de lecture ; informations : valeurs actuelles des champs, lues (US-53, US-54), corrigées
+	 * ou saisies à la main (RG7).
+	 */
+	public record Fiche(Facture.Statut statutTraitement, String motif, boolean modifiable,
+			InformationsFacture informations) {
+	}
 
 	/**
 	 * US-53 RG2 à RG6 : statut et champs lus. aVerifier : lus avec un doute (RG4, RG5) ; aRenseigner :
@@ -26,7 +38,8 @@ public record VueFacture(Long id, String nomFichier, String typeFichier, Facture
 
 	static VueFacture de(Facture facture, List<ChampLu> champsLus) {
 		return new VueFacture(facture.getId(), facture.getNomFichier(), facture.getTypeFichier(), facture.getSens(),
-				lecture(facture, champsLus));
+				lecture(facture, champsLus), new Fiche(facture.getStatut(), facture.getMotifACompleter(),
+						facture.isModifiable(), InformationsFacture.de(facture)));
 	}
 
 	private static Lecture lecture(Facture facture, List<ChampLu> champsLus) {
