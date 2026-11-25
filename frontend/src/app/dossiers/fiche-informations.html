@@ -1,0 +1,148 @@
+@let f = facture();
+@if (f.lecture; as l) {
+  <!-- US-53, US-54 : résultat de la lecture automatique ; US-55 : vérification et correction -->
+  <section class="lecture" aria-labelledby="titre-lecture">
+    <header class="titre">
+      <h2 id="titre-lecture">Informations de la facture</h2>
+      @if (f.statut === 'TRAITEE') {
+        <span class="traitee">Traitée</span>
+      }
+    </header>
+    @if (f.modification; as m) {
+      <!-- RG8 -->
+      <p class="muted modification">Modifiée par {{ m.par }} le {{ date(m.le) }}</p>
+    }
+    @switch (l.statut) {
+      @case ('EN_COURS') {
+        <p class="muted" role="status">Lecture en cours…</p>
+      }
+      @default {
+        @if (l.statut === 'ECHOUEE') {
+          <!-- US-53 CA4, US-55 RG7 -->
+          <p class="echec" role="status">Lecture échouée : les informations de cette facture sont à saisir.</p>
+        }
+        @if (edition()) {
+          <form class="formulaire" (ngSubmit)="enregistrer()" novalidate>
+            <label for="champ-TYPE_TIERS">{{ libelles.TYPE_TIERS }}</label>
+            <select id="champ-TYPE_TIERS" name="typeTiers" [(ngModel)]="saisie.typeTiers">
+              <option value="">—</option>
+              <option value="FOURNISSEUR">Fournisseur</option>
+              <option value="CLIENT">Client</option>
+            </select>
+
+            <label for="champ-NOM_TIERS">{{ libelles.NOM_TIERS }}</label>
+            <input id="champ-NOM_TIERS" name="nomTiers" maxlength="255" [(ngModel)]="saisie.nomTiers" />
+
+            <label for="champ-NUMERO_FACTURE">{{ libelles.NUMERO_FACTURE }}</label>
+            <input id="champ-NUMERO_FACTURE" name="numeroFacture" maxlength="100" [(ngModel)]="saisie.numeroFacture" />
+
+            <label for="champ-DATE_EMISSION">{{ libelles.DATE_EMISSION }}</label>
+            <input id="champ-DATE_EMISSION" name="dateEmission" type="date" [(ngModel)]="saisie.dateEmission" />
+
+            <label for="champ-MONTANT_HT">{{ libelles.MONTANT_HT }}</label>
+            <input id="champ-MONTANT_HT" name="montantHt" inputmode="decimal" [(ngModel)]="saisie.montantHt" />
+
+            <label for="champ-MONTANT_TVA">{{ libelles.MONTANT_TVA }}</label>
+            <input id="champ-MONTANT_TVA" name="montantTva" inputmode="decimal" [(ngModel)]="saisie.montantTva" />
+
+            <label for="champ-TAUX_TVA">{{ libelles.TAUX_TVA }}</label>
+            <input
+              id="champ-TAUX_TVA"
+              name="tauxTva"
+              inputmode="decimal"
+              [placeholder]="l.tauxMultiple ? 'Multiple' : ''"
+              [(ngModel)]="saisie.tauxTva"
+            />
+
+            <label for="champ-MONTANT_TTC">{{ libelles.MONTANT_TTC }}</label>
+            <input id="champ-MONTANT_TTC" name="montantTtc" inputmode="decimal" [(ngModel)]="saisie.montantTtc" />
+
+            <!-- RG3 : comptes actifs du plan comptable du dossier -->
+            <label for="champ-COMPTE_CONTREPARTIE">{{ libelles.COMPTE_CONTREPARTIE }}</label>
+            <select id="champ-COMPTE_CONTREPARTIE" name="compteContrepartie" [(ngModel)]="saisie.compteContrepartie">
+              <option value="">—</option>
+              @if (compteHorsListe()) {
+                <option [value]="saisie.compteContrepartie">{{ saisie.compteContrepartie }}</option>
+              }
+              @for (c of comptes(); track c.numero) {
+                <option [value]="c.numero">{{ c.numero }} – {{ c.libelle }}</option>
+              }
+            </select>
+
+            @if (erreur(); as e) {
+              <p class="alerte" role="alert">{{ e }}</p>
+            }
+            <div class="actions">
+              <button type="submit" class="bouton bouton--secondaire" [disabled]="envoiEnCours()">Enregistrer</button>
+              <button type="button" class="bouton" [disabled]="envoiEnCours()" (click)="valider(false)">Valider</button>
+              <button type="button" class="bouton" [disabled]="envoiEnCours()" (click)="valider(true)">
+                Valider et passer à la suivante
+              </button>
+              <button type="button" class="lien" [disabled]="envoiEnCours()" (click)="annuler()">Annuler</button>
+            </div>
+          </form>
+        } @else {
+          <dl class="champs">
+            @for (c of champs; track c) {
+              <div class="champ" [class.champ--doute]="l.aVerifier.includes(c)">
+                <dt>{{ libelles[c] }}</dt>
+                <dd>
+                  @if (modifiable(f)) {
+                    <!-- RG2 : un clic sur le champ ou son repère le met en modification -->
+                    <button
+                      type="button"
+                      class="valeur"
+                      [attr.aria-label]="'Modifier : ' + libelles[c]"
+                      (click)="modifier(l, c)"
+                    >
+                      <ng-container *ngTemplateOutlet="contenu; context: { $implicit: c }" />
+                    </button>
+                  } @else {
+                    <ng-container *ngTemplateOutlet="contenu; context: { $implicit: c }" />
+                  }
+                </dd>
+              </div>
+            }
+          </dl>
+          <ng-template #contenu let-c>
+            @if (valeur(l, c); as v) {
+              {{ v }}
+              @if (l.aVerifier.includes(c)) {
+                <!-- US-53 RG4, RG5 : lu avec un doute -->
+                <span class="marque marque--a-verifier">À vérifier</span>
+              }
+            } @else {
+              <!-- US-53 RG3 : non lu -->
+              <span class="marque marque--a-renseigner">À renseigner</span>
+            }
+          </ng-template>
+          @if (modifiable(f)) {
+            <button type="button" class="bouton" (click)="modifier(l, 'TYPE_TIERS')">Vérifier et valider</button>
+          }
+        }
+        @if (l.tauxMultiple && !edition()) {
+          <!-- US-54 CA2 : plusieurs taux de TVA, détail par taux -->
+          <table class="detail-tva">
+            <caption>Détail de la TVA</caption>
+            <thead>
+              <tr>
+                <th scope="col">Taux</th>
+                <th scope="col">Base HT</th>
+                <th scope="col">TVA</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of l.detailTva; track t.taux) {
+                <tr>
+                  <td>{{ taux(t.taux) }}</td>
+                  <td>{{ montant(t.baseHt) }}</td>
+                  <td>{{ montant(t.montantTva) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+    }
+  </section>
+}

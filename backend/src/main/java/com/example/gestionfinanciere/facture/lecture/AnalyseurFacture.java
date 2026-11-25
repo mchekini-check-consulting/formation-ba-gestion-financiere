@@ -75,6 +75,9 @@ public final class AnalyseurFacture {
 	private static final Map<String, String> LIBELLES_COMPTES = new LinkedHashMap<>();
 	static final String COMPTE_PAR_DEFAUT = "607";
 	static final String PRODUIT_PAR_DEFAUT = "706";
+	// Énergie, entretien, fournitures de bureau : compte 606 du plan comptable des dossiers (US-41),
+	// qui n'a pas les sous-comptes 6061, 6063 et 6064 (US-55 RG3 : la contrepartie est un compte du plan).
+	static final String ACHATS_NON_STOCKES = "606";
 
 	static {
 		for (String nom : List.of("EDF", "Engie", "TotalEnergies", "Veolia", "Orange", "SFR", "Free", "Bouygues Telecom",
@@ -82,9 +85,7 @@ public final class AnalyseurFacture {
 				"Office Depot", "Bureau Vallée", "Amazon", "Moulins Bertrand", "Emballages Sud")) {
 			FOURNISSEURS_CONNUS.put(nom, sansAccents(nom.toLowerCase(Locale.ROOT)));
 		}
-		LIBELLES_COMPTES.put("6061", "Fournitures non stockables (eau, énergie)");
-		LIBELLES_COMPTES.put("6063", "Fournitures d'entretien et de petit équipement");
-		LIBELLES_COMPTES.put("6064", "Fournitures administratives");
+		LIBELLES_COMPTES.put(ACHATS_NON_STOCKES, "Achats non stockés de matières et fournitures");
 		LIBELLES_COMPTES.put("613", "Locations");
 		LIBELLES_COMPTES.put("616", "Primes d'assurance");
 		LIBELLES_COMPTES.put("625", "Déplacements, missions et réceptions");
@@ -105,7 +106,7 @@ public final class AnalyseurFacture {
 		}
 		for (String mot : List.of("edf", "engie", "totalenergies", "veolia", "electricite", "gaz", "eau", "energie",
 				"carburant", "gazole")) {
-			COMPTES_PAR_MOT.put(mot, "6061");
+			COMPTES_PAR_MOT.put(mot, ACHATS_NON_STOCKES);
 		}
 		for (String mot : List.of("orange", "sfr", "free", "bouygues", "la poste", "telephone", "internet", "mobile")) {
 			COMPTES_PAR_MOT.put(mot, "626");
@@ -120,10 +121,10 @@ public final class AnalyseurFacture {
 			COMPTES_PAR_MOT.put(mot, "625");
 		}
 		for (String mot : List.of("leroy merlin", "castorama", "brico", "outillage", "entretien", "nettoyage")) {
-			COMPTES_PAR_MOT.put(mot, "6063");
+			COMPTES_PAR_MOT.put(mot, ACHATS_NON_STOCKES);
 		}
 		for (String mot : List.of("office depot", "bureau vallee", "papeterie", "fournitures de bureau", "cartouche")) {
-			COMPTES_PAR_MOT.put(mot, "6064");
+			COMPTES_PAR_MOT.put(mot, ACHATS_NON_STOCKES);
 		}
 	}
 

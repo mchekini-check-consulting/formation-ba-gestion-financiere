@@ -48,7 +48,7 @@ class AnalyseurFactureTest {
 		assertEquals(euros("20.00"), lu.tauxTva());
 		assertEquals(euros("186.40"), lu.montantTtc());
 		// Compte proposé (énergie), toujours à vérifier par le comptable, comme dans la maquette.
-		assertEquals("6061", lu.compteContrepartie());
+		assertEquals("606", lu.compteContrepartie());
 		assertEquals(Set.of(ChampFacture.COMPTE_CONTREPARTIE), lu.aVerifier());
 		assertEquals(Set.of(), lu.aRenseigner());
 		assertTrue(lu.aVerifierOuARenseigner());

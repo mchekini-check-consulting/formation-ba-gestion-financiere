@@ -228,13 +228,16 @@ public class Facture {
 		lectureTermineeLe = quand;
 		detailTva.clear();
 		if (!resultat.lisible()) {
+			// US-55 RG7 : aucun champ, tous à saisir à la main.
 			lectureStatut = StatutLecture.ECHOUEE;
 			lectureAVerifier = null;
 			tauxTvaMultiple = null;
-			return;
+		} else {
+			lectureStatut = StatutLecture.LUE;
+			lectureAVerifier = resultat.aVerifierOuARenseigner();
+			tauxTvaMultiple = resultat.tauxMultiple();
+			resultat.detailTva().forEach(lue -> detailTva.add(new TvaLue(this, lue)));
 		}
-		lectureStatut = StatutLecture.LUE;
-		lectureAVerifier = resultat.aVerifierOuARenseigner();
 		typeTiers = resultat.typeTiers();
 		nomTiers = resultat.nomTiers();
 		numeroFacture = resultat.numeroFacture();
@@ -244,8 +247,35 @@ public class Facture {
 		tauxTva = resultat.tauxTva();
 		montantTtc = resultat.montantTtc();
 		compteContrepartie = resultat.compteContrepartie();
-		tauxTvaMultiple = resultat.tauxMultiple();
-		resultat.detailTva().forEach(lue -> detailTva.add(new TvaLue(this, lue)));
+	}
+
+	/**
+	 * US-55 RG2 et RG7 : informations corrigées ou saisies par le cabinet. Pastille « À vérifier » de
+	 * la liste tant qu'un champ reste douteux (resteUnDoute) ou vide. Un taux saisi remplace le détail
+	 * par taux d'une facture à plusieurs taux (US-54 CA2).
+	 */
+	void corriger(InformationsFacture informations, boolean resteUnDoute) {
+		typeTiers = informations.typeTiers();
+		nomTiers = informations.nomTiers();
+		numeroFacture = informations.numeroFacture();
+		dateEmission = informations.dateEmission();
+		montantHt = informations.montantHt();
+		montantTva = informations.montantTva();
+		montantTtc = informations.montantTtc();
+		compteContrepartie = informations.compteContrepartie();
+		if (informations.tauxTva() != null || !isTauxTvaMultiple()) {
+			tauxTva = informations.tauxTva();
+			tauxTvaMultiple = Boolean.FALSE;
+			detailTva.clear();
+		}
+		lectureAVerifier = resteUnDoute || !VueFacture.aRenseigner(this).isEmpty();
+	}
+
+	// US-55 RG6 : « Valider » passe la facture en « Traitée », depuis tout statut sauf « Traitée ».
+	void valider() {
+		statut = Statut.TRAITEE;
+		motifACompleter = null;
+		lectureAVerifier = Boolean.FALSE;
 	}
 
 	public Long getId() {
