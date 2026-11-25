@@ -86,9 +86,9 @@ class FactureServiceTest {
 		List<Facture.Statut> possibles = List.of(Facture.Statut.EN_COURS, Facture.Statut.A_COMPLETER);
 		assertEquals(List.of(
 				new LigneFacture(5L, "edf.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true, null, possibles,
-						Facture.Source.DEPOT_CLIENT, null, false),
+						Facture.Source.DEPOT_CLIENT, null, false, null, null, null),
 				new LigneFacture(5L, "loyer.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, false, null,
-						possibles, Facture.Source.DEPOT_CLIENT, null, false)),
+						possibles, Facture.Source.DEPOT_CLIENT, null, false, null, null, null)),
 				liste.factures());
 	}
 
@@ -297,7 +297,7 @@ class FactureServiceTest {
 		assertEquals(ResultatImport.Statut.IMPORTEE, resultat.statut());
 		assertEquals(new LigneFacture(9L, "facture-edf-juin.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, true,
 				null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET, Facture.StatutLecture.EN_COURS,
-				false), resultat.facture());
+				false, null, null, null), resultat.facture());
 		Facture facture = enregistree();
 		assertEquals("application/pdf", facture.getTypeFichier());
 		assertEquals(Facture.Sens.ACHAT, facture.getSens());

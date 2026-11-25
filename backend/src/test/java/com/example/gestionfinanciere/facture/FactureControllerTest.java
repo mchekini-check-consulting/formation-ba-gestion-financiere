@@ -42,7 +42,7 @@ class FactureControllerTest {
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean@test.fr", "x", "Jean Dupont");
 	private final ListeFactures liste = new ListeFactures(
 			List.of(new LigneFacture(1L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.RECUE, true, null,
-					Facture.Statut.RECUE.suivants(), Facture.Source.DEPOT_CLIENT, null, false)));
+					Facture.Statut.RECUE.suivants(), Facture.Source.DEPOT_CLIENT, null, false, null, null, null)));
 
 	private void connecte(Compte compte) {
 		when(sessions.consulter("jeton")).thenReturn(ResultatSession.active(compte));
@@ -152,7 +152,7 @@ class FactureControllerTest {
 	void us51ChangerStatut() {
 		connecte(jean);
 		LigneFacture enCours = new LigneFacture(5L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.EN_COURS,
-				false, null, Facture.Statut.EN_COURS.suivants(), Facture.Source.DEPOT_CLIENT, null, false);
+				false, null, Facture.Statut.EN_COURS.suivants(), Facture.Source.DEPOT_CLIENT, null, false, null, null, null);
 		when(factures.changerStatut(jean, 42L, 5L, Facture.Statut.EN_COURS, null))
 				.thenReturn(new ResultatStatut(ResultatStatut.Issue.CHANGE, enCours));
 
@@ -224,7 +224,7 @@ class FactureControllerTest {
 	void us52Ca1Import() {
 		connecte(jean);
 		LigneFacture ligne = new LigneFacture(9L, "facture-edf-juin.pdf", Instant.EPOCH, "Jean Dupont",
-				Facture.Statut.RECUE, true, null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET, null, false);
+				Facture.Statut.RECUE, true, null, Facture.Statut.RECUE.suivants(), Facture.Source.IMPORT_CABINET, null, false, null, null, null);
 		when(factures.importer(jean, 42L, Facture.Sens.ACHAT, "facture-edf-juin.pdf", PDF))
 				.thenReturn(ResultatImport.importee(ligne));
 

@@ -163,7 +163,8 @@ class FactureIT {
 	}
 
 	private static String sansLecture(String json) {
-		return json.replaceAll("\"lecture\":(null|\"[A-Z_]+\"),\"lectureAVerifier\":(true|false)", "");
+		return json.replaceAll("\"lecture\":(null|\"[A-Z_]+\"),\"lectureAVerifier\":(true|false),"
+				+ "\"nomTiers\":(null|\"[^\"]*\"),\"dateEmission\":(null|\"[^\"]*\"),\"montantTtc\":(null|[0-9.]+)", "");
 	}
 
 	private static String debut(byte[] contenu, int taille) {

@@ -18,6 +18,9 @@ const TICKET: LigneFacture = {
   source: 'DEPOT_CLIENT',
   lecture: null,
   lectureAVerifier: false,
+  nomTiers: null,
+  dateEmission: null,
+  montantTtc: null,
 };
 const ELECTRICITE: LigneFacture = {
   ...TICKET,
@@ -63,8 +66,8 @@ describe('US-12 Factures d’un dossier', () => {
   it('RG2 et RG3 : fichier, date de dépôt, déposée par, « Reçue », badge « Nouvelle »', async () => {
     const { page } = await afficher('ACHAT', [TICKET, ELECTRICITE]);
     expect(lignes(page)).toEqual([
-      ['ticket-fournitures.jpgNouvelle', '08/11/2026 à 10:05', 'Jean Dupont', 'Dépôt client', 'Reçue', '—', expect.any(String)],
-      ['facture-electricite-octobre.pdf', '05/11/2026 à 10:00', 'Jean Dupont', 'Dépôt client', 'Reçue', '—', expect.any(String)],
+      ['ticket-fournitures.jpgNouvelle', '—', '—', '—', '08/11/2026 à 10:05', 'Jean Dupont', 'Dépôt client', 'Reçue', '—', expect.any(String)],
+      ['facture-electricite-octobre.pdf', '—', '—', '—', '05/11/2026 à 10:00', 'Jean Dupont', 'Dépôt client', 'Reçue', '—', expect.any(String)],
     ]);
     expect(page.querySelectorAll('.badge--nouvelle')).toHaveLength(1);
     // US-13 RG1 : un clic sur le fichier ouvre son aperçu.
@@ -260,6 +263,18 @@ describe('US-12 Factures d’un dossier', () => {
     expect(formaterDepot('2026-07-01T22:30:00Z')).toBe('02/07/2026 à 00:30');
   });
 
+  it('maquette sprint 2 : tiers, date d’émission et TTC lus ou corrigés', async () => {
+    const lue: LigneFacture = { ...ELECTRICITE, nomTiers: 'EDF', dateEmission: '2026-06-12', montantTtc: 186.4 };
+    const { page } = await afficher('ACHAT', [lue]);
+    const entetes = Array.from(page.querySelectorAll('thead th')).map((th) => th.textContent?.trim());
+    expect(entetes.slice(0, 4)).toEqual(['Fichier', 'Tiers', 'Date', 'TTC']);
+    expect(lignes(page)[0].slice(1, 4).map((v) => v?.replace(/ | /g, ' '))).toEqual([
+      'EDF',
+      '12/06/2026',
+      '186,40 €',
+    ]);
+  });
+
   describe('US-53 Lecture automatique des factures fournisseurs', () => {
     const LUE: LigneFacture = { ...ELECTRICITE, lecture: 'LUE', lectureAVerifier: true };
     const ECHOUEE: LigneFacture = { ...TICKET, lecture: 'ECHOUEE' };
@@ -271,7 +286,7 @@ describe('US-12 Factures d’un dossier', () => {
     it('RG6 : statut de la lecture et pastille « À vérifier » dans l’onglet fournisseurs', async () => {
       const { page } = await afficher('ACHAT', [LUE, ECHOUEE]);
       expect(page.querySelector('thead')?.textContent).toContain('Lecture');
-      expect(lignes(page).map((l) => l[5])).toEqual(['LueÀ vérifier', 'Lecture échouée']);
+      expect(lignes(page).map((l) => l[8])).toEqual(['LueÀ vérifier', 'Lecture échouée']);
       expect(page.querySelector('.pastille--lue')).not.toBeNull();
       expect(page.querySelector('.pastille--lecture-echouee')).not.toBeNull();
       expect(page.querySelectorAll('.badge--a-verifier')).toHaveLength(1);
@@ -280,19 +295,19 @@ describe('US-12 Factures d’un dossier', () => {
     it('US-54 RG1 : statut de la lecture aussi dans l’onglet Factures clients', async () => {
       const { page } = await afficher('VENTE', [{ ...TICKET, lecture: 'LUE', lectureAVerifier: true }]);
       expect(page.querySelector('thead')?.textContent).toContain('Lecture');
-      expect(lignes(page)[0][5]).toBe('LueÀ vérifier');
+      expect(lignes(page)[0][8]).toBe('LueÀ vérifier');
     });
 
     it('RG1 : la liste se met à jour toute seule jusqu’à la fin de la lecture', async () => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
       const { fixture, page } = await afficher('ACHAT', [EN_LECTURE]);
-      expect(lignes(page)[0][5]).toBe('Lecture en cours');
+      expect(lignes(page)[0][8]).toBe('Lecture en cours');
 
       // Échec passager : la liste reste affichée, nouvel essai plus tard.
       vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
       http.expectOne(LISTE).flush('', { status: 503, statusText: 'KO' });
       await fixture.whenStable();
-      expect(lignes(page)[0][5]).toBe('Lecture en cours');
+      expect(lignes(page)[0][8]).toBe('Lecture en cours');
 
       vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
       http.expectOne(LISTE).flush({ factures: [EN_LECTURE] });
@@ -302,7 +317,7 @@ describe('US-12 Factures d’un dossier', () => {
       http.expectOne(LISTE).flush({ factures: [{ ...EN_LECTURE, lecture: 'LUE' }] });
       await fixture.whenStable();
       expect(page.textContent).not.toContain('Chargement…');
-      expect(lignes(page)[0][5]).toBe('Lue');
+      expect(lignes(page)[0][8]).toBe('Lue');
 
       // Plus de lecture en cours : plus d'appel.
       vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS * 3);
@@ -329,7 +344,7 @@ describe('US-12 Factures d’un dossier', () => {
       select.dispatchEvent(new Event('change'));
       suivi.flush({ factures: [{ ...EN_LECTURE, lecture: 'LUE' }] });
       await fixture.whenStable();
-      expect(lignes(page)[0][5]).toBe('Lecture en cours');
+      expect(lignes(page)[0][8]).toBe('Lecture en cours');
 
       fixture.destroy();
       vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS * 3);
@@ -365,6 +380,9 @@ describe('US-52 Importer des factures depuis le dossier', () => {
     source: 'IMPORT_CABINET',
     lecture: null,
     lectureAVerifier: false,
+  nomTiers: null,
+  dateEmission: null,
+  montantTtc: null,
   };
 
   function fichier(nom: string, type: string, taille = 10): File {

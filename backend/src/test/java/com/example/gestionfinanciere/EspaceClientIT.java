@@ -264,9 +264,12 @@ class EspaceClientIT {
 		assertThat(apresLecture(dossier, vente, lucie)).contains("\"statut\":\"LUE\"", "\"typeTiers\":\"CLIENT\"")
 				.doesNotContain("\"nomTiers\":\"Boulangerie Dupont\"");
 
-		// Liste : statut de lecture et pastille « À vérifier ».
+		// Liste : statut de lecture, pastille « À vérifier » ; tiers, date et TTC lus (vides si illisible).
 		assertThat(appel("GET", "/dossiers/" + dossier + "/factures?sens=ACHAT", null, lucie).body()).contains(
-				"\"lecture\":\"LUE\",\"lectureAVerifier\":true", "\"lecture\":\"ECHOUEE\",\"lectureAVerifier\":false");
+				"\"lecture\":\"LUE\",\"lectureAVerifier\":true,\"nomTiers\":\"EDF\",\"dateEmission\":\"2026-06-12\","
+						+ "\"montantTtc\":186.40",
+				"\"lecture\":\"ECHOUEE\",\"lectureAVerifier\":false,\"nomTiers\":null,\"dateEmission\":null,"
+						+ "\"montantTtc\":null");
 
 		// Suppression d'une facture lue : ses champs lus partent avec elle.
 		assertThat(appel("DELETE", "/espace-client/factures/" + illisible, null, sophie).statusCode()).isEqualTo(204);

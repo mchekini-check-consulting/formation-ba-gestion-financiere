@@ -52,10 +52,15 @@
     @if (affichees().length === 0) {
       <p class="vide">{{ videFiltre() }}</p>
     } @else {
+      <div class="defilement">
       <table>
         <thead>
           <tr>
             <th scope="col">Fichier</th>
+            <!-- Maquette sprint 2 : informations lues ou corrigées (US-53, US-55) -->
+            <th scope="col">Tiers</th>
+            <th scope="col">Date</th>
+            <th scope="col" class="montant">TTC</th>
             <th scope="col">Déposée le</th>
             <th scope="col">Déposée par</th>
             <th scope="col">Source</th>
@@ -74,6 +79,9 @@
                   <span class="badge badge--nouvelle">Nouvelle</span>
                 }
               </td>
+              <td>{{ f.nomTiers ?? '—' }}</td>
+              <td class="date">{{ date(f) }}</td>
+              <td class="montant">{{ ttc(f) }}</td>
               <td>{{ depot(f) }}</td>
               <td>{{ f.deposeePar }}</td>
               <!-- US-52 RG4 -->
@@ -147,6 +155,7 @@
           }
         </tbody>
       </table>
+      </div>
     }
   }
 } @else {
