@@ -13,63 +13,14 @@
     </button>
   </header>
 
-  @if (f.lecture; as l) {
-    <!-- US-53 : résultat de la lecture automatique (facture fournisseur) -->
-    <section class="lecture" aria-labelledby="titre-lecture">
-      <h2 id="titre-lecture">Lecture automatique</h2>
-      @switch (l.statut) {
-        @case ('EN_COURS') {
-          <p class="muted" role="status">Lecture en cours…</p>
-        }
-        @case ('ECHOUEE') {
-          <!-- CA4 -->
-          <p class="echec" role="status">Lecture échouée : les informations de cette facture sont à saisir.</p>
-        }
-        @default {
-          <dl class="champs">
-            @for (c of champs; track c) {
-              <div class="champ" [class.champ--doute]="l.aVerifier.includes(c)">
-                <dt>{{ libellesChamp[c] }}</dt>
-                <dd>
-                  @if (valeur(l, c); as v) {
-                    {{ v }}
-                    @if (l.aVerifier.includes(c)) {
-                      <!-- RG4, RG5 : lu avec un doute -->
-                      <span class="marque marque--a-verifier">À vérifier</span>
-                    }
-                  } @else {
-                    <!-- RG3 : non lu -->
-                    <span class="marque marque--a-renseigner">À renseigner</span>
-                  }
-                </dd>
-              </div>
-            }
-          </dl>
-          @if (l.tauxMultiple) {
-            <!-- US-54 CA2 : plusieurs taux de TVA, détail par taux -->
-            <table class="detail-tva">
-              <caption>Détail de la TVA</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Taux</th>
-                  <th scope="col">Base HT</th>
-                  <th scope="col">TVA</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (t of l.detailTva; track t.taux) {
-                  <tr>
-                    <td>{{ taux(t.taux) }}</td>
-                    <td>{{ montant(t.baseHt) }}</td>
-                    <td>{{ montant(t.montantTva) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          }
-        }
-      }
-    </section>
+  <app-fiche-informations
+    [dossierId]="dossierId()"
+    [facture]="f"
+    (modifiee)="facture.set($event)"
+    (validee)="ouvrirLaSuivante($event)"
+  />
+  @if (information(); as i) {
+    <p class="muted" role="status">{{ i }}</p>
   }
 
   <!-- RG1 : aperçu du PDF ou de l'image -->

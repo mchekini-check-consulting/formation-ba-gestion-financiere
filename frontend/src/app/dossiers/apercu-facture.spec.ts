@@ -1,9 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { SessionService } from '../session/session.service';
-import { ApercuFacture, MESSAGE_FACTURE_INTROUVABLE, affichage } from './apercu-facture';
+import { ApercuFacture, MESSAGE_FACTURE_INTROUVABLE, MESSAGE_PLUS_DE_SUIVANTE, affichage } from './apercu-facture';
 import { Lecture, VueFacture, valeurChamp } from './facture.service';
 
 const TICKET: VueFacture = {
@@ -11,14 +12,18 @@ const TICKET: VueFacture = {
   nomFichier: 'ticket-fournitures.png',
   typeFichier: 'image/png',
   sens: 'ACHAT',
+  statut: 'RECUE',
   lecture: null,
+  modification: null,
 };
 const VENTE: VueFacture = {
   id: 6,
   nomFichier: 'facture-client-0042.pdf',
   typeFichier: 'application/pdf',
   sens: 'VENTE',
+  statut: 'RECUE',
   lecture: null,
+  modification: null,
 };
 const LECTURE: Lecture = {
   statut: 'LUE',
@@ -56,7 +61,7 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
         provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
-          useValue: { snapshot: { paramMap: convertToParamMap({ id: '42', factureId: '5' }) } },
+          useValue: { paramMap: of(convertToParamMap({ id: '42', factureId: '5' })) },
         },
       ],
     }).compileComponents();
@@ -165,6 +170,33 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
     expect(creer).not.toHaveBeenCalled();
   });
 
+  describe('US-55 RG6 « Valider et passer à la suivante »', () => {
+    const ligne = (id: number, statut: string) => ({ id, statut });
+
+    it('ouvre la facture suivante de l’onglet qui n’est pas « Traitée »', async () => {
+      const navigation = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      const { fixture } = await ouvrir({ ...TICKET, lecture: LECTURE });
+      fixture.componentInstance.ouvrirLaSuivante({ ...TICKET, statut: 'TRAITEE' });
+      http
+        .expectOne('/api/dossiers/42/factures?sens=ACHAT')
+        .flush({ factures: [ligne(9, 'TRAITEE'), ligne(5, 'TRAITEE'), ligne(7, 'RECUE')] });
+      expect(navigation).toHaveBeenCalledWith(['/dossiers', '42', 'factures', 7]);
+    });
+
+    it('plus aucune facture à traiter ; service indisponible', async () => {
+      const { fixture, page } = await ouvrir({ ...TICKET, lecture: LECTURE });
+      fixture.componentInstance.ouvrirLaSuivante({ ...TICKET, statut: 'TRAITEE' });
+      http.expectOne('/api/dossiers/42/factures?sens=ACHAT').flush({ factures: [ligne(5, 'TRAITEE')] });
+      await fixture.whenStable();
+      expect(page.querySelector('[role=status]')?.textContent).toBe(MESSAGE_PLUS_DE_SUIVANTE);
+
+      fixture.componentInstance.ouvrirLaSuivante({ ...TICKET, statut: 'TRAITEE' });
+      http.expectOne('/api/dossiers/42/factures?sens=ACHAT').flush(null, { status: 503, statusText: 'Unavailable' });
+      await fixture.whenStable();
+      expect(page.querySelector('[role=alert]')?.textContent).toContain('momentanément indisponible');
+    });
+  });
+
   describe('US-53 Lecture automatique', () => {
     function champs(page: HTMLElement) {
       return Array.from(page.querySelectorAll('.champ')).map((c) =>
@@ -174,7 +206,7 @@ describe('US-13 Aperçu et téléchargement d’une facture', () => {
 
     it('CA1 : les 9 champs lus ; RG4 « À vérifier »', async () => {
       const { page } = await ouvrir({ ...TICKET, lecture: LECTURE });
-      expect(page.querySelector('h2')?.textContent).toBe('Lecture automatique');
+      expect(page.querySelector('h2')?.textContent).toBe('Informations de la facture');
       expect(champs(page)).toEqual([
         'Type de tiers Fournisseur',
         'Nom du tiers EDF',

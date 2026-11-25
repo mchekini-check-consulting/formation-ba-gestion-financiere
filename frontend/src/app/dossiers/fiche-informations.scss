@@ -1,0 +1,226 @@
+// US-53, US-54 champs lus et US-55 correction : mêmes couleurs et composants que le dossier.
+$creme: #fcfdff;
+$or: #1d4ed8;
+$bord: #dbe4f0;
+$gris: #42526b;
+
+.muted {
+  margin: 0;
+  color: $gris;
+}
+
+.alerte {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #8c1d18;
+  font-size: 14px;
+}
+
+.bouton {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: $or;
+  color: $creme;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--secondaire {
+    border: 1px solid $or;
+    background: none;
+    color: $or;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.lien {
+  border: 0;
+  background: none;
+  color: $gris;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+// US-53 : champs lus automatiquement.
+.lecture {
+  padding: 18px 20px;
+  background: $creme;
+  border: 1px solid $bord;
+  border-radius: 16px;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+.echec {
+  margin: 0;
+  color: #9b1c1c;
+  font-weight: 600;
+}
+
+.champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px 24px;
+  margin: 0;
+}
+
+.champ {
+  dt {
+    color: $gris;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+  }
+
+  &--doute dd {
+    color: #9b1c1c;
+  }
+}
+
+.marque {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--a-verifier {
+    background: #fde8e8;
+    color: #9b1c1c;
+  }
+
+  &--a-renseigner {
+    margin-left: 0;
+    background: #fff1db;
+    color: #7a4100;
+  }
+}
+
+// US-54 CA2 : détail de la TVA par taux.
+.detail-tva {
+  margin-top: 16px;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  caption {
+    margin-bottom: 6px;
+    color: $gris;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  th,
+  td {
+    padding: 6px 16px 6px 0;
+    border-bottom: 1px solid $bord;
+    text-align: left;
+  }
+
+  th {
+    color: $gris;
+    font-size: 12px;
+  }
+}
+
+.titre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.traitee {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e3f4e8;
+  color: #1d6b38;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.modification {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+// US-55 RG2 : un clic sur la valeur (ou son repère) la met en modification.
+.valeur {
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: #eef3fb;
+    outline: 1px dashed $or;
+  }
+}
+
+.champs + .bouton {
+  margin-top: 16px;
+}
+
+.formulaire {
+  display: grid;
+  grid-template-columns: minmax(160px, max-content) minmax(0, 360px);
+  gap: 10px 16px;
+  align-items: center;
+
+  label {
+    color: $gris;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  input,
+  select {
+    padding: 8px 10px;
+    border: 1px solid $bord;
+    border-radius: 8px;
+    font: inherit;
+  }
+}
+
+.actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .formulaire {
+    grid-template-columns: 1fr;
+  }
+}

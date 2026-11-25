@@ -8,11 +8,13 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -275,6 +277,48 @@ class FactureIT {
 		HttpResponse<String> refuse = importer(dossier + "/factures?sens=ACHAT", "edf.pdf",
 				"%PDF-1.7".getBytes(StandardCharsets.US_ASCII), autre);
 		assertThat(refuse.statusCode()).isEqualTo(404);
+	}
+
+
+	// US-55 CA1 à CA3 : la facture EDF lue, corrigée puis validée ; une facture traitée ne se modifie plus.
+	@Test
+	void us55CorrectionEtValidation() throws Exception {
+		String jeton = jeanConnecte();
+		String dossier = dossier(jeton);
+		HttpResponse<String> importee = importer(dossier + "/factures?sens=ACHAT", "facture-electricite-octobre.pdf",
+				fichierDExemple("facture-electricite-octobre.pdf"), jeton);
+		Matcher id = ID.matcher(importee.body());
+		assertThat(id.find()).isTrue();
+		String fiche = dossier + "/factures/" + id.group(1);
+		Awaitility.await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(200))
+				.until(() -> !appel("GET", fiche, null, jeton).body().contains("\"statut\":\"EN_COURS\""));
+
+		String incoherente = """
+				{"typeTiers":"FOURNISSEUR","nomTiers":"EDF","numeroFacture":"F-2026-0611","dateEmission":"2026-06-12",
+				"montantHt":155.33,"montantTva":31.07,"tauxTva":20,"montantTtc":190.00,"compteContrepartie":"606"}""";
+		HttpResponse<String> refus = appel("POST", fiche + "/validation", incoherente, jeton);
+		assertThat(refus.statusCode()).isEqualTo(400);
+		assertThat(refus.body()).contains("Montants incohérents : HT + TVA ≠ TTC");
+		assertThat(appel("POST", fiche + "/validation", "{\"nomTiers\":\"EDF\"}", jeton).body())
+				.contains("Indiquez le numéro de facture");
+
+		// La lecture a déjà trouvé ces montants : seul le nom du tiers change (RG8).
+		String corrigee = incoherente.replace("190.00", "186.40").replace("\"EDF\"", "\"EDF Entreprises\"");
+		HttpResponse<String> enregistree = appel("PUT", fiche + "/informations", corrigee, jeton);
+		assertThat(enregistree.statusCode()).isEqualTo(200);
+		assertThat(enregistree.body()).contains("\"nomTiers\":\"EDF Entreprises\"", "\"statut\":\"RECUE\"",
+				"\"modification\":{\"par\":\"Jean Dupont\"");
+
+		HttpResponse<String> validee = appel("POST", fiche + "/validation", corrigee, jeton);
+		assertThat(validee.statusCode()).isEqualTo(200);
+		assertThat(validee.body()).contains("\"statut\":\"TRAITEE\"");
+		assertThat(appel("GET", dossier + "/factures?sens=ACHAT", null, jeton).body())
+				.contains("\"statut\":\"TRAITEE\"");
+
+		HttpResponse<String> figee = appel("PUT", fiche + "/informations", incoherente, jeton);
+		assertThat(figee.statusCode()).isEqualTo(409);
+		assertThat(figee.body()).contains("Facture traitée : ses informations ne se modifient plus");
+		assertThat(appel("PUT", fiche + "/informations", incoherente, jeanConnecte()).statusCode()).isEqualTo(404);
 	}
 
 }

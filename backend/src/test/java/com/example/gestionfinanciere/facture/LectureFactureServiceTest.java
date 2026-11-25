@@ -127,7 +127,7 @@ class LectureFactureServiceTest {
 		assertEquals(new BigDecimal("31.07"), facture.getMontantTva());
 		assertEquals(new BigDecimal("20.00"), facture.getTauxTva());
 		assertEquals(new BigDecimal("186.40"), facture.getMontantTtc());
-		assertEquals("6061", facture.getCompteContrepartie());
+		assertEquals("606", facture.getCompteContrepartie());
 		verify(champs).supprimerDeLaFacture(5L);
 		ArgumentCaptor<List<ChampLu>> lus = ArgumentCaptor.forClass(List.class);
 		verify(champs).saveAll(lus.capture());
@@ -148,7 +148,7 @@ class LectureFactureServiceTest {
 		// Page de la facture : valeurs, libellé du compte, champs à vérifier.
 		VueFacture.Lecture vue = VueFacture.de(facture, lus.getValue()).lecture();
 		assertEquals(Facture.StatutLecture.LUE, vue.statut());
-		assertEquals("Fournitures non stockables (eau, énergie)", vue.libelleContrepartie());
+		assertEquals("Achats non stockés de matières et fournitures", vue.libelleContrepartie());
 		assertEquals(List.of(ChampFacture.COMPTE_CONTREPARTIE), vue.aVerifier());
 		assertEquals(List.of(), vue.aRenseigner());
 	}

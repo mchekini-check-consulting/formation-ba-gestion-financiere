@@ -139,13 +139,34 @@ export interface Lecture {
   aRenseigner: ChampFacture[];
 }
 
-/** US-13 : en-tête de la page d'aperçu ; US-53 : résultat de la lecture (null : jamais lue). */
+/**
+ * US-13 : en-tête de la page d'aperçu ; US-53 : résultat de la lecture (null : jamais lue).
+ * US-55 : statut de traitement (une facture « Traitée » ne se modifie plus) et dernière modification (RG8).
+ */
 export interface VueFacture {
   id: number;
   nomFichier: string;
   typeFichier: string;
   sens: Sens;
+  statut: Statut;
   lecture: Lecture | null;
+  modification: { par: string; le: string } | null;
+}
+
+/**
+ * US-55 RG1, RG2 : informations saisies ou corrigées sur la fiche ; null = non renseigné.
+ * dateEmission : « 2026-06-12 » ; compteContrepartie : numéro d'un compte du plan du dossier (RG3).
+ */
+export interface InformationsFacture {
+  typeTiers: 'FOURNISSEUR' | 'CLIENT' | null;
+  nomTiers: string | null;
+  numeroFacture: string | null;
+  dateEmission: string | null;
+  montantHt: number | null;
+  montantTva: number | null;
+  tauxTva: number | null;
+  montantTtc: number | null;
+  compteContrepartie: string | null;
 }
 
 export interface ListeFactures {
@@ -182,6 +203,20 @@ export class FactureService {
   fichier(dossierId: number | string, factureId: number | string, telechargement: boolean): Observable<Blob> {
     const params = telechargement ? new HttpParams().set('telechargement', 'true') : undefined;
     return this.http.get(`${this.url}/${dossierId}/factures/${factureId}/fichier`, { params, responseType: 'blob' });
+  }
+
+  /** US-55 RG2 : enregistrer les informations corrigées, sans changer le statut. */
+  enregistrerInformations(
+    dossierId: number | string,
+    factureId: number,
+    informations: InformationsFacture,
+  ): Observable<VueFacture> {
+    return this.http.put<VueFacture>(`${this.url}/${dossierId}/factures/${factureId}/informations`, informations);
+  }
+
+  /** US-55 RG4 à RG6 : enregistrer puis passer la facture en « Traitée » (refus 400 : message à afficher). */
+  valider(dossierId: number | string, factureId: number, informations: InformationsFacture): Observable<VueFacture> {
+    return this.http.post<VueFacture>(`${this.url}/${dossierId}/factures/${factureId}/validation`, informations);
   }
 
   /** US-51 : changer le statut ; le motif n'est utile que pour « À compléter » (RG3). */

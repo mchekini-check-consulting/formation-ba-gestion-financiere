@@ -30,16 +30,16 @@ public class FactureService {
 
 	private final FactureRepository factures;
 	private final ChangementStatutFactureRepository historique;
-	private final ChampLuRepository champsLus;
+	private final VuesFacture vues;
 	private final DossierRepository dossiers;
 	private final ApplicationEventPublisher evenements;
 	private final Clock horloge;
 
 	public FactureService(FactureRepository factures, ChangementStatutFactureRepository historique,
-			ChampLuRepository champsLus, DossierRepository dossiers, ApplicationEventPublisher evenements, Clock horloge) {
+			VuesFacture vues, DossierRepository dossiers, ApplicationEventPublisher evenements, Clock horloge) {
 		this.factures = factures;
 		this.historique = historique;
-		this.champsLus = champsLus;
+		this.vues = vues;
 		this.evenements = evenements;
 		this.dossiers = dossiers;
 		this.horloge = horloge;
@@ -60,14 +60,15 @@ public class FactureService {
 		return Optional.of(new ListeFactures(lignes));
 	}
 
-	// US-13 : nom et type du fichier, pour la page d'aperçu ; vide sans droits sur le dossier.
+	// US-13 : nom et type du fichier, pour la page d'aperçu ; US-53, US-55 : informations de la facture.
+	// Vide sans droits sur le dossier.
 	@Transactional(readOnly = true)
 	public Optional<VueFacture> consulter(Compte collaborateur, Long dossierId, Long factureId) {
 		Optional<Facture> facture = factureDuCabinet(collaborateur, dossierId, factureId);
 		if (facture.isEmpty()) {
 			refus("facture.consultation", collaborateur, dossierId, factureId);
 		}
-		return facture.map(f -> VueFacture.de(f, champsLus.findByFactureId(f.getId())));
+		return facture.map(vues::vue);
 	}
 
 	/**

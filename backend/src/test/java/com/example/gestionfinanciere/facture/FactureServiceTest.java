@@ -33,6 +33,7 @@ import com.example.gestionfinanciere.dossier.DossierRepository;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.JournalCapture;
 import com.example.gestionfinanciere.facture.lecture.DemandeLecture;
+import com.example.gestionfinanciere.plancomptable.CompteComptableRepository;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -45,6 +46,8 @@ class FactureServiceTest {
 	private final DossierRepository dossiers = mock(DossierRepository.class);
 	private final ChangementStatutFactureRepository historique = mock(ChangementStatutFactureRepository.class);
 	private final ChampLuRepository champsLus = mock(ChampLuRepository.class);
+	private final CompteComptableRepository comptes = mock(CompteComptableRepository.class);
+	private final CorrectionFactureRepository corrections = mock(CorrectionFactureRepository.class);
 	private final ApplicationEventPublisher evenements = mock(ApplicationEventPublisher.class);
 
 	private final Cabinet cabinet = new Cabinet("Cabinet Test", "123456789", 120, null, MAINTENANT, MAINTENANT);
@@ -52,7 +55,8 @@ class FactureServiceTest {
 	private final Dossier fleurs = new Dossier(cabinet, "Fleurs Martin EURL", "812345679", jean, MAINTENANT);
 
 	private FactureService service() {
-		return new FactureService(factures, historique, champsLus, dossiers, evenements, new HorlogeReglable(MAINTENANT));
+		return new FactureService(factures, historique, new VuesFacture(champsLus, comptes, corrections), dossiers,
+				evenements, new HorlogeReglable(MAINTENANT));
 	}
 
 	@BeforeEach
@@ -113,7 +117,7 @@ class FactureServiceTest {
 		Facture facture = avecFichier(null);
 		when(factures.findByIdAndDossierId(5L, 42L)).thenReturn(Optional.of(facture));
 
-		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null)),
+		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, Facture.Statut.RECUE, null, null)),
 				service().consulter(jean, 42L, 5L));
 		assertTrue(LigneFacture.de(facture).nouvelle());
 

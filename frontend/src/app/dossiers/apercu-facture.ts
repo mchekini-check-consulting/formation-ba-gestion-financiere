@@ -1,19 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
-import {
-  CHAMPS,
-  ChampFacture,
-  FactureService,
-  LIBELLES_CHAMP,
-  Lecture,
-  VueFacture,
-  montantOuTiret,
-  taux,
-  valeurChamp,
-} from './facture.service';
+import { FactureService, VueFacture } from './facture.service';
+import { FicheInformations } from './fiche-informations';
+
+/** US-55 RG6 : « Valider et passer à la suivante » quand il n'en reste plus. */
+export const MESSAGE_PLUS_DE_SUIVANTE = 'Plus aucune facture à traiter dans cet onglet.';
 
 /** US-13 RG3 : facture d'un dossier sans droits, inexistante ou adresse tapée à la main. */
 export const MESSAGE_FACTURE_INTROUVABLE = 'Facture introuvable ou accès non autorisé';
@@ -35,15 +29,18 @@ export function affichage(typeFichier: string): Affichage {
  * la session et les droits sur le dossier. Ouvrir l'aperçu retire le badge « Nouvelle ».
  * US-53 et US-54 : champs lus automatiquement sur une facture fournisseur ou client, « À vérifier »
  * ou « À renseigner » ; détail de la TVA d'une facture à plusieurs taux (US-54 CA2).
+ * US-55 : vérification, correction et validation (FicheInformations) ; « Valider et passer à la
+ * suivante » ouvre la facture suivante de l'onglet qui n'est pas encore « Traitée » (RG6).
  */
 @Component({
-  imports: [RouterLink],
+  imports: [RouterLink, FicheInformations],
   selector: 'app-apercu-facture',
   templateUrl: './apercu-facture.html',
   styleUrl: './apercu-facture.scss',
 })
 export class ApercuFacture implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly factures = inject(FactureService);
   private readonly sanitizer = inject(DomSanitizer);
   protected readonly dossierId = signal('');
@@ -51,14 +48,22 @@ export class ApercuFacture implements OnInit, OnDestroy {
   protected readonly lien = signal<string | null>(null);
   protected readonly erreur = signal<string | null>(null);
   protected readonly telechargementEnCours = signal(false);
-  protected readonly champs = CHAMPS;
-  protected readonly libellesChamp = LIBELLES_CHAMP;
+  protected readonly information = signal<string | null>(null);
   private adresseFichier: string | null = null;
 
+  /** Rechargée à chaque facture : « Valider et passer à la suivante » change l'adresse sans quitter la page. */
   ngOnInit(): void {
-    const parametres = this.route.snapshot.paramMap;
-    const dossierId = parametres.get('id') ?? '';
-    const factureId = parametres.get('factureId') ?? '';
+    this.route.paramMap.subscribe((parametres) =>
+      this.charger(parametres.get('id') ?? '', parametres.get('factureId') ?? ''),
+    );
+  }
+
+  private charger(dossierId: string, factureId: string): void {
+    this.liberer();
+    this.facture.set(null);
+    this.lien.set(null);
+    this.erreur.set(null);
+    this.information.set(null);
     this.dossierId.set(dossierId);
     this.factures
       .consulter(dossierId, factureId)
@@ -78,9 +83,29 @@ export class ApercuFacture implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.liberer();
+  }
+
+  private liberer(): void {
     if (this.adresseFichier) {
       URL.revokeObjectURL(this.adresseFichier);
+      this.adresseFichier = null;
     }
+  }
+
+  /** US-55 RG6 : facture suivante de l'onglet qui n'est pas encore « Traitée ». */
+  ouvrirLaSuivante(validee: VueFacture): void {
+    this.factures.lister(Number(this.dossierId()), validee.sens).subscribe({
+      next: (liste) => {
+        const suivante = liste.factures.find((f) => f.id !== validee.id && f.statut !== 'TRAITEE');
+        if (suivante) {
+          void this.router.navigate(['/dossiers', this.dossierId(), 'factures', suivante.id]);
+        } else {
+          this.information.set(MESSAGE_PLUS_DE_SUIVANTE);
+        }
+      },
+      error: () => this.erreur.set(MESSAGE_INDISPONIBLE),
+    });
   }
 
   /** RG2 : le fichier d'origine, enregistré sous son nom. */
@@ -105,18 +130,6 @@ export class ApercuFacture implements OnInit, OnDestroy {
         this.echec(err);
       },
     });
-  }
-
-  protected valeur(lecture: Lecture, champ: ChampFacture): string | null {
-    return valeurChamp(lecture, champ);
-  }
-
-  protected taux(valeur: number): string {
-    return taux(valeur);
-  }
-
-  protected montant(valeur: number | null): string {
-    return montantOuTiret(valeur);
   }
 
   protected affichage(facture: VueFacture): Affichage {

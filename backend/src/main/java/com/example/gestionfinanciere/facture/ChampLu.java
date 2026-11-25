@@ -48,6 +48,11 @@ public class ChampLu {
 		this.aVerifier = aVerifier;
 	}
 
+	// US-55 : champ corrigé ou confirmé par le cabinet, il n'est plus « À vérifier ».
+	void lever() {
+		aVerifier = false;
+	}
+
 	public Long getId() {
 		return id;
 	}

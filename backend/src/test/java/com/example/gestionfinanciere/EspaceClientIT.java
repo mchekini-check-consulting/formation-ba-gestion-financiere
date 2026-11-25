@@ -256,7 +256,7 @@ class EspaceClientIT {
 		assertThat(apresLecture(dossier, edf, lucie)).contains("\"statut\":\"LUE\"",
 				"\"typeTiers\":\"FOURNISSEUR\"", "\"nomTiers\":\"EDF\"", "\"numeroFacture\":\"F-2026-0611\"",
 				"\"dateEmission\":\"2026-06-12\"", "\"montantHt\":155.33", "\"montantTva\":31.07",
-				"\"tauxTva\":20.00", "\"montantTtc\":186.40", "\"compteContrepartie\":\"6061\"",
+				"\"tauxTva\":20.00", "\"montantTtc\":186.40", "\"compteContrepartie\":\"606\"",
 				"\"aVerifier\":[\"COMPTE_CONTREPARTIE\"]", "\"aRenseigner\":[]");
 		// CA4 : rien de lisible -> « Lecture échouée ».
 		assertThat(apresLecture(dossier, illisible, lucie)).contains("\"statut\":\"ECHOUEE\"");
