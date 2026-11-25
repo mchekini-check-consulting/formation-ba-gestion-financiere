@@ -48,14 +48,12 @@ pointeo:
   # Jamais en preprod/prod. Activé en local par ./mvnw spring-boot:run (pom.xml) et en
   # dev/qualif par POINTEO_MODE_TEST (helm.yaml).
   mode-test: false
-  # US-53 Lecture automatique des factures : texte des photos et PDF scannés lu par Claude (API
-  # Anthropic, facture/lecture/LectureConfiguration). Clé secrète ANTHROPIC_API_KEY, à injecter par
-  # la plateforme (jamais dans helm.yaml ni dans le code). Sans clé : photos et PDF scannés en
-  # « Lecture échouée » (saisie à la main) ; les PDF avec texte restent lus normalement.
+  # US-53 et US-54 Lecture automatique des factures : texte des photos et PDF scannés lu par le
+  # programme Tesseract (facture/lecture/TesseractOcr), installé dans l'image du backend (Dockerfile).
+  # Sans Tesseract (poste local) : photos et PDF scannés en « Lecture échouée » (saisie à la main) ;
+  # les PDF avec texte restent lus normalement.
   ocr:
-    claude:
-      cle: ${ANTHROPIC_API_KEY:}
-      modele: claude-opus-5-5
+    tesseract: tesseract
     delai: 60s
   # US-58 Bouchon bancaire : transactions de démonstration (src/main/resources/bouchon/transactions.csv,
   # qui explique comment ajouter des données), source « Bouchon », sans connexion à un vrai compte.
