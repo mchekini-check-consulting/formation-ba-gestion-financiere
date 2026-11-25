@@ -87,6 +87,26 @@ class ConnexionIT {
 		assertThat(comptes.findByEmail("sophie.martin@boulangerie-test.fr").orElseThrow().getDossierId()).isNotNull();
 	}
 
+	// V25 : Jean (administrateur) et Claire (comptable) du cabinet de démonstration voient le dossier
+	// de démonstration de Sophie.
+	@Test
+	void cabinetDeDemonstrationVoitLeDossierDeSophie() throws Exception {
+		for (String email : new String[] { "jean.dupont@cabinet-test.fr", "claire.bernard@cabinet-test.fr" }) {
+			String corps = seConnecter(email, MOT_DE_PASSE_DEMO).body();
+			int debutJeton = corps.indexOf("\"jeton\":\"") + "\"jeton\":\"".length();
+			String jeton = corps.substring(debutJeton, corps.indexOf('"', debutJeton));
+			HttpRequest requete = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/dossiers"))
+					.header("Authorization", "Bearer " + jeton)
+					.GET()
+					.build();
+			HttpResponse<String> reponse = http.send(requete, HttpResponse.BodyHandlers.ofString());
+			assertThat(reponse.statusCode()).as(email).isEqualTo(200);
+			assertThat(reponse.body()).as(email).contains("Boulangerie Martin");
+		}
+		assertThat(comptes.findByEmail("claire.bernard@cabinet-test.fr").orElseThrow().getRoleCabinet())
+				.hasToString("COMPTABLE");
+	}
+
 	@Test
 	void rg1EmailEnMajusculesAccepte() throws Exception {
 		assertThat(seConnecter("Jean.Dupont@Cabinet-Test.fr", MOT_DE_PASSE_DEMO).statusCode()).isEqualTo(200);
