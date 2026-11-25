@@ -47,3 +47,6 @@ Thumbs.db
 /playwright-report
 /test-results
 /blob-report
+/backend-e2e.log
+/hs_err_pid*.log
+/replay_pid*.log
