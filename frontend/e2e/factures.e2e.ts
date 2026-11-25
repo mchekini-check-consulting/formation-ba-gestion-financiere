@@ -40,7 +40,7 @@ test.describe('Factures d’un dossier', () => {
 
     // RG2 : un clic sur le compte « À vérifier » ouvre la fiche en modification, curseur dessus.
     await page.getByRole('button', { name: 'Modifier : Compte de contrepartie' }).click();
-    const compte = page.getByLabel('Compte de contrepartie');
+    const compte = page.getByRole('combobox', { name: 'Compte de contrepartie' });
     await expect(compte).toBeFocused();
     await expect(compte).toHaveValue('606');
 
@@ -49,8 +49,9 @@ test.describe('Factures d’un dossier', () => {
     await page.getByRole('button', { name: 'Valider', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveText('Indiquez le numéro de facture');
 
-    // CA1 : corrigé puis validé.
+    // CA1 : corrigé (numéro remis, nom du tiers changé) puis validé.
     await page.getByLabel('Numéro de facture').fill('F-2026-0611');
+    await page.getByLabel('Nom du tiers').fill('EDF Entreprises');
     await page.getByRole('button', { name: 'Valider', exact: true }).click();
     await expect(page.getByText('Traitée', { exact: true })).toBeVisible();
     await expect(page.getByText(/^Modifiée par Claire Martin le/)).toBeVisible();

@@ -55,10 +55,13 @@ export function lienDansEmail(texte: string, chemin: string): string {
   return lien!;
 }
 
+/** Envoie le formulaire de connexion et attend la réponse du backend (l'écran vide alors le mot de passe). */
 export async function saisirIdentifiants(page: Page, email: string, motDePasse: string): Promise<void> {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Mot de passe', { exact: true }).fill(motDePasse);
+  const reponse = page.waitForResponse((r) => r.url().endsWith('/auth/connexion') && r.request().method() === 'POST');
   await page.getByRole('button', { name: 'Se connecter' }).click();
+  await reponse;
 }
 
 /** Connexion complète (email + mot de passe) : l'écran d'accueil du rôle s'ouvre. */
