@@ -56,7 +56,13 @@ th {
   }
 }
 
+// « Lue » et « À vérifier » côte à côte, sans retour à la ligne dans le badge.
+.lecture {
+  white-space: nowrap;
+}
+
 .badge {
+  white-space: nowrap;
   padding: 3px 10px;
   border-radius: 999px;
   background: #e8eef8;
