@@ -94,7 +94,7 @@
                 }
               </td>
               <!-- US-53 RG6 et US-54 RG1 : statut de la lecture automatique ; pastille « À vérifier » -->
-              <td>
+              <td class="lecture">
                 @if (f.lecture; as lecture) {
                   <span class="pastille" [class]="pastillesLecture[lecture]">{{ libellesLecture[lecture] }}</span>
                   @if (lecture === 'LUE' && f.lectureAVerifier) {
