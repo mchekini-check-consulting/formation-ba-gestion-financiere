@@ -23,6 +23,13 @@ spring:
     multipart:
       max-file-size: 11MB
       max-request-size: 11MB
+  # Kafka (facture/EvenementsFactureKafka) : adresse injectée par helm.yaml (KAFKA_BOOTSTRAP_SERVERS).
+  # Envoi abandonné au bout de 5 s si Kafka ne répond pas, pour ne pas bloquer l'écran.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      properties:
+        max.block.ms: 5000
   jpa:
     open-in-view: false
     hibernate:
@@ -55,6 +62,12 @@ pointeo:
   # Désactivé par défaut. Activé en local par ./mvnw spring-boot:run (pom.xml) et en dev/qualif par
   # POINTEO_BOUCHON_BANCAIRE (helm.yaml). Jamais en preprod/prod.
   bouchon-bancaire: ${POINTEO_BOUCHON_BANCAIRE:false}
+  # Événements de facture sur Kafka (facture/EvenementsFactureKafka) : « facture traitée » à chaque
+  # validation (US-55). Sans KAFKA_BOOTSTRAP_SERVERS (poste local, tests) : rien n'est envoyé.
+  # En dev/qualif : Kafka de la plateforme (helm.yaml). Topic créé au premier envoi.
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:}
+    topic-facture: ${KAFKA_TOPIC_FACTURE:facture}
 
 # Contrat d'interface des API (Swagger / OpenAPI) : /swagger-ui.html et /v3/api-docs.
 # Désactivé par défaut ; activé en local par ./mvnw spring-boot:run (pom.xml) et en dev/qualif

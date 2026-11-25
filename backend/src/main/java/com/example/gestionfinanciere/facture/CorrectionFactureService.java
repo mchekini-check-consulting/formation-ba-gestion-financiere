@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.gestionfinanciere.compte.Compte;
@@ -62,10 +63,12 @@ public class CorrectionFactureService {
 	private final DossierRepository dossiers;
 	private final VuesFacture vues;
 	private final Clock horloge;
+	private final ApplicationEventPublisher evenements;
 
 	public CorrectionFactureService(FactureRepository factures, ChampLuRepository champsLus,
 			ChangementStatutFactureRepository historique, CorrectionFactureRepository corrections,
-			CompteComptableRepository comptes, DossierRepository dossiers, VuesFacture vues, Clock horloge) {
+			CompteComptableRepository comptes, DossierRepository dossiers, VuesFacture vues, Clock horloge,
+			ApplicationEventPublisher evenements) {
 		this.factures = factures;
 		this.champsLus = champsLus;
 		this.historique = historique;
@@ -74,6 +77,7 @@ public class CorrectionFactureService {
 		this.dossiers = dossiers;
 		this.vues = vues;
 		this.horloge = horloge;
+		this.evenements = evenements;
 	}
 
 	// RG2, RG3, RG7, RG8 : enregistre les informations, sans changer le statut.
@@ -127,6 +131,8 @@ public class CorrectionFactureService {
 			historique.save(new ChangementStatutFacture(facture, ancien, Facture.Statut.TRAITEE, null, collaborateur,
 					maintenant));
 			issue = ResultatCorrection.Issue.VALIDEE;
+			// Envoyé sur Kafka une fois la validation enregistrée (EvenementsFactureKafka).
+			evenements.publishEvent(new FactureTraitee(facture.getId(), dossierId, facture.getSens(), maintenant));
 		}
 		evenement.avec("issue", issue).avec("champsModifies", modifies.size()).info();
 		return new ResultatCorrection(issue, null, vues.vue(facture));
