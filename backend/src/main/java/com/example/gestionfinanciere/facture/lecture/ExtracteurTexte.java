@@ -24,8 +24,8 @@ public class ExtracteurTexte {
 	static final String PNG = "image/png";
 	// Une facture tient sur peu de pages : on n'envoie pas un long document entier à l'OCR.
 	static final int PAGES_MAX = 3;
-	// Assez fin pour lire une facture, assez léger pour l'envoi à Claude (A4 : 1240 x 1754 points).
-	private static final float RESOLUTION = 150;
+	// Résolution conseillée pour Tesseract (A4 : 2480 x 3508 points).
+	private static final float RESOLUTION = 300;
 
 	private final MoteurOcr ocr;
 

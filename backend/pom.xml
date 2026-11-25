@@ -99,17 +99,11 @@
 			<artifactId>awaitility</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!-- US-53 : texte des factures PDF (et rendu en image des PDF scannés pour la lecture par Claude) -->
+		<!-- US-53 : texte des factures PDF (et rendu en image des PDF scannés pour l'OCR Tesseract) -->
 		<dependency>
 			<groupId>org.apache.pdfbox</groupId>
 			<artifactId>pdfbox</artifactId>
 			<version>3.0.5</version>
-		</dependency>
-		<!-- US-53 : lecture du texte des photos et PDF scannés par Claude (API Anthropic) -->
-		<dependency>
-			<groupId>com.anthropic</groupId>
-			<artifactId>anthropic-java</artifactId>
-			<version>3.3.0</version>
 		</dependency>
 	</dependencies>
 
