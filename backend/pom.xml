@@ -114,9 +114,8 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<!-- Lancement local uniquement (./mvnw spring-boot:run), jamais dans l'image :
-					     factures d'exemple (mode test), Swagger, emails dans le Mailpit local (application.yaml). -->
+					     Swagger, emails dans le Mailpit local (application.yaml). -->
 					<environmentVariables>
-						<POINTEO_MODE_TEST>true</POINTEO_MODE_TEST>
 						<POINTEO_SWAGGER>true</POINTEO_SWAGGER>
 						<!-- US-58 : transactions de démonstration (bouchon bancaire) -->
 						<POINTEO_BOUCHON_BANCAIRE>true</POINTEO_BOUCHON_BANCAIRE>

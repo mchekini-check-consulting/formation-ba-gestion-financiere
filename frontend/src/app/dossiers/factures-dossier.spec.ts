@@ -42,14 +42,14 @@ describe('US-12 Factures d’un dossier', () => {
 
   afterEach(() => http.verify());
 
-  async function afficher(sens: Sens, factures: LigneFacture[], exemplesPossibles = false) {
+  async function afficher(sens: Sens, factures: LigneFacture[]) {
     const fixture: ComponentFixture<FacturesDossier> = TestBed.createComponent(FacturesDossier);
     fixture.componentRef.setInput('dossierId', 42);
     fixture.componentRef.setInput('sens', sens);
     await fixture.whenStable();
     const page = fixture.nativeElement as HTMLElement;
     expect(page.textContent).toContain('Chargement…');
-    http.expectOne(`/api/dossiers/42/factures?sens=${sens}`).flush({ factures, exemplesPossibles });
+    http.expectOne(`/api/dossiers/42/factures?sens=${sens}`).flush({ factures });
     await fixture.whenStable();
     return { fixture, page };
   }
@@ -69,7 +69,6 @@ describe('US-12 Factures d’un dossier', () => {
     expect(page.querySelectorAll('.badge--nouvelle')).toHaveLength(1);
     // US-13 RG1 : un clic sur le fichier ouvre son aperçu.
     expect(page.querySelector('a.fichier')?.getAttribute('href')).toBe('/dossiers/42/factures/2');
-    expect(page.querySelector('.exemples')).toBeNull();
   });
 
   it('CA vide : factures fournisseurs et factures clients', async () => {
@@ -81,24 +80,7 @@ describe('US-12 Factures d’un dossier', () => {
     expect(ventes.page.querySelector('.vide')?.textContent).toBe('Aucune facture client pour le moment');
   });
 
-  it('mode test : « Ajouter des factures d’exemple » puis la liste est rechargée', async () => {
-    const { fixture, page } = await afficher('ACHAT', [], true);
-    const bouton = page.querySelector<HTMLButtonElement>('.exemples');
-    expect(bouton?.textContent?.trim()).toBe("Ajouter des factures d'exemple (mode test)");
-
-    bouton?.click();
-    await fixture.whenStable();
-    expect(bouton?.disabled).toBe(true);
-    const ajout = http.expectOne('/api/dossiers/42/factures/exemples');
-    expect(ajout.request.method).toBe('POST');
-    ajout.flush(null, { status: 201, statusText: 'Created' });
-    await fixture.whenStable();
-    http.expectOne('/api/dossiers/42/factures?sens=ACHAT').flush({ factures: [TICKET], exemplesPossibles: true });
-    await fixture.whenStable();
-    expect(lignes(page)).toHaveLength(1);
-  });
-
-  it('service indisponible (liste ou ajout des exemples)', async () => {
+  it('service indisponible', async () => {
     const fixture = TestBed.createComponent(FacturesDossier);
     fixture.componentRef.setInput('dossierId', 42);
     fixture.componentRef.setInput('sens', 'VENTE');
@@ -108,12 +90,6 @@ describe('US-12 Factures d’un dossier', () => {
     const page = fixture.nativeElement as HTMLElement;
     expect(page.querySelector('[role=alert]')?.textContent).toContain('momentanément indisponible');
 
-    const autre = await afficher('ACHAT', [], true);
-    autre.page.querySelector<HTMLButtonElement>('.exemples')?.click();
-    await autre.fixture.whenStable();
-    http.expectOne('/api/dossiers/42/factures/exemples').flush(null, { status: 503, statusText: 'Unavailable' });
-    await autre.fixture.whenStable();
-    expect(autre.page.querySelector('[role=alert]')?.textContent).toContain('momentanément indisponible');
   });
 
   describe('US-51 Statut de traitement', () => {
@@ -319,11 +295,11 @@ describe('US-12 Factures d’un dossier', () => {
       expect(lignes(page)[0][5]).toBe('Lecture en cours');
 
       vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
-      http.expectOne(LISTE).flush({ factures: [EN_LECTURE], exemplesPossibles: false });
+      http.expectOne(LISTE).flush({ factures: [EN_LECTURE] });
       await fixture.whenStable();
 
       vi.advanceTimersByTime(DELAI_SUIVI_LECTURE_MS);
-      http.expectOne(LISTE).flush({ factures: [{ ...EN_LECTURE, lecture: 'LUE' }], exemplesPossibles: false });
+      http.expectOne(LISTE).flush({ factures: [{ ...EN_LECTURE, lecture: 'LUE' }] });
       await fixture.whenStable();
       expect(page.textContent).not.toContain('Chargement…');
       expect(lignes(page)[0][5]).toBe('Lue');
@@ -351,7 +327,7 @@ describe('US-12 Factures d’un dossier', () => {
       const suivi = http.expectOne(LISTE);
       select.value = 'EN_COURS';
       select.dispatchEvent(new Event('change'));
-      suivi.flush({ factures: [{ ...EN_LECTURE, lecture: 'LUE' }], exemplesPossibles: false });
+      suivi.flush({ factures: [{ ...EN_LECTURE, lecture: 'LUE' }] });
       await fixture.whenStable();
       expect(lignes(page)[0][5]).toBe('Lecture en cours');
 
@@ -400,7 +376,7 @@ describe('US-52 Importer des factures depuis le dossier', () => {
     fixture.componentRef.setInput('dossierId', 42);
     fixture.componentRef.setInput('sens', sens);
     await fixture.whenStable();
-    http.expectOne(`/api/dossiers/42/factures?sens=${sens}`).flush({ factures: [], exemplesPossibles: false });
+    http.expectOne(`/api/dossiers/42/factures?sens=${sens}`).flush({ factures: [] });
     await fixture.whenStable();
     const page = fixture.nativeElement as HTMLElement;
     const composant = fixture.componentInstance;
@@ -431,7 +407,7 @@ describe('US-52 Importer des factures depuis le dossier', () => {
     envoi.flush(IMPORTEE, { status: 201, statusText: 'Created' });
     await fixture.whenStable();
 
-    http.expectOne('/api/dossiers/42/factures?sens=ACHAT').flush({ factures: [IMPORTEE], exemplesPossibles: false });
+    http.expectOne('/api/dossiers/42/factures?sens=ACHAT').flush({ factures: [IMPORTEE] });
     await fixture.whenStable();
     expect(message(page)).toBe('1 facture importée');
     const cellules = Array.from(page.querySelectorAll('tbody td')).map((td) => td.textContent?.trim());
@@ -465,7 +441,7 @@ describe('US-52 Importer des factures depuis le dossier', () => {
     await fixture.whenStable();
     http.expectOne('/api/dossiers/42/factures?sens=ACHAT').flush(null, { status: 503, statusText: 'Unavailable' });
     await fixture.whenStable();
-    http.expectOne('/api/dossiers/42/factures?sens=ACHAT').flush({ factures: [IMPORTEE], exemplesPossibles: false });
+    http.expectOne('/api/dossiers/42/factures?sens=ACHAT').flush({ factures: [IMPORTEE] });
     await fixture.whenStable();
 
     expect(message(page)).toBe('1 facture importée, 3 refusées');

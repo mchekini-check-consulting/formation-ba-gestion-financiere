@@ -75,24 +75,6 @@ th {
   color: $gris;
 }
 
-.exemples {
-  align-self: flex-start;
-  padding: 8px 14px;
-  border: 1px dashed $or;
-  border-radius: 10px;
-  background: none;
-  color: $or;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-}
-
 // US-52 « Importer des factures » : bouton principal de l'onglet, champ fichier masqué.
 .import {
   display: flex;

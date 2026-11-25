@@ -59,7 +59,7 @@ describe('US-11 Ouvrir un dossier', () => {
   }
 
   function factures(sens: 'ACHAT' | 'VENTE') {
-    http.expectOne(`/api/dossiers/2/factures?sens=${sens}`).flush({ factures: [], exemplesPossibles: false });
+    http.expectOne(`/api/dossiers/2/factures?sens=${sens}`).flush({ factures: [] });
   }
 
   function onglets(page: HTMLElement) {

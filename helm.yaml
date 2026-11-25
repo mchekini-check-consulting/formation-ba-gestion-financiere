@@ -41,10 +41,6 @@ applications:
           qualif: https://frontend.formation-ba-gestion-financiere.qualif.check-consulting.net
           preprod: https://frontend.formation-ba-gestion-financiere.preprod.check-consulting.net
           prod: https://frontend.formation-ba-gestion-financiere.prod.check-consulting.net
-      # Mode test : bouton « factures d'exemple » des dossiers. Les codes et liens des emails ne
-      # s'affichent jamais à l'écran : ils arrivent dans Mailpit (voir SMTP_HOST). Jamais en preprod/prod.
-      - key: POINTEO_MODE_TEST
-        value: {dev: "true", qualif: "true", preprod: "false", prod: "false"}
       # US-58 Bouchon bancaire : transactions de démonstration (source « Bouchon ») dans les dossiers,
       # sans connexion à un vrai compte. Jamais en preprod/prod.
       - key: POINTEO_BOUCHON_BANCAIRE

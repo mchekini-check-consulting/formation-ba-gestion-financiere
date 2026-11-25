@@ -42,8 +42,7 @@ class FactureControllerTest {
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean@test.fr", "x", "Jean Dupont");
 	private final ListeFactures liste = new ListeFactures(
 			List.of(new LigneFacture(1L, "edf.pdf", Instant.EPOCH, "Jean Dupont", Facture.Statut.RECUE, true, null,
-					Facture.Statut.RECUE.suivants(), Facture.Source.DEPOT_CLIENT, null, false)),
-			false);
+					Facture.Statut.RECUE.suivants(), Facture.Source.DEPOT_CLIENT, null, false)));
 
 	private void connecte(Compte compte) {
 		when(sessions.consulter("jeton")).thenReturn(ResultatSession.active(compte));
@@ -53,7 +52,7 @@ class FactureControllerTest {
 	@Test
 	void rg1AchatsEtVentes() {
 		connecte(jean);
-		ListeFactures vide = new ListeFactures(List.of(), false);
+		ListeFactures vide = new ListeFactures(List.of());
 		when(factures.lister(jean, 42L, Facture.Sens.ACHAT)).thenReturn(Optional.of(liste));
 		when(factures.lister(jean, 42L, Facture.Sens.VENTE)).thenReturn(Optional.of(vide));
 
@@ -89,9 +88,7 @@ class FactureControllerTest {
 		assertEquals(HttpStatus.UNAUTHORIZED, controller.lister(null, "42", "ACHAT").getStatusCode());
 		connecte(new Compte("sophie@test.fr", "x", Role.DIRIGEANT, true, "Sophie Martin"));
 		assertEquals(HttpStatus.FORBIDDEN, controller.lister(AUTORISATION, "42", "ACHAT").getStatusCode());
-		assertEquals(HttpStatus.FORBIDDEN, controller.ajouterExemples(AUTORISATION, "42").getStatusCode());
 		verify(factures, never()).lister(any(), any(), any());
-		verify(factures, never()).ajouterExemples(any(), any());
 	}
 
 	// US-13 RG1 : aperçu dans la page ; RG2 : téléchargement du fichier d'origine.
@@ -212,15 +209,6 @@ class FactureControllerTest {
 		assertEquals(HttpStatus.FORBIDDEN,
 				controller.changerStatut(AUTORISATION, "42", "5", demande("EN_COURS", null)).getStatusCode());
 		verify(factures, never()).changerStatut(any(), any(), any(), any(), any());
-	}
-
-	@Test
-	void exemples() {
-		connecte(jean);
-		when(factures.ajouterExemples(jean, 42L)).thenReturn(true);
-		assertEquals(HttpStatus.CREATED, controller.ajouterExemples(AUTORISATION, "42").getStatusCode());
-		assertEquals(HttpStatus.NOT_FOUND, controller.ajouterExemples(AUTORISATION, "43").getStatusCode());
-		assertEquals(HttpStatus.NOT_FOUND, controller.ajouterExemples(AUTORISATION, "x").getStatusCode());
 	}
 
 	// ---------- US-52 Importer des factures depuis le dossier ----------

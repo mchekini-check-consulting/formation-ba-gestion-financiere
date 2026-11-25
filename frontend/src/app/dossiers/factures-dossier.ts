@@ -83,7 +83,6 @@ export class FacturesDossier implements OnChanges, OnDestroy {
   readonly sens = input.required<Sens>();
   protected readonly liste = signal<ListeFactures | null>(null);
   protected readonly erreur = signal<string | null>(null);
-  protected readonly ajoutEnCours = signal(false);
   protected readonly statuts = STATUTS;
   protected readonly libelles = LIBELLES_STATUT;
   protected readonly pastilles = PASTILLES_STATUT;
@@ -157,20 +156,6 @@ export class FacturesDossier implements OnChanges, OnDestroy {
       clearTimeout(this.suivi);
       this.suivi = null;
     }
-  }
-
-  ajouterExemples(): void {
-    this.ajoutEnCours.set(true);
-    this.factures.ajouterExemples(this.dossierId()).subscribe({
-      next: () => {
-        this.ajoutEnCours.set(false);
-        this.charger();
-      },
-      error: () => {
-        this.ajoutEnCours.set(false);
-        this.erreur.set(MESSAGE_INDISPONIBLE);
-      },
-    });
   }
 
   /** Bouton « Importer des factures ». */

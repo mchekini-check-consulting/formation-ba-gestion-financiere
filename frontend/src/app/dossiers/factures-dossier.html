@@ -149,12 +149,6 @@
       </table>
     }
   }
-  @if (l.exemplesPossibles) {
-    <!-- Mode test seulement : le dépôt de factures (US-15) n'existe pas encore. -->
-    <button type="button" class="exemples" [disabled]="ajoutEnCours()" (click)="ajouterExemples()">
-      Ajouter des factures d'exemple (mode test)
-    </button>
-  }
 } @else {
   <p class="muted">Chargement…</p>
 }

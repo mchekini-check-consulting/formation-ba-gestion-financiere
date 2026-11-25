@@ -1,15 +1,9 @@
 package com.example.gestionfinanciere.facture;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,10 +24,6 @@ public class FactureService {
 
 	private static final String CHAMP_DOSSIER = "dossierId";
 	private static final String CHAMP_FACTURE = "factureId";
-	private static final String PDF = "application/pdf";
-	private static final String ELECTRICITE = "facture-electricite-octobre.pdf";
-	private static final String TICKET = "ticket-fournitures.png";
-	private static final String VENTE = "facture-client-0042.pdf";
 
 	// US-51 RG3 : longueur de la colonne motif_a_completer.
 	static final int LONGUEUR_MOTIF_MAX = 255;
@@ -44,18 +34,15 @@ public class FactureService {
 	private final DossierRepository dossiers;
 	private final ApplicationEventPublisher evenements;
 	private final Clock horloge;
-	private final boolean modeTest;
 
 	public FactureService(FactureRepository factures, ChangementStatutFactureRepository historique,
-			ChampLuRepository champsLus, DossierRepository dossiers, ApplicationEventPublisher evenements, Clock horloge,
-			@Value("${pointeo.mode-test:false}") boolean modeTest) {
+			ChampLuRepository champsLus, DossierRepository dossiers, ApplicationEventPublisher evenements, Clock horloge) {
 		this.factures = factures;
 		this.historique = historique;
 		this.champsLus = champsLus;
 		this.evenements = evenements;
 		this.dossiers = dossiers;
 		this.horloge = horloge;
-		this.modeTest = modeTest;
 	}
 
 	// RG1 : achats ou ventes du dossier ; vide si le dossier n'existe pas ou est d'un autre cabinet.
@@ -70,7 +57,7 @@ public class FactureService {
 				.stream().map(LigneFacture::de).toList();
 		EvenementMetier.de("facture.liste", "consultee").avec(collaborateur.identifiantsPourLogs())
 				.avec(CHAMP_DOSSIER, dossierId).avec("sens", sens).avec("nombre", lignes.size()).info();
-		return Optional.of(new ListeFactures(lignes, modeTest));
+		return Optional.of(new ListeFactures(lignes));
 	}
 
 	// US-13 : nom et type du fichier, pour la page d'aperçu ; vide sans droits sur le dossier.
@@ -187,48 +174,6 @@ public class FactureService {
 				horloge.instant()));
 		evenement.info();
 		return new ResultatStatut(issue, LigneFacture.de(facture));
-	}
-
-	/**
-	 * Mode test seulement : le dépôt de factures (US-15) n'existe pas encore. Ajoute au dossier
-	 * deux factures fournisseurs (dont une déjà ouverte) et une facture client, déposées par le
-	 * collaborateur, avec un vrai fichier (US-13). Faux si le dossier n'est pas celui de son cabinet.
-	 */
-	@Transactional
-	public boolean ajouterExemples(Compte collaborateur, Long dossierId) {
-		Optional<Dossier> dossier = dossierDuCabinet(collaborateur, dossierId);
-		if (!modeTest || dossier.isEmpty()) {
-			refus("facture.exemples", collaborateur, dossierId, null);
-			return false;
-		}
-		Instant maintenant = horloge.instant();
-		Facture electricite = new Facture(dossier.get(), Facture.Sens.ACHAT, ELECTRICITE, PDF,
-				maintenant.minus(Duration.ofDays(3)), collaborateur, exemple(ELECTRICITE));
-		electricite.marquerOuverte(maintenant.minus(Duration.ofDays(2)));
-		List<Facture> exemples = List.of(electricite,
-				new Facture(dossier.get(), Facture.Sens.ACHAT, TICKET, "image/png",
-						maintenant.minus(Duration.ofHours(5)), collaborateur, exemple(TICKET)),
-				new Facture(dossier.get(), Facture.Sens.VENTE, VENTE, PDF, maintenant.minus(Duration.ofDays(1)),
-						collaborateur, exemple(VENTE)));
-		// US-53 RG1 : les factures fournisseurs d'exemple sont lues comme un vrai dépôt.
-		List<Facture> aLire = exemples.stream().filter(Facture::demarrerLecture).toList();
-		factures.saveAll(exemples);
-		aLire.forEach(f -> evenements.publishEvent(new DemandeLecture(f.getId())));
-		EvenementMetier.de("facture.exemples", "ajoutees").avec(collaborateur.identifiantsPourLogs())
-				.avec(CHAMP_DOSSIER, dossierId).avec("nombre", 3).info();
-		return true;
-	}
-
-	// Fichiers d'exemple rangés avec l'application (src/main/resources/exemples).
-	static byte[] exemple(String nom) {
-		try (InputStream fichier = FactureService.class.getResourceAsStream("/exemples/" + nom)) {
-			if (fichier == null) {
-				throw new IllegalStateException("fichier d'exemple absent : " + nom);
-			}
-			return fichier.readAllBytes();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
 	}
 
 	private Optional<Dossier> dossierDuCabinet(Compte collaborateur, Long dossierId) {

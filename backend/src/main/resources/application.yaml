@@ -43,11 +43,6 @@ pointeo:
     smtp-user: ${SMTP_USER:}
     smtp-password: ${SMTP_PASSWORD:}
     expediteur: ${MAIL_FROM:noreply@pointeo.fr}
-  # Mode test : bouton « factures d'exemple » d'un dossier (le dépôt de factures n'existe pas encore).
-  # Les codes et liens des emails ne sont jamais renvoyés à l'écran : ils arrivent par email (Mailpit).
-  # Jamais en preprod/prod. Activé en local par ./mvnw spring-boot:run (pom.xml) et en
-  # dev/qualif par POINTEO_MODE_TEST (helm.yaml).
-  mode-test: false
   # US-53 et US-54 Lecture automatique des factures : texte des photos et PDF scannés lu par le
   # programme Tesseract (facture/lecture/TesseractOcr), installé dans l'image du backend (Dockerfile).
   # Sans Tesseract (poste local) : photos et PDF scannés en « Lecture échouée » (saisie à la main) ;

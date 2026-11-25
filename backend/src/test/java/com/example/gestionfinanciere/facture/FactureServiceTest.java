@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -15,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,9 +51,8 @@ class FactureServiceTest {
 	private final Compte jean = Compte.administrateurDe(cabinet, "jean.dupont@cabinet-test.fr", "x", "Jean Dupont");
 	private final Dossier fleurs = new Dossier(cabinet, "Fleurs Martin EURL", "812345679", jean, MAINTENANT);
 
-	private FactureService service(boolean modeTest) {
-		return new FactureService(factures, historique, champsLus, dossiers, evenements, new HorlogeReglable(MAINTENANT),
-				modeTest);
+	private FactureService service() {
+		return new FactureService(factures, historique, champsLus, dossiers, evenements, new HorlogeReglable(MAINTENANT));
 	}
 
 	@BeforeEach
@@ -80,7 +77,7 @@ class FactureServiceTest {
 		when(factures.findByDossierIdAndSensOrderByDeposeeLeDescIdDesc(42L, Facture.Sens.ACHAT)).thenReturn(List.of(
 				facture(Facture.Sens.ACHAT, "edf.pdf", null), facture(Facture.Sens.ACHAT, "loyer.pdf", MAINTENANT)));
 
-		ListeFactures liste = service(false).lister(jean, 42L, Facture.Sens.ACHAT).orElseThrow();
+		ListeFactures liste = service().lister(jean, 42L, Facture.Sens.ACHAT).orElseThrow();
 
 		List<Facture.Statut> possibles = List.of(Facture.Statut.EN_COURS, Facture.Statut.A_COMPLETER);
 		assertEquals(List.of(
@@ -89,50 +86,14 @@ class FactureServiceTest {
 				new LigneFacture(5L, "loyer.pdf", MAINTENANT, "Jean Dupont", Facture.Statut.RECUE, false, null,
 						possibles, Facture.Source.DEPOT_CLIENT, null, false)),
 				liste.factures());
-		assertFalse(liste.exemplesPossibles());
-		assertTrue(service(true).lister(jean, 42L, Facture.Sens.VENTE).orElseThrow().exemplesPossibles());
 	}
 
 	// Droits du dossier (US-11 RG3) : dossier d'un autre cabinet -> rien.
 	@Test
 	void dossierDUnAutreCabinet() {
-		assertTrue(service(true).lister(jean, 99L, Facture.Sens.ACHAT).isEmpty());
-		assertFalse(service(true).ajouterExemples(jean, 99L));
+		assertTrue(service().lister(jean, 99L, Facture.Sens.ACHAT).isEmpty());
 		verify(factures, never()).findByDossierIdAndSensOrderByDeposeeLeDescIdDesc(any(), any());
 		verify(factures, never()).saveAll(any());
-	}
-
-	// Mode test : deux factures fournisseurs (une déjà ouverte) et une facture client.
-	@Test
-	@SuppressWarnings("unchecked")
-	void exemplesEnModeTestSeulement() {
-		assertFalse(service(false).ajouterExemples(jean, 42L));
-		verify(factures, never()).saveAll(any());
-
-		assertTrue(service(true).ajouterExemples(jean, 42L));
-		ArgumentCaptor<Iterable<Facture>> enregistrees = ArgumentCaptor.forClass(Iterable.class);
-		verify(factures).saveAll(enregistrees.capture());
-		List<Facture> liste = new ArrayList<>();
-		enregistrees.getValue().forEach(liste::add);
-		assertEquals(List.of("facture-electricite-octobre.pdf", "ticket-fournitures.png", "facture-client-0042.pdf"),
-				liste.stream().map(Facture::getNomFichier).toList());
-		assertEquals(List.of(Facture.Sens.ACHAT, Facture.Sens.ACHAT, Facture.Sens.VENTE),
-				liste.stream().map(Facture::getSens).toList());
-		assertEquals(List.of(false, true, true), liste.stream().map(f -> f.getOuverteLe() == null).toList());
-		assertTrue(liste.stream().allMatch(f -> f.getDossier() == fleurs && f.getDeposeePar() == jean));
-		// US-13 : chaque exemple a un vrai fichier (PDF ou PNG).
-		assertEquals(List.of("application/pdf", "image/png", "application/pdf"),
-				liste.stream().map(Facture::getTypeFichier).toList());
-		assertEquals("%PDF", new String(liste.get(0).getContenu(), 0, 4, StandardCharsets.US_ASCII));
-		assertEquals("PNG", new String(liste.get(1).getContenu(), 1, 3, StandardCharsets.US_ASCII));
-		// US-53 RG1 et US-54 RG1 : les factures fournisseurs et la facture client partent en lecture.
-		assertTrue(liste.stream().allMatch(f -> f.getLectureStatut() == Facture.StatutLecture.EN_COURS));
-		verify(evenements, org.mockito.Mockito.times(3)).publishEvent(any(Object.class));
-	}
-
-	@Test
-	void fichierDExempleAbsent() {
-		assertThrows(IllegalStateException.class, () -> FactureService.exemple("inconnu.pdf"));
 	}
 
 	private Facture avecFichier(Instant ouverteLe) {
@@ -153,15 +114,15 @@ class FactureServiceTest {
 		when(factures.findByIdAndDossierId(5L, 42L)).thenReturn(Optional.of(facture));
 
 		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, null)),
-				service(false).consulter(jean, 42L, 5L));
+				service().consulter(jean, 42L, 5L));
 		assertTrue(LigneFacture.de(facture).nouvelle());
 
-		FichierFacture fichier = service(false).ouvrir(jean, 42L, 5L, false).orElseThrow();
+		FichierFacture fichier = service().ouvrir(jean, 42L, 5L, false).orElseThrow();
 		assertEquals(new FichierFacture("edf.pdf", "application/pdf", new byte[] { 1, 2, 3 }), fichier);
 		assertEquals(MAINTENANT, facture.getOuverteLe());
 		assertFalse(LigneFacture.de(facture).nouvelle());
 
-		assertTrue(service(false).ouvrir(jean, 42L, 5L, true).isPresent());
+		assertTrue(service().ouvrir(jean, 42L, 5L, true).isPresent());
 	}
 
 	// US-13 RG3 : facture d'un autre dossier, dossier d'un autre cabinet, facture sans fichier.
@@ -171,10 +132,10 @@ class FactureServiceTest {
 		ReflectionTestUtils.setField(fleurs, "id", 42L);
 		when(factures.findByIdAndDossierId(6L, 42L)).thenReturn(Optional.of(sansFichier));
 
-		assertTrue(service(false).ouvrir(jean, 42L, 6L, false).isEmpty());
-		assertTrue(service(false).ouvrir(jean, 42L, 7L, false).isEmpty());
-		assertTrue(service(false).ouvrir(jean, 99L, 5L, true).isEmpty());
-		assertTrue(service(false).consulter(jean, 99L, 5L).isEmpty());
+		assertTrue(service().ouvrir(jean, 42L, 6L, false).isEmpty());
+		assertTrue(service().ouvrir(jean, 42L, 7L, false).isEmpty());
+		assertTrue(service().ouvrir(jean, 99L, 5L, true).isEmpty());
+		assertTrue(service().consulter(jean, 99L, 5L).isEmpty());
 		assertNull(sansFichier.getOuverteLe());
 	}
 
@@ -183,9 +144,9 @@ class FactureServiceTest {
 	void us13Logs() {
 		when(factures.findByIdAndDossierId(5L, 42L)).thenReturn(Optional.of(avecFichier(null)));
 		try (JournalCapture journal = JournalCapture.de(EvenementMetier.class)) {
-			service(false).ouvrir(jean, 42L, 5L, false);
-			service(false).ouvrir(jean, 42L, 5L, true);
-			service(false).ouvrir(jean, 99L, 5L, true);
+			service().ouvrir(jean, 42L, 5L, false);
+			service().ouvrir(jean, 42L, 5L, true);
+			service().ouvrir(jean, 99L, 5L, true);
 
 			List<String> evenements = journal.lignes().stream().map(e -> e.getLevel() + " "
 					+ e.getMDCPropertyMap().get("event") + "=" + e.getMDCPropertyMap().get("outcome")).toList();
@@ -208,10 +169,10 @@ class FactureServiceTest {
 	void us51Ca1EnCoursPuisTraitee() {
 		Facture facture = edf();
 
-		ResultatStatut enCours = service(false).changerStatut(jean, 42L, 5L, Facture.Statut.EN_COURS, null);
+		ResultatStatut enCours = service().changerStatut(jean, 42L, 5L, Facture.Statut.EN_COURS, null);
 		assertEquals(ResultatStatut.Issue.CHANGE, enCours.issue());
 		assertEquals(Facture.Statut.EN_COURS, enCours.facture().statut());
-		ResultatStatut traitee = service(false).changerStatut(jean, 42L, 5L, Facture.Statut.TRAITEE, " ");
+		ResultatStatut traitee = service().changerStatut(jean, 42L, 5L, Facture.Statut.TRAITEE, " ");
 		assertEquals(Facture.Statut.TRAITEE, traitee.facture().statut());
 		assertEquals(Facture.Statut.TRAITEE, facture.getStatut());
 
@@ -229,7 +190,7 @@ class FactureServiceTest {
 	@Test
 	void us51Ca2ACompleterAvecMotif() {
 		edf();
-		ResultatStatut resultat = service(false).changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER,
+		ResultatStatut resultat = service().changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER,
 				"  Facture illisible ");
 		assertEquals(ResultatStatut.Issue.CHANGE, resultat.issue());
 		assertEquals("Facture illisible", resultat.facture().motif());
@@ -242,7 +203,7 @@ class FactureServiceTest {
 	@Test
 	void us51Refus() {
 		Facture facture = edf();
-		FactureService service = service(false);
+		FactureService service = service();
 
 		assertEquals(ResultatStatut.Issue.MOTIF_MANQUANT,
 				service.changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, null).issue());
@@ -265,8 +226,8 @@ class FactureServiceTest {
 	void us51Logs() {
 		edf();
 		try (JournalCapture journal = JournalCapture.de(EvenementMetier.class)) {
-			service(false).changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, "Facture illisible");
-			service(false).changerStatut(jean, 42L, 5L, Facture.Statut.TRAITEE, null);
+			service().changerStatut(jean, 42L, 5L, Facture.Statut.A_COMPLETER, "Facture illisible");
+			service().changerStatut(jean, 42L, 5L, Facture.Statut.TRAITEE, null);
 
 			Map<String, String> change = journal.seule(Level.INFO).getMDCPropertyMap();
 			assertEquals("facture.statut", change.get("event"));
@@ -287,8 +248,8 @@ class FactureServiceTest {
 		when(factures.findByDossierIdAndSensOrderByDeposeeLeDescIdDesc(42L, Facture.Sens.VENTE))
 				.thenReturn(List.of(facture(Facture.Sens.VENTE, "client.pdf", null)));
 		try (JournalCapture journal = JournalCapture.de(EvenementMetier.class)) {
-			service(false).lister(jean, 42L, Facture.Sens.VENTE);
-			service(false).lister(jean, 99L, Facture.Sens.VENTE);
+			service().lister(jean, 42L, Facture.Sens.VENTE);
+			service().lister(jean, 99L, Facture.Sens.VENTE);
 
 			ILoggingEvent consultation = journal.seule(Level.INFO);
 			Map<String, String> champs = consultation.getMDCPropertyMap();
@@ -326,7 +287,7 @@ class FactureServiceTest {
 			return facture;
 		});
 
-		ResultatImport resultat = service(false).importer(jean, 42L, Facture.Sens.ACHAT,
+		ResultatImport resultat = service().importer(jean, 42L, Facture.Sens.ACHAT,
 				"C:\\docs\\facture-edf-juin.pdf", PDF);
 
 		assertEquals(ResultatImport.Statut.IMPORTEE, resultat.statut());
@@ -350,7 +311,7 @@ class FactureServiceTest {
 			return facture;
 		});
 
-		ResultatImport resultat = service(false).importer(jean, 42L, Facture.Sens.VENTE, "vente.pdf", PDF);
+		ResultatImport resultat = service().importer(jean, 42L, Facture.Sens.VENTE, "vente.pdf", PDF);
 
 		assertEquals(ResultatImport.Statut.IMPORTEE, resultat.statut());
 		assertEquals(Facture.StatutLecture.EN_COURS, resultat.facture().lecture());
@@ -362,12 +323,12 @@ class FactureServiceTest {
 	void us52Ca2FichierRefuse() {
 		byte[] xlsx = { 'P', 'K', 3, 4, 0, 0 };
 		assertEquals(ResultatImport.Statut.FORMAT_REFUSE,
-				service(false).importer(jean, 42L, Facture.Sens.VENTE, "releve.xlsx", xlsx).statut());
+				service().importer(jean, 42L, Facture.Sens.VENTE, "releve.xlsx", xlsx).statut());
 		assertEquals(ResultatImport.Statut.FORMAT_REFUSE,
-				service(false).importer(jean, 42L, Facture.Sens.VENTE, "vide.pdf", null).statut());
+				service().importer(jean, 42L, Facture.Sens.VENTE, "vide.pdf", null).statut());
 		byte[] gros = new byte[(int) DepotFactureService.TAILLE_MAX + 1];
 		assertEquals(ResultatImport.Statut.TROP_VOLUMINEUX,
-				service(false).importer(jean, 42L, Facture.Sens.ACHAT, "gros.pdf", gros).statut());
+				service().importer(jean, 42L, Facture.Sens.ACHAT, "gros.pdf", gros).statut());
 		verify(factures, never()).save(any());
 	}
 
@@ -379,16 +340,16 @@ class FactureServiceTest {
 		ReflectionTestUtils.setField(fleurs, "id", 42L);
 
 		assertEquals(ResultatImport.Statut.DOSSIER_INTROUVABLE,
-				service(false).importer(jean, 99L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
+				service().importer(jean, 99L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
 		assertEquals(ResultatImport.Statut.DOSSIER_INTROUVABLE,
-				service(false).importer(lucie, 42L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
+				service().importer(lucie, 42L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
 		verify(factures, never()).save(any());
 
 		// Une fois le dossier attribué à Lucie (US-20), l'import est possible.
 		when(dossiers.estAttribue(42L, 5L)).thenReturn(true);
 		when(factures.save(any(Facture.class))).thenAnswer(appel -> appel.getArgument(0));
 		assertEquals(ResultatImport.Statut.IMPORTEE,
-				service(false).importer(lucie, 42L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
+				service().importer(lucie, 42L, Facture.Sens.ACHAT, "edf.pdf", PDF).statut());
 	}
 
 }

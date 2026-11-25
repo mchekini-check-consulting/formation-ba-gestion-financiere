@@ -148,10 +148,8 @@ export interface VueFacture {
   lecture: Lecture | null;
 }
 
-/** exemplesPossibles : mode test seulement (dev, qualif), jamais en preprod ni en prod. */
 export interface ListeFactures {
   factures: LigneFacture[];
-  exemplesPossibles: boolean;
 }
 
 /** US-12 Factures d'un dossier : appels au backend (via le gateway). */
@@ -189,11 +187,6 @@ export class FactureService {
   /** US-51 : changer le statut ; le motif n'est utile que pour « À compléter » (RG3). */
   changerStatut(dossierId: number, factureId: number, statut: Statut, motif: string | null): Observable<LigneFacture> {
     return this.http.patch<LigneFacture>(`${this.url}/${dossierId}/factures/${factureId}/statut`, { statut, motif });
-  }
-
-  /** Mode test : factures d'exemple, le dépôt (US-15) n'existant pas encore. */
-  ajouterExemples(dossierId: number): Observable<void> {
-    return this.http.post<void>(`${this.url}/${dossierId}/factures/exemples`, null);
   }
 }
 

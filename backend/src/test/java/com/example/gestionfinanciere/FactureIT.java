@@ -28,9 +28,9 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.CompteRepository;
 import com.example.gestionfinanciere.compte.SessionService;
 
-// US-12 Factures d'un dossier : vrai serveur HTTP, migrations Flyway et PostgreSQL 16 jetable,
-// en mode test (factures d'exemple, le dépôt US-15 n'existant pas encore).
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "pointeo.mode-test=true")
+// US-12 Factures d'un dossier : vrai serveur HTTP, migrations Flyway et PostgreSQL 16 jetable.
+// Les factures sont importées par le cabinet (US-52) à partir des fichiers d'exemple des tests.
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 class FactureIT {
 
@@ -84,6 +84,22 @@ class FactureIT {
 		return "/dossiers/" + id.group(1);
 	}
 
+	// Deux factures fournisseurs (l'électricité puis le ticket) et une facture client, importées par le cabinet.
+	private void exemples(String dossier, String jeton) throws IOException, InterruptedException {
+		for (String[] exemple : new String[][] { { "ACHAT", "facture-electricite-octobre.pdf" },
+				{ "ACHAT", "ticket-fournitures.png" }, { "VENTE", "facture-client-0042.pdf" } }) {
+			HttpResponse<String> import_ = importer(dossier + "/factures?sens=" + exemple[0], exemple[1],
+					fichierDExemple(exemple[1]), jeton);
+			assertThat(import_.statusCode()).isEqualTo(201);
+		}
+	}
+
+	private static byte[] fichierDExemple(String nom) throws IOException {
+		try (var flux = FactureIT.class.getResourceAsStream("/exemples/" + nom)) {
+			return flux.readAllBytes();
+		}
+	}
+
 	// CA vide, puis RG1 (achats / ventes), RG2 (fichier, date, déposée par, « Reçue »), RG3 (« Nouvelle »).
 	@Test
 	void facturesDUnDossier() throws Exception {
@@ -91,16 +107,16 @@ class FactureIT {
 		String dossier = dossier(jeton);
 
 		assertThat(appel("GET", dossier + "/factures?sens=ACHAT", null, jeton).body())
-				.isEqualTo("{\"factures\":[],\"exemplesPossibles\":true}");
+				.isEqualTo("{\"factures\":[]}");
 
-		assertThat(appel("POST", dossier + "/factures/exemples", null, jeton).statusCode()).isEqualTo(201);
+		exemples(dossier, jeton);
 
 		HttpResponse<String> achats = appel("GET", dossier + "/factures?sens=ACHAT", null, jeton);
 		assertThat(achats.statusCode()).isEqualTo(200);
-		// La plus récente d'abord : le ticket (nouveau), puis l'électricité (déjà ouverte).
+		// La plus récente d'abord : le ticket, puis l'électricité ; personne ne les a ouvertes.
 		assertThat(achats.body()).containsSubsequence("\"nomFichier\":\"ticket-fournitures.png\"",
 				"\"deposeePar\":\"Jean Dupont\",\"statut\":\"RECUE\",\"nouvelle\":true",
-				"\"nomFichier\":\"facture-electricite-octobre.pdf\"", "\"nouvelle\":false");
+				"\"nomFichier\":\"facture-electricite-octobre.pdf\"", "\"nouvelle\":true");
 		assertThat(achats.body()).doesNotContain("facture-client-0042.pdf");
 
 		// Sans « sens » : factures fournisseurs (onglet par défaut). Le statut de lecture (US-53) peut avoir
@@ -119,13 +135,12 @@ class FactureIT {
 	void controleDAcces() throws Exception {
 		String jeton = jeanConnecte();
 		String dossier = dossier(jeton);
-		appel("POST", dossier + "/factures/exemples", null, jeton);
+		exemples(dossier, jeton);
 
 		String autreCabinet = jeanConnecte();
 		HttpResponse<String> refus = appel("GET", dossier + "/factures?sens=ACHAT", null, autreCabinet);
 		assertThat(refus.statusCode()).isEqualTo(404);
 		assertThat(refus.body()).contains("Dossier introuvable ou accès non autorisé").doesNotContain("ticket");
-		assertThat(appel("POST", dossier + "/factures/exemples", null, autreCabinet).statusCode()).isEqualTo(404);
 
 		assertThat(appel("GET", dossier + "/factures", null, null).statusCode()).isEqualTo(401);
 		assertThat(appel("GET", "/dossiers/abc/factures", null, jeton).statusCode()).isEqualTo(404);
@@ -158,7 +173,7 @@ class FactureIT {
 	void us13ApercuEtTelechargement() throws Exception {
 		String jeton = jeanConnecte();
 		String dossier = dossier(jeton);
-		appel("POST", dossier + "/factures/exemples", null, jeton);
+		exemples(dossier, jeton);
 		Long ticket = premiereFacture(dossier, "ACHAT", jeton);
 		String chemin = dossier + "/factures/" + ticket;
 
@@ -172,8 +187,10 @@ class FactureIT {
 		assertThat(apercu.headers().firstValue("Content-Type")).hasValue("image/png");
 		assertThat(apercu.headers().firstValue("Content-Disposition").orElseThrow()).startsWith("inline;");
 		assertThat(debut(apercu.body(), 4)).isEqualTo("\u0089PNG");
-		assertThat(appel("GET", dossier + "/factures?sens=ACHAT", null, jeton).body())
-				.doesNotContain("\"nouvelle\":true");
+		// Le ticket ouvert n'est plus « Nouvelle » ; l'électricité, jamais ouverte, le reste.
+		assertThat(appel("GET", dossier + "/factures?sens=ACHAT", null, jeton).body()).containsSubsequence(
+				"\"nomFichier\":\"ticket-fournitures.png\"", "\"nouvelle\":false",
+				"\"nomFichier\":\"facture-electricite-octobre.pdf\"", "\"nouvelle\":true");
 
 		Long vente = premiereFacture(dossier, "VENTE", jeton);
 		HttpResponse<byte[]> telechargement = fichier(dossier + "/factures/" + vente + "/fichier?telechargement=true",
@@ -189,7 +206,7 @@ class FactureIT {
 	void us13ControleDAcces() throws Exception {
 		String jeton = jeanConnecte();
 		String dossier = dossier(jeton);
-		appel("POST", dossier + "/factures/exemples", null, jeton);
+		exemples(dossier, jeton);
 		Long ticket = premiereFacture(dossier, "ACHAT", jeton);
 		String chemin = dossier + "/factures/" + ticket + "/fichier";
 
