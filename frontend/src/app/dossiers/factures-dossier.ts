@@ -16,7 +16,9 @@ import {
   STATUTS,
   Sens,
   Statut,
+  dateOuTiret,
   formaterDepot,
+  montantOuTiret,
 } from './facture.service';
 
 const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réessayez.';
@@ -269,5 +271,13 @@ export class FacturesDossier implements OnChanges, OnDestroy {
 
   protected depot(facture: LigneFacture): string {
     return formaterDepot(facture.deposeeLe);
+  }
+
+  protected date(facture: LigneFacture): string {
+    return dateOuTiret(facture.dateEmission);
+  }
+
+  protected ttc(facture: LigneFacture): string {
+    return montantOuTiret(facture.montantTtc);
   }
 }

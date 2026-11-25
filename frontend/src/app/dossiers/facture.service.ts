@@ -56,6 +56,10 @@ export interface LigneFacture {
   lecture: StatutLecture | null;
   /** US-53 : pastille « À vérifier » (au moins un champ lu avec un doute ou non lu). */
   lectureAVerifier: boolean;
+  /** Tiers, date d'émission (AAAA-MM-JJ) et TTC lus ou corrigés ; null tant qu'ils ne sont pas connus. */
+  nomTiers: string | null;
+  dateEmission: string | null;
+  montantTtc: number | null;
 }
 
 /** US-53 RG6 : statut de la lecture automatique d'une facture fournisseur. */
@@ -290,6 +294,11 @@ function montant(valeur: number | null): string | null {
 /** « 5.5 » -> « 5,5 % ». */
 export function taux(valeur: number): string {
   return `${valeur.toLocaleString('fr-FR')} %`;
+}
+
+/** « 2026-06-12 » -> « 12/06/2026 » ; « — » si la date n'est pas connue. */
+export function dateOuTiret(date: string | null): string {
+  return date === null ? '—' : date.split('-').reverse().join('/');
 }
 
 /** US-54 CA2 : montant d'une ligne du détail de la TVA ; « — » si la facture ne le donne pas. */

@@ -9,6 +9,21 @@ $gris: #42526b;
   gap: 16px;
 }
 
+// Beaucoup de colonnes : le tableau défile sur petit écran.
+.defilement {
+  overflow-x: auto;
+}
+
+.montant {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.date {
+  white-space: nowrap;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
