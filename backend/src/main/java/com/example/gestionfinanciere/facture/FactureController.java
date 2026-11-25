@@ -36,7 +36,6 @@ import com.example.gestionfinanciere.dossier.DossierController;
 //   GET  /dossiers/{id}/factures/{f}               nom et type du fichier (US-13)
 //   GET  /dossiers/{id}/factures/{f}/fichier       fichier d'origine : aperçu, ou ?telechargement=true (US-13)
 //   PATCH /dossiers/{id}/factures/{f}/statut       changer le statut, {"statut","motif"} (US-51)
-//   POST /dossiers/{id}/factures/exemples          mode test seulement : factures d'exemple
 @RestController
 @RequestMapping("/dossiers/{dossierId}/factures")
 public class FactureController {
@@ -223,22 +222,6 @@ public class FactureController {
 			}
 		}
 		return Optional.empty();
-	}
-
-	@PostMapping("/exemples")
-	public ResponseEntity<Object> ajouterExemples(
-			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String autorisation,
-			@PathVariable String dossierId) {
-		ResultatSession session = sessions.consulter(SessionController.jeton(autorisation));
-		ResponseEntity<Object> refus = DossierController.refus(session);
-		if (refus != null) {
-			return refus;
-		}
-		Optional<Long> numero = DossierController.numero(dossierId);
-		if (numero.isEmpty() || !factures.ajouterExemples(session.compte(), numero.get())) {
-			return DossierController.introuvable();
-		}
-		return ResponseEntity.status(HttpStatus.CREATED).build();
 	}
 
 	private static Optional<Facture.Sens> sens(String valeur) {
