@@ -71,8 +71,8 @@ test.describe('Factures d’un dossier', () => {
 
     // US-56 CA2 : facture d'achat traitée corrigée (écriture non exportée), puis écriture re-générée.
     await page.getByRole('button', { name: 'Corriger' }).click();
-    await page.getByLabel('Montant HT').fill('160');
-    await page.getByLabel('Montant TTC').fill('191,07');
+    await page.getByLabel('Montant HT', { exact: true }).fill('160');
+    await page.getByLabel('Montant TTC', { exact: true }).fill('191,07');
     await page.getByRole('button', { name: 'Enregistrer' }).click();
     await expect(ecritures.getByText('À re-générer')).toBeVisible();
     await ecritures.getByRole('button', { name: 'Re-générer les écritures' }).click();
