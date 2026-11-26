@@ -51,6 +51,11 @@ public class CorrectionFactureService {
 	static final String MESSAGE_TYPE_TIERS = "Type de tiers : Fournisseur ou Client";
 	static final String MESSAGE_TAUX = "Taux de TVA : entre 0 et 100 %";
 
+	// Champs des logs métier.
+	private static final String LOG_ISSUE = "issue";
+	private static final String LOG_DOSSIER = "dossierId";
+	private static final String LOG_FACTURE = "factureId";
+
 	// RG5 : champs obligatoires pour valider, dans l'ordre de la fiche.
 	static final Map<ChampFacture, String> OBLIGATOIRES = obligatoires();
 
@@ -107,8 +112,8 @@ public class CorrectionFactureService {
 	private ResultatCorrection traiter(Compte collaborateur, Long dossierId, Long factureId,
 			InformationsFacture informations, boolean validation) {
 		EvenementMetier evenement = EvenementMetier.de(validation ? "facture.validation" : "facture.correction",
-				"traitee").avec(collaborateur.identifiantsPourLogs()).avec("dossierId", dossierId)
-				.avec("factureId", factureId);
+				"traitee").avec(collaborateur.identifiantsPourLogs()).avec(LOG_DOSSIER, dossierId)
+				.avec(LOG_FACTURE, factureId);
 		Optional<Facture> trouvee = trouver(collaborateur, dossierId, factureId);
 		if (trouvee.isEmpty()) {
 			return refus(evenement, ResultatCorrection.Issue.INTROUVABLE, null);
@@ -143,7 +148,7 @@ public class CorrectionFactureService {
 			// Envoyé sur Kafka une fois la validation enregistrée (EvenementsFactureKafka).
 			evenements.publishEvent(new FactureTraitee(facture.getId(), dossierId, facture.getSens(), maintenant));
 		}
-		evenement.avec("issue", issue).avec("champsModifies", modifies.size()).info();
+		evenement.avec(LOG_ISSUE, issue).avec("champsModifies", modifies.size()).info();
 		return new ResultatCorrection(issue, null, vues.vue(facture));
 	}
 
@@ -155,7 +160,7 @@ public class CorrectionFactureService {
 	@Transactional
 	public ResultatCorrection regenerer(Compte collaborateur, Long dossierId, Long factureId) {
 		EvenementMetier evenement = EvenementMetier.de("facture.regeneration_ecriture", "traitee")
-				.avec(collaborateur.identifiantsPourLogs()).avec("dossierId", dossierId).avec("factureId", factureId);
+				.avec(collaborateur.identifiantsPourLogs()).avec(LOG_DOSSIER, dossierId).avec(LOG_FACTURE, factureId);
 		Optional<Facture> trouvee = trouver(collaborateur, dossierId, factureId);
 		if (trouvee.isEmpty()) {
 			return refus(evenement, ResultatCorrection.Issue.INTROUVABLE, null);
@@ -174,7 +179,7 @@ public class CorrectionFactureService {
 			return refus(evenement, ResultatCorrection.Issue.INVALIDE, invalide.get());
 		}
 		ecritures.generer(facture, collaborateur, horloge.instant());
-		evenement.avec("issue", ResultatCorrection.Issue.REGENEREE).info();
+		evenement.avec(LOG_ISSUE, ResultatCorrection.Issue.REGENEREE).info();
 		return new ResultatCorrection(ResultatCorrection.Issue.REGENEREE, null, vues.vue(facture));
 	}
 
@@ -212,7 +217,7 @@ public class CorrectionFactureService {
 
 	private static ResultatCorrection refus(EvenementMetier evenement, ResultatCorrection.Issue issue,
 			String message) {
-		evenement.avec("issue", issue).warn();
+		evenement.avec(LOG_ISSUE, issue).warn();
 		return ResultatCorrection.refuse(issue, message);
 	}
 
