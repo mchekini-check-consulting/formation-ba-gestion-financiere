@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 // US-03 Se connecter (PTO-4), de l'écran jusqu'à la base : comptes de démonstration
-// de backend/src/main/resources/db/migration/V6__compte_donnees_demo.sql.
+// de backend/src/main/resources/db/migration/V6__compte_donnees_demo.sql. Connexion directe
+// (l'étape du code reçu par email a été retirée) : l'accueil du rôle s'ouvre.
 const EMAIL = 'jean.dupont@cabinet-test.fr';
 const MOT_DE_PASSE = 'Pointeo2026!';
 const MESSAGE_ERREUR = 'Email ou mot de passe incorrect';
@@ -12,12 +13,12 @@ test.describe('US-03 Se connecter', () => {
     await expect(page.getByRole('heading', { name: 'Se connecter' })).toBeVisible();
   });
 
-  test('CA1 — collaborateur : bon mot de passe -> écran du code reçu par email', async ({ page }) => {
+  test('CA1 — collaborateur : bon mot de passe -> ses dossiers', async ({ page }) => {
     await page.getByLabel('Email').fill(EMAIL);
     await page.getByLabel('Mot de passe', { exact: true }).fill(MOT_DE_PASSE);
     await page.getByRole('button', { name: 'Se connecter' }).click();
 
-    await expect(page).toHaveURL(/\/verification-code$/);
+    await expect(page).toHaveURL(/\/dossiers$/);
   });
 
   test('CA2 — mauvais mot de passe -> « Email ou mot de passe incorrect »', async ({ page }) => {
@@ -35,7 +36,7 @@ test.describe('US-03 Se connecter', () => {
     await page.getByLabel('Mot de passe', { exact: true }).fill(MOT_DE_PASSE);
     await page.getByRole('button', { name: 'Se connecter' }).click();
 
-    await expect(page).toHaveURL(/\/verification-code$/);
+    await expect(page).toHaveURL(/\/dossiers$/);
   });
 
   test('RG2 — email inconnu : même message, sans dire ce qui est faux', async ({ page }) => {
@@ -46,12 +47,12 @@ test.describe('US-03 Se connecter', () => {
     await expect(page.getByRole('alert')).toHaveText(MESSAGE_ERREUR);
   });
 
-  test('dirigeant client : bon mot de passe -> écran du code reçu par email', async ({ page }) => {
+  test('dirigeant client : bon mot de passe -> son espace client', async ({ page }) => {
     await page.getByLabel('Email').fill('sophie.martin@boulangerie-test.fr');
     await page.getByLabel('Mot de passe', { exact: true }).fill(MOT_DE_PASSE);
     await page.getByRole('button', { name: 'Se connecter' }).click();
 
-    await expect(page).toHaveURL(/\/verification-code$/);
+    await expect(page).toHaveURL(/\/espace-client$/);
   });
 
   test('champs vides -> « Ce champ est obligatoire »', async ({ page }) => {
