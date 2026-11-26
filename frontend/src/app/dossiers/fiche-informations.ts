@@ -12,6 +12,7 @@ import {
   Lecture,
   VueFacture,
   formaterDepot,
+  modifiable,
   montantOuTiret,
   taux,
   valeurChamp,
@@ -92,7 +93,9 @@ export function informationsDe(saisie: Saisie): InformationsFacture | string {
  * US-55 : un clic sur un champ (ou son repère) met la fiche en modification, le curseur sur ce champ
  * (RG2) ; contrepartie choisie dans le plan comptable du dossier (RG3) ; « Enregistrer », « Valider »
  * (RG4 à RG6) ou « Valider et passer à la suivante ». Lecture échouée : saisie à la main (RG7).
- * Une facture « Traitée » ou en cours de lecture ne se modifie pas.
+ * Une facture en cours de lecture ne se modifie pas. US-56 : une facture d'achat « Traitée » se corrige
+ * (« Enregistrer » seulement) tant que son écriture n'est pas exportée ; une facture de vente « Traitée »
+ * ne se modifie plus.
  */
 @Component({
   imports: [FormsModule, NgTemplateOutlet],
@@ -120,7 +123,7 @@ export class FicheInformations {
   protected saisie: Saisie = saisieDe(this.lectureVide());
 
   protected modifiable(f: VueFacture): boolean {
-    return f.statut !== 'TRAITEE' && f.lecture !== null && f.lecture.statut !== 'EN_COURS';
+    return modifiable(f);
   }
 
   /** RG2 : la fiche passe en modification, le curseur sur le champ cliqué. */

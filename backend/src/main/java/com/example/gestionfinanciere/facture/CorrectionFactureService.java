@@ -30,14 +30,22 @@ import com.example.gestionfinanciere.plancomptable.CompteComptableRepository;
  * US-55 Vérifier, corriger et valider les informations d'une facture. Tous les champs se modifient
  * (RG2) ; la contrepartie est un compte actif du plan comptable du dossier (RG3) ; « Valider » exige
  * les champs obligatoires (RG5) et HT + TVA = TTC (RG4), puis passe la facture en « Traitée » (RG6).
- * Chaque modification garde son auteur et sa date (RG8). Une facture traitée ou en cours de lecture
- * ne se modifie pas. Les écritures comptables (US-56, US-57) ne sont pas encore générées.
+ * Chaque modification garde son auteur et sa date (RG8). Une facture en cours de lecture ne se modifie pas.
+ * US-56 : la validation d'une facture d'achat génère son écriture (RG1 à RG4). Une facture d'achat traitée
+ * se corrige encore (informations complètes et cohérentes) tant que son écriture n'est pas exportée, puis
+ * « Re-générer les écritures » la recalcule (RG5, CA2) ; exportée, plus rien ne change (CA3). Une facture
+ * de vente traitée ne se modifie plus (écritures : US-57).
  */
 @Service
 @Loggable
 public class CorrectionFactureService {
 
 	static final String MESSAGE_TRAITEE = "Facture traitée : ses informations ne se modifient plus";
+	static final String MESSAGE_EXPORTEE = "Écriture exportée : la facture ne se modifie plus";
+	static final String MESSAGE_DEJA_VALIDEE =
+			"Facture déjà validée : enregistrez la correction puis re-générez les écritures";
+	static final String MESSAGE_NON_VALIDEE = "Validez la facture pour générer ses écritures";
+	static final String MESSAGE_SANS_ECRITURE = "Pas d'écriture pour une facture de vente";
 	static final String MESSAGE_LECTURE_EN_COURS = "Lecture en cours : réessayez dans quelques secondes";
 	static final String MESSAGE_INCOHERENTS = "Montants incohérents : HT + TVA ≠ TTC";
 	static final String MESSAGE_TYPE_TIERS = "Type de tiers : Fournisseur ou Client";
@@ -64,11 +72,12 @@ public class CorrectionFactureService {
 	private final VuesFacture vues;
 	private final Clock horloge;
 	private final ApplicationEventPublisher evenements;
+	private final EcrituresFacture ecritures;
 
 	public CorrectionFactureService(FactureRepository factures, ChampLuRepository champsLus,
 			ChangementStatutFactureRepository historique, CorrectionFactureRepository corrections,
 			CompteComptableRepository comptes, DossierRepository dossiers, VuesFacture vues, Clock horloge,
-			ApplicationEventPublisher evenements) {
+			ApplicationEventPublisher evenements, EcrituresFacture ecritures) {
 		this.factures = factures;
 		this.champsLus = champsLus;
 		this.historique = historique;
@@ -78,6 +87,7 @@ public class CorrectionFactureService {
 		this.vues = vues;
 		this.horloge = horloge;
 		this.evenements = evenements;
+		this.ecritures = ecritures;
 	}
 
 	// RG2, RG3, RG7, RG8 : enregistre les informations, sans changer le statut.
@@ -99,19 +109,17 @@ public class CorrectionFactureService {
 		EvenementMetier evenement = EvenementMetier.de(validation ? "facture.validation" : "facture.correction",
 				"traitee").avec(collaborateur.identifiantsPourLogs()).avec("dossierId", dossierId)
 				.avec("factureId", factureId);
-		Optional<Facture> trouvee = AccesDossier.dossierAccessible(dossiers, collaborateur, dossierId)
-				.flatMap(dossier -> factures.findByIdAndDossierId(factureId, dossier.getId()));
+		Optional<Facture> trouvee = trouver(collaborateur, dossierId, factureId);
 		if (trouvee.isEmpty()) {
 			return refus(evenement, ResultatCorrection.Issue.INTROUVABLE, null);
 		}
 		Facture facture = trouvee.get();
-		Optional<String> figee = figee(facture);
+		Optional<String> figee = figee(facture, validation);
 		if (figee.isPresent()) {
 			return refus(evenement, ResultatCorrection.Issue.FIGEE, figee.get());
 		}
 		InformationsFacture valeurs = informations == null ? VIDE : informations.nettoyees();
-		Optional<String> invalide = invalide(dossierId, valeurs)
-				.or(() -> validation ? incomplete(valeurs) : Optional.empty());
+		Optional<String> invalide = refusInformations(facture, dossierId, valeurs, validation);
 		if (invalide.isPresent()) {
 			return refus(evenement, ResultatCorrection.Issue.INVALIDE, invalide.get());
 		}
@@ -131,11 +139,75 @@ public class CorrectionFactureService {
 			historique.save(new ChangementStatutFacture(facture, ancien, Facture.Statut.TRAITEE, null, collaborateur,
 					maintenant));
 			issue = ResultatCorrection.Issue.VALIDEE;
+			ecritures.generer(facture, collaborateur, maintenant);
 			// Envoyé sur Kafka une fois la validation enregistrée (EvenementsFactureKafka).
 			evenements.publishEvent(new FactureTraitee(facture.getId(), dossierId, facture.getSens(), maintenant));
 		}
 		evenement.avec("issue", issue).avec("champsModifies", modifies.size()).info();
 		return new ResultatCorrection(issue, null, vues.vue(facture));
+	}
+
+	/**
+	 * US-56 RG5 : recalcule l'écriture d'une facture d'achat traitée à partir de ses informations
+	 * actuelles, tant qu'elle n'est pas exportée (CA2) ; exportée : refusé (CA3). Une facture traitée
+	 * avant l'US-56 reçoit ainsi son écriture.
+	 */
+	@Transactional
+	public ResultatCorrection regenerer(Compte collaborateur, Long dossierId, Long factureId) {
+		EvenementMetier evenement = EvenementMetier.de("facture.regeneration_ecriture", "traitee")
+				.avec(collaborateur.identifiantsPourLogs()).avec("dossierId", dossierId).avec("factureId", factureId);
+		Optional<Facture> trouvee = trouver(collaborateur, dossierId, factureId);
+		if (trouvee.isEmpty()) {
+			return refus(evenement, ResultatCorrection.Issue.INTROUVABLE, null);
+		}
+		Facture facture = trouvee.get();
+		Optional<String> figee = nonRegenerable(facture);
+		if (figee.isPresent()) {
+			return refus(evenement, ResultatCorrection.Issue.FIGEE, figee.get());
+		}
+		InformationsFacture actuelles = new InformationsFacture(facture.getTypeTiers(), facture.getNomTiers(),
+				facture.getNumeroFacture(), facture.getDateEmission(), facture.getMontantHt(),
+				facture.getMontantTva(), facture.getTauxTva(), facture.getMontantTtc(),
+				facture.getCompteContrepartie());
+		Optional<String> invalide = incomplete(actuelles).or(() -> ecritures.refus(facture, actuelles));
+		if (invalide.isPresent()) {
+			return refus(evenement, ResultatCorrection.Issue.INVALIDE, invalide.get());
+		}
+		ecritures.generer(facture, collaborateur, horloge.instant());
+		evenement.avec("issue", ResultatCorrection.Issue.REGENEREE).info();
+		return new ResultatCorrection(ResultatCorrection.Issue.REGENEREE, null, vues.vue(facture));
+	}
+
+	/**
+	 * Formats et RG3, puis RG5 et RG4 pour une validation ou une facture traitée (US-56 : son écriture doit
+	 * pouvoir se recalculer), puis l'écriture d'une facture d'achat validée (comptes du plan, équilibre).
+	 */
+	private Optional<String> refusInformations(Facture facture, Long dossierId, InformationsFacture valeurs,
+			boolean validation) {
+		boolean complete = validation || facture.getStatut() == Facture.Statut.TRAITEE;
+		Optional<String> refus = invalide(dossierId, valeurs);
+		if (refus.isEmpty() && complete) {
+			refus = incomplete(valeurs);
+		}
+		if (refus.isEmpty() && validation && EcrituresFacture.concernee(facture)) {
+			refus = ecritures.refus(facture, valeurs);
+		}
+		return refus;
+	}
+
+	private Optional<Facture> trouver(Compte collaborateur, Long dossierId, Long factureId) {
+		return AccesDossier.dossierAccessible(dossiers, collaborateur, dossierId)
+				.flatMap(dossier -> factures.findByIdAndDossierId(factureId, dossier.getId()));
+	}
+
+	private Optional<String> nonRegenerable(Facture facture) {
+		if (!EcrituresFacture.concernee(facture)) {
+			return Optional.of(MESSAGE_SANS_ECRITURE);
+		}
+		if (facture.getStatut() != Facture.Statut.TRAITEE) {
+			return Optional.of(MESSAGE_NON_VALIDEE);
+		}
+		return ecritures.exportee(facture) ? Optional.of(MESSAGE_EXPORTEE) : Optional.empty();
 	}
 
 	private static ResultatCorrection refus(EvenementMetier evenement, ResultatCorrection.Issue issue,
@@ -144,14 +216,25 @@ public class CorrectionFactureService {
 		return ResultatCorrection.refuse(issue, message);
 	}
 
-	private static Optional<String> figee(Facture facture) {
+	private Optional<String> figee(Facture facture, boolean validation) {
 		if (facture.getStatut() == Facture.Statut.TRAITEE) {
-			return Optional.of(MESSAGE_TRAITEE);
+			return traiteeFigee(facture, validation);
 		}
 		if (facture.getLectureStatut() == Facture.StatutLecture.EN_COURS) {
 			return Optional.of(MESSAGE_LECTURE_EN_COURS);
 		}
 		return Optional.empty();
+	}
+
+	// US-56 : une facture d'achat traitée se corrige tant que son écriture n'est pas exportée.
+	private Optional<String> traiteeFigee(Facture facture, boolean validation) {
+		if (!EcrituresFacture.concernee(facture)) {
+			return Optional.of(MESSAGE_TRAITEE);
+		}
+		if (ecritures.exportee(facture)) {
+			return Optional.of(MESSAGE_EXPORTEE);
+		}
+		return validation ? Optional.of(MESSAGE_DEJA_VALIDEE) : Optional.empty();
 	}
 
 	// Formats et RG3 : premier refus dans l'ordre de la fiche.

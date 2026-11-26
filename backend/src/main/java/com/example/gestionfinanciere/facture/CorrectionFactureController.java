@@ -23,7 +23,9 @@ import com.example.gestionfinanciere.dossier.DossierController;
 // US-55 Vérifier, corriger et valider les informations d'une facture, exposé par le gateway sous
 // /backend/dossiers/{id}/factures ; mêmes droits que le dossier (US-11 RG3), session obligatoire (US-07) :
 //   PUT  /dossiers/{id}/factures/{f}/informations  enregistrer les champs corrigés ou saisis (RG2, RG3, RG7)
-//   POST /dossiers/{id}/factures/{f}/validation    enregistrer puis passer en « Traitée » (RG4 à RG6)
+//   POST /dossiers/{id}/factures/{f}/validation    enregistrer puis passer en « Traitée » (RG4 à RG6) ;
+//                                                  facture d'achat : génère son écriture (US-56 RG1)
+//   POST /dossiers/{id}/factures/{f}/ecriture      « Re-générer les écritures », sans corps (US-56 RG5)
 // Corps : {"typeTiers","nomTiers","numeroFacture","dateEmission","montantHt","montantTva","tauxTva",
 // "montantTtc","compteContrepartie"} ; réponse : la fiche à jour, ou {"message"} (400, 404, 409).
 @RestController
@@ -60,6 +62,15 @@ public class CorrectionFactureController {
 		return traiter(autorisation, dossierId, factureId, informations, corrections::valider);
 	}
 
+	@PostMapping("/ecriture")
+	public ResponseEntity<Object> regenerer(
+			@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String autorisation,
+			@PathVariable String dossierId, @PathVariable String factureId) {
+		return traiter(autorisation, dossierId, factureId, null,
+				(collaborateur, dossier, facture, informations) -> corrections.regenerer(collaborateur, dossier,
+						facture));
+	}
+
 	private ResponseEntity<Object> traiter(String autorisation, String dossierId, String factureId,
 			InformationsFacture informations, Traitement traitement) {
 		ResultatSession session = sessions.consulter(SessionController.jeton(autorisation));
@@ -75,7 +86,7 @@ public class CorrectionFactureController {
 		ResultatCorrection resultat = traitement.appliquer(session.compte(), dossier.get(), facture.get(),
 				informations);
 		return switch (resultat.issue()) {
-			case ENREGISTREE, VALIDEE -> ResponseEntity.ok(resultat.facture());
+			case ENREGISTREE, VALIDEE, REGENEREE -> ResponseEntity.ok(resultat.facture());
 			case INTROUVABLE -> introuvable();
 			case INVALIDE -> ResponseEntity.badRequest().body(new ErreurResponse(resultat.message()));
 			case FIGEE -> ResponseEntity.status(HttpStatus.CONFLICT).body(new ErreurResponse(resultat.message()));

@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -53,6 +54,9 @@ class FactureIT {
 
 	@Autowired
 	private SessionService sessions;
+
+	@Autowired
+	private JdbcTemplate jdbc;
 
 	private final HttpClient http = HttpClient.newHttpClient();
 
@@ -316,10 +320,81 @@ class FactureIT {
 		assertThat(appel("GET", dossier + "/factures?sens=ACHAT", null, jeton).body())
 				.contains("\"statut\":\"TRAITEE\"");
 
-		HttpResponse<String> figee = appel("PUT", fiche + "/informations", incoherente, jeton);
-		assertThat(figee.statusCode()).isEqualTo(409);
-		assertThat(figee.body()).contains("Facture traitée : ses informations ne se modifient plus");
+		// US-56 : une facture d'achat traitée se corrige encore, mais reste complète et cohérente.
+		HttpResponse<String> incoherenteApres = appel("PUT", fiche + "/informations", incoherente, jeton);
+		assertThat(incoherenteApres.statusCode()).isEqualTo(400);
+		assertThat(incoherenteApres.body()).contains("Montants incohérents : HT + TVA ≠ TTC");
+		assertThat(appel("POST", fiche + "/validation", corrigee, jeton).statusCode()).isEqualTo(409);
 		assertThat(appel("PUT", fiche + "/informations", incoherente, jeanConnecte()).statusCode()).isEqualTo(404);
+	}
+
+	// US-56 CA1 à CA3 : écriture générée à la validation, recalculée après correction, figée une fois
+	// exportée ; contrôle SQL de l'US-30 (zéro écriture déséquilibrée, zéro compte absent du plan).
+	@Test
+	void us56EcrituresDUneFactureValidee() throws Exception {
+		String jeton = jeanConnecte();
+		String dossier = dossier(jeton);
+		HttpResponse<String> importee = importer(dossier + "/factures?sens=ACHAT", "facture-electricite-octobre.pdf",
+				fichierDExemple("facture-electricite-octobre.pdf"), jeton);
+		Matcher id = ID.matcher(importee.body());
+		assertThat(id.find()).isTrue();
+		String fiche = dossier + "/factures/" + id.group(1);
+		Awaitility.await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(200))
+				.until(() -> !appel("GET", fiche, null, jeton).body().contains("\"statut\":\"EN_COURS\""));
+		assertThat(appel("POST", fiche + "/ecriture", null, jeton).body())
+				.contains("Validez la facture pour générer ses écritures");
+
+		String edf = """
+				{"typeTiers":"FOURNISSEUR","nomTiers":"EDF","numeroFacture":"F-2026-0611","dateEmission":"2026-06-12",
+				"montantHt":155.33,"montantTva":31.07,"tauxTva":20,"montantTtc":186.40,"compteContrepartie":"607"}""";
+		HttpResponse<String> validee = appel("POST", fiche + "/validation", edf, jeton);
+		assertThat(validee.statusCode()).isEqualTo(200);
+		assertThat(validee.body()).contains("\"journal\":\"AC\"", "\"date\":\"2026-06-12\"",
+				"\"libelle\":\"EDF F-2026-0611\"", "\"aJour\":true", "\"exportee\":false",
+				"{\"numeroCompte\":\"607\",\"libelleCompte\":\"Achats de marchandises\",\"libelle\":\"EDF F-2026-0611\",\"debit\":155.33,\"credit\":0.00}",
+				"{\"numeroCompte\":\"44566\"", "\"debit\":31.07",
+				"{\"numeroCompte\":\"401\",\"libelleCompte\":\"Fournisseurs\",\"libelle\":\"EDF F-2026-0611\",\"debit\":0.00,\"credit\":186.40}",
+				"\"totalDebit\":186.40,\"totalCredit\":186.40");
+		controleSql();
+
+		// CA2 : HT corrigé, écriture « à re-générer », puis recalculée et toujours équilibrée.
+		String htCorrige = edf.replace("155.33", "160.00").replace("186.40", "191.07");
+		assertThat(appel("PUT", fiche + "/informations", htCorrige, jeton).body()).contains("\"aJour\":false");
+		HttpResponse<String> regeneree = appel("POST", fiche + "/ecriture", null, jeton);
+		assertThat(regeneree.statusCode()).isEqualTo(200);
+		assertThat(regeneree.body()).contains("\"aJour\":true", "\"debit\":160.00",
+				"\"totalDebit\":191.07,\"totalCredit\":191.07");
+		assertThat(jdbc.queryForObject("select count(*) from ligne_ecriture l join ecriture e on e.id = l.ecriture_id"
+				+ " where e.facture_id = ?", Integer.class, Long.valueOf(id.group(1)))).isEqualTo(3);
+		controleSql();
+
+		// RG3 du plan comptable : le 607 utilisé ne se supprime pas (compte général) ; un sous-compte utilisé non plus.
+		assertThat(appel("POST", dossier + "/plan-comptable", """
+				{"numero":"401EDF","libelle":"EDF"}""", jeton).statusCode()).isEqualTo(201);
+		jdbc.update("update ligne_ecriture set numero_compte = '401EDF' where numero_compte = '401'"
+				+ " and ecriture_id = (select id from ecriture where facture_id = ?)", Long.valueOf(id.group(1)));
+		HttpResponse<String> utilise = appel("DELETE", dossier + "/plan-comptable/401EDF", null, jeton);
+		assertThat(utilise.statusCode()).isEqualTo(409);
+		assertThat(utilise.body()).contains("utilisé dans une écriture");
+
+		// CA3 : écriture exportée, plus de re-génération ni de correction.
+		jdbc.update("update ecriture set exportee_le = now() where facture_id = ?", Long.valueOf(id.group(1)));
+		HttpResponse<String> exportee = appel("POST", fiche + "/ecriture", null, jeton);
+		assertThat(exportee.statusCode()).isEqualTo(409);
+		assertThat(exportee.body()).contains("Écriture exportée : la facture ne se modifie plus");
+		assertThat(appel("GET", fiche, null, jeton).body()).contains("\"exportee\":true");
+		assertThat(appel("PUT", fiche + "/informations", edf, jeton).statusCode()).isEqualTo(409);
+	}
+
+	// US-56 / US-30 : les deux requêtes de contrôle renvoient zéro ligne.
+	private void controleSql() {
+		assertThat(jdbc.queryForList("""
+				select e.id from ecriture e join ligne_ecriture l on l.ecriture_id = e.id
+				group by e.id having sum(l.debit) <> sum(l.credit)""")).isEmpty();
+		assertThat(jdbc.queryForList("""
+				select l.id from ligne_ecriture l join ecriture e on e.id = l.ecriture_id
+				left join compte_comptable c on c.dossier_id = e.dossier_id and c.numero = l.numero_compte
+				where c.id is null""")).isEmpty();
 	}
 
 }

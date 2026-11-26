@@ -1,0 +1,142 @@
+// US-56 Écritures générées : mêmes couleurs et composants que la fiche facture.
+$creme: #fcfdff;
+$or: #1d4ed8;
+$bord: #dbe4f0;
+$gris: #42526b;
+
+.ecritures {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  background: $creme;
+  border: 1px solid $bord;
+  border-radius: 16px;
+}
+
+.titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+.marque {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--exportee {
+    background: #e8eef8;
+    color: #1e293b;
+  }
+
+  &--a-regenerer {
+    background: #fff1db;
+    color: #7a4100;
+  }
+}
+
+.muted {
+  margin: 0;
+  color: $gris;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.defilement {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead tr {
+  background: #f7f9fd;
+  color: $gris;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+tbody tr,
+tfoot tr {
+  border-top: 1px solid #e3eaf4;
+}
+
+tfoot {
+  font-weight: 700;
+}
+
+.nombre {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.compte {
+  display: block;
+  font-weight: 600;
+}
+
+.libelle-compte {
+  display: block;
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.bouton {
+  padding: 10px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: $or;
+  color: $creme;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--secondaire {
+    border: 1px solid $or;
+    background: none;
+    color: $or;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.alerte {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #8c1d18;
+  font-size: 14px;
+}

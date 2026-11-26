@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -132,7 +133,8 @@ class PlanComptableServiceTest {
 				service.changerActivation(lucie, 42L, "999", new DemandeActivation(false)).statut());
 	}
 
-	// RG3 : un sous-compte se supprime ; un compte du plan général se désactive seulement.
+	// RG3 : un sous-compte inutilisé se supprime ; un compte du plan général ou utilisé dans une écriture
+	// (US-56) se désactive seulement.
 	@Test
 	void suppression() {
 		when(comptes.findByDossierIdAndNumero(42L, "401MOULINS")).thenReturn(Optional.of(moulins));
@@ -145,6 +147,10 @@ class PlanComptableServiceTest {
 		verify(comptes, never()).delete(fournisseurs);
 
 		assertEquals(Statut.COMPTE_INTROUVABLE, service.supprimer(lucie, 42L, "4019").statut());
+
+		when(comptes.utiliseDansUneEcriture(42L, "401MOULINS")).thenReturn(true);
+		assertEquals(Statut.COMPTE_UTILISE, service.supprimer(lucie, 42L, "401MOULINS").statut());
+		verify(comptes, times(1)).delete(moulins);
 	}
 
 	@Test

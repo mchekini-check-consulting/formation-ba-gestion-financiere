@@ -15,6 +15,7 @@ const TICKET: VueFacture = {
   statut: 'RECUE',
   lecture: null,
   modification: null,
+  ecriture: null,
 };
 const VENTE: VueFacture = {
   id: 6,
@@ -24,6 +25,7 @@ const VENTE: VueFacture = {
   statut: 'RECUE',
   lecture: null,
   modification: null,
+  ecriture: null,
 };
 const LECTURE: Lecture = {
   statut: 'LUE',

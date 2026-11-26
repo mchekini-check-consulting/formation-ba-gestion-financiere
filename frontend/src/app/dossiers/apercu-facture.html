@@ -22,6 +22,10 @@
   @if (information(); as i) {
     <p class="muted" role="status">{{ i }}</p>
   }
+  @if (f.sens === 'ACHAT' && f.lecture) {
+    <!-- US-56 : écritures d'une facture fournisseur validée -->
+    <app-ecritures-facture [dossierId]="dossierId()" [facture]="f" (modifiee)="facture.set($event)" />
+  }
 
   <!-- RG1 : aperçu du PDF ou de l'image -->
   <section class="apercu">

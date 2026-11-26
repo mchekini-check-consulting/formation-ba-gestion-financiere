@@ -19,6 +19,13 @@ public interface CompteComptableRepository extends JpaRepository<CompteComptable
 
 	boolean existsByDossierIdAndNumero(Long dossierId, String numero);
 
+	// RG3 : compte utilisé dans une écriture du dossier (US-56).
+	@Query(nativeQuery = true, value = """
+			select exists (select 1 from ligne_ecriture l join ecriture e on e.id = l.ecriture_id
+			               where e.dossier_id = :dossierId and l.numero_compte = :numero)
+			""")
+	boolean utiliseDansUneEcriture(@Param("dossierId") Long dossierId, @Param("numero") String numero);
+
 	// RG1 : le dossier qui vient d'être créé reçoit une copie du plan comptable général.
 	@Transactional
 	@Modifying

@@ -7,11 +7,14 @@ public record ResultatCorrection(Issue issue, String message, VueFacture facture
 		ENREGISTREE,
 		// RG6 : facture passée en « Traitée ».
 		VALIDEE,
+		// US-56 RG5 : écriture recalculée.
+		REGENEREE,
 		INTROUVABLE,
 		// Valeur refusée (format, compte absent du plan RG3), champ obligatoire manquant (RG5) ou
 		// montants incohérents (RG4).
 		INVALIDE,
-		// Facture déjà traitée ou lecture en cours : ses informations ne se modifient pas.
+		// Lecture en cours, facture de vente traitée ou écriture exportée (US-56 CA3) : ne se modifie pas.
+		// US-56 : écriture d'une facture non validée ou de vente.
 		FIGEE
 	}
 

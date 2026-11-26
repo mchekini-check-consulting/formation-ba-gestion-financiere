@@ -35,7 +35,7 @@ class CorrectionFactureControllerTest {
 	private final InformationsFacture informations = new InformationsFacture("FOURNISSEUR", "EDF", "F-1", null, null,
 			null, null, null, null);
 	private final VueFacture vue = new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT,
-			Facture.Statut.TRAITEE, null, null);
+			Facture.Statut.TRAITEE, null, null, null);
 
 	private void connecte(Compte compte) {
 		when(sessions.consulter("jeton")).thenReturn(ResultatSession.active(compte));
@@ -75,6 +75,23 @@ class CorrectionFactureControllerTest {
 		ResponseEntity<Object> introuvable = controller.enregistrer(AUTORISATION, "42", "6", informations);
 		assertEquals(HttpStatus.NOT_FOUND, introuvable.getStatusCode());
 		assertEquals(INTROUVABLE, introuvable.getBody());
+	}
+
+	// US-56 RG5 : « Re-générer les écritures » ; CA3 : écriture exportée -> 409.
+	@Test
+	void regenerer() {
+		connecte(lucie);
+		when(corrections.regenerer(lucie, 42L, 5L))
+				.thenReturn(new ResultatCorrection(ResultatCorrection.Issue.REGENEREE, null, vue));
+		ResponseEntity<Object> regeneree = controller.regenerer(AUTORISATION, "42", "5");
+		assertEquals(HttpStatus.OK, regeneree.getStatusCode());
+		assertEquals(vue, regeneree.getBody());
+
+		when(corrections.regenerer(lucie, 42L, 6L)).thenReturn(ResultatCorrection
+				.refuse(ResultatCorrection.Issue.FIGEE, CorrectionFactureService.MESSAGE_EXPORTEE));
+		ResponseEntity<Object> exportee = controller.regenerer(AUTORISATION, "42", "6");
+		assertEquals(HttpStatus.CONFLICT, exportee.getStatusCode());
+		assertEquals(new ErreurResponse("Écriture exportée : la facture ne se modifie plus"), exportee.getBody());
 	}
 
 	// Adresse tapée à la main, sans connexion, ou dirigeant (réservé au cabinet).
