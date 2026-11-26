@@ -29,13 +29,17 @@ import com.example.gestionfinanciere.compte.Compte;
 import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.dossier.Dossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
+import com.example.gestionfinanciere.ecriture.Ecriture;
+import com.example.gestionfinanciere.ecriture.EcritureRepository;
+import com.example.gestionfinanciere.ecriture.EcritureService;
+import com.example.gestionfinanciere.ecriture.VueEcriture;
 import com.example.gestionfinanciere.facture.lecture.AnalyseurFacture;
 import com.example.gestionfinanciere.facture.lecture.ResultatLecture;
 import com.example.gestionfinanciere.facture.lecture.TvaParTaux;
 import com.example.gestionfinanciere.plancomptable.CompteComptable;
 import com.example.gestionfinanciere.plancomptable.CompteComptableRepository;
 
-// US-55 Vérifier, corriger et valider les informations d'une facture.
+// US-55 Vérifier, corriger et valider les informations d'une facture ; US-56 écriture générée.
 class CorrectionFactureServiceTest {
 
 	private static final Instant MAINTENANT = Instant.parse("2026-11-25T09:00:00Z");
@@ -52,9 +56,13 @@ class CorrectionFactureServiceTest {
 	private final Compte lucie = Compte.administrateurDe(cabinet, "lucie@cabinet-test.fr", "x", "Lucie Bernard");
 	private final Dossier dossier = new Dossier(cabinet, "Boulangerie Martin", "812345679", lucie, MAINTENANT);
 	private final ApplicationEventPublisher evenements = mock(ApplicationEventPublisher.class);
+	private final EcritureRepository ecritures = mock(EcritureRepository.class);
+	private final EcrituresFacture ecrituresFacture = new EcrituresFacture(new EcritureService(ecritures, comptes));
 	private final CorrectionFactureService service = new CorrectionFactureService(factures, champsLus, historique,
-			corrections, comptes, dossiers, new VuesFacture(champsLus, comptes, corrections),
-			new HorlogeReglable(MAINTENANT), evenements);
+			corrections, comptes, dossiers, new VuesFacture(champsLus, comptes, corrections, ecrituresFacture),
+			new HorlogeReglable(MAINTENANT), evenements, ecrituresFacture);
+	// Écriture enregistrée (base simulée).
+	private Ecriture enregistree;
 
 	private Facture facture;
 	private ChampLu ttcDouteux;
@@ -81,6 +89,16 @@ class CorrectionFactureServiceTest {
 		when(champsLus.findByFactureId(5L)).thenReturn(List.of(ttcDouteux, nomSur));
 		when(comptes.findByDossierIdAndNumero(42L, "606")).thenReturn(Optional
 				.of(CompteComptable.general(42L, "606", "Achats non stockés de matières et fournitures", MAINTENANT)));
+		when(comptes.findByDossierIdAndNumero(42L, "401"))
+				.thenReturn(Optional.of(CompteComptable.general(42L, "401", "Fournisseurs", MAINTENANT)));
+		when(comptes.findByDossierIdAndNumero(42L, "44566")).thenReturn(Optional.of(
+				CompteComptable.general(42L, "44566", "TVA déductible sur autres biens et services", MAINTENANT)));
+		enregistree = null;
+		when(ecritures.findByFactureId(5L)).thenAnswer(appel -> Optional.ofNullable(enregistree));
+		when(ecritures.save(any(Ecriture.class))).thenAnswer(appel -> {
+			enregistree = appel.getArgument(0);
+			return enregistree;
+		});
 	}
 
 	private static InformationsFacture edf(String ttc) {
@@ -252,9 +270,10 @@ class CorrectionFactureServiceTest {
 		return service.enregistrer(lucie, 42L, 5L, informations).message();
 	}
 
-	// Une facture traitée ou en cours de lecture ne se modifie pas.
+	// Une facture de vente traitée ou une facture en cours de lecture ne se modifie pas.
 	@Test
 	void factureFigee() {
+		ReflectionTestUtils.setField(facture, "sens", Facture.Sens.VENTE);
 		facture.valider();
 		ResultatCorrection traitee = service.enregistrer(lucie, 42L, 5L, edf("186.40"));
 		assertEquals(ResultatCorrection.Issue.FIGEE, traitee.issue());
@@ -307,13 +326,174 @@ class CorrectionFactureServiceTest {
 	void vueDeLaFiche() {
 		CorrectionFacture derniere = new CorrectionFacture(facture, "NOM_TIERS", lucie, MAINTENANT);
 		when(corrections.findFirstByFactureIdOrderByModifieLeDescIdDesc(5L)).thenReturn(Optional.of(derniere));
-		VueFacture vue = new VuesFacture(champsLus, comptes, corrections).vue(facture);
+		VueFacture vue = new VuesFacture(champsLus, comptes, corrections, ecrituresFacture).vue(facture);
 		assertEquals(new VueFacture.Modification("Lucie Bernard", MAINTENANT), vue.modification());
 		assertEquals(Facture.Statut.RECUE, vue.statut());
 
 		when(comptes.findByDossierIdAndNumero(42L, "606")).thenReturn(Optional.empty());
 		assertEquals(AnalyseurFacture.libelleCompte("606"),
-				new VuesFacture(champsLus, comptes, corrections).vue(facture).lecture().libelleContrepartie());
+				new VuesFacture(champsLus, comptes, corrections, ecrituresFacture).vue(facture).lecture()
+						.libelleContrepartie());
+	}
+
+	private static BigDecimal euros(String montant) {
+		return new BigDecimal(montant);
+	}
+
+	private static VueEcriture.Ligne ligne(String compte, String libelleCompte, String libelle, String debit,
+			String credit) {
+		return new VueEcriture.Ligne(compte, libelleCompte, libelle, euros(debit), euros(credit));
+	}
+
+	// US-56 CA1, RG1 à RG3 : la validation génère l'écriture équilibrée au journal des achats.
+	@Test
+	void us56Ca1EcritureGenereeALaValidation() {
+		when(comptes.findByDossierIdOrderByNumero(42L)).thenReturn(List.of(
+				CompteComptable.general(42L, "401", "Fournisseurs", MAINTENANT),
+				CompteComptable.general(42L, "44566", "TVA déductible sur autres biens et services", MAINTENANT),
+				CompteComptable.general(42L, "606", "Achats non stockés de matières et fournitures", MAINTENANT)));
+
+		VueEcriture ecriture = service.valider(lucie, 42L, 5L, edf("186.40")).facture().ecriture();
+
+		assertEquals(Ecriture.Journal.AC, ecriture.journal());
+		assertEquals(EMISE_LE, ecriture.date());
+		assertEquals("EDF F-2026-0611", ecriture.libelle());
+		assertEquals(List.of(
+				ligne("606", "Achats non stockés de matières et fournitures", "EDF F-2026-0611", "155.33", "0.00"),
+				ligne("44566", "TVA déductible sur autres biens et services", "EDF F-2026-0611 – TVA 20 %", "31.07",
+						"0.00"),
+				ligne("401", "Fournisseurs", "EDF F-2026-0611", "0.00", "186.40")), ecriture.lignes());
+		assertEquals(euros("186.40"), ecriture.totalDebit());
+		assertEquals(euros("186.40"), ecriture.totalCredit());
+		assertEquals("Lucie Bernard", ecriture.genereePar());
+		assertEquals(MAINTENANT, ecriture.genereeLe());
+		assertTrue(ecriture.aJour());
+		assertFalse(ecriture.exportee());
+		assertEquals(42L, enregistree.getDossierId());
+		assertEquals(5L, enregistree.getFactureId());
+	}
+
+	// US-56 CA2, RG5 : correction d'une facture traitée, écriture « à re-générer » puis recalculée.
+	@Test
+	void us56Ca2CorrectionPuisRegeneration() {
+		service.valider(lucie, 42L, 5L, edf("186.40"));
+		InformationsFacture htCorrige = new InformationsFacture("FOURNISSEUR", "EDF", "F-2026-0611", EMISE_LE,
+				euros("160.00"), euros("31.07"), euros("20"), euros("191.07"), "606");
+
+		ResultatCorrection corrigee = service.enregistrer(lucie, 42L, 5L, htCorrige);
+		assertEquals(ResultatCorrection.Issue.ENREGISTREE, corrigee.issue());
+		assertEquals(Facture.Statut.TRAITEE, facture.getStatut());
+		assertFalse(corrigee.facture().ecriture().aJour());
+
+		ResultatCorrection regeneree = service.regenerer(lucie, 42L, 5L);
+		assertEquals(ResultatCorrection.Issue.REGENEREE, regeneree.issue());
+		VueEcriture ecriture = regeneree.facture().ecriture();
+		assertTrue(ecriture.aJour());
+		assertEquals(euros("160.00"), ecriture.lignes().get(0).debit());
+		assertEquals(euros("191.07"), ecriture.totalDebit());
+		assertEquals(euros("191.07"), ecriture.totalCredit());
+		assertEquals(3, enregistree.getLignes().size());
+	}
+
+	// US-56 : une facture traitée reste complète et cohérente ; « Valider » ne se rejoue pas.
+	@Test
+	void us56FactureTraiteeCorrigee() {
+		service.valider(lucie, 42L, 5L, edf("186.40"));
+
+		assertEquals("Montants incohérents : HT + TVA ≠ TTC", message(edf("190.00")));
+		assertEquals("Indiquez le montant TTC", message(edf(null)));
+		ResultatCorrection revalidee = service.valider(lucie, 42L, 5L, edf("186.40"));
+		assertEquals(ResultatCorrection.Issue.FIGEE, revalidee.issue());
+		assertEquals(CorrectionFactureService.MESSAGE_DEJA_VALIDEE, revalidee.message());
+	}
+
+	// US-56 CA3 : écriture exportée, ni correction ni re-génération.
+	@Test
+	void us56Ca3Exportee() {
+		service.valider(lucie, 42L, 5L, edf("186.40"));
+		ReflectionTestUtils.setField(enregistree, "exporteeLe", MAINTENANT);
+
+		ResultatCorrection regeneree = service.regenerer(lucie, 42L, 5L);
+		assertEquals(ResultatCorrection.Issue.FIGEE, regeneree.issue());
+		assertEquals("Écriture exportée : la facture ne se modifie plus", regeneree.message());
+		assertEquals("Écriture exportée : la facture ne se modifie plus", message(edf("186.40")));
+		assertTrue(ecrituresFacture.vue(facture).orElseThrow().exportee());
+	}
+
+	// US-56 RG5 : re-générer une facture non validée, de vente, introuvable ou incomplète.
+	@Test
+	void us56RegenerationRefusee() {
+		assertEquals("Validez la facture pour générer ses écritures", service.regenerer(lucie, 42L, 5L).message());
+		assertEquals(ResultatCorrection.Issue.INTROUVABLE, service.regenerer(lucie, 99L, 5L).issue());
+
+		// Facture traitée avant l'US-56 avec un TTC faux (186,00 lu) : rien n'est généré.
+		facture.valider();
+		ResultatCorrection incoherente = service.regenerer(lucie, 42L, 5L);
+		assertEquals(ResultatCorrection.Issue.INVALIDE, incoherente.issue());
+		assertEquals("Montants incohérents : HT + TVA ≠ TTC", incoherente.message());
+		assertNull(enregistree);
+
+		ReflectionTestUtils.setField(facture, "sens", Facture.Sens.VENTE);
+		assertEquals("Pas d'écriture pour une facture de vente", service.regenerer(lucie, 42L, 5L).message());
+	}
+
+	// US-56 : une facture traitée avant l'US-56 reçoit son écriture au premier « Re-générer ».
+	@Test
+	void us56FactureTraiteeAvantLUs() {
+		service.enregistrer(lucie, 42L, 5L, edf("186.40"));
+		facture.valider();
+		assertTrue(ecrituresFacture.vue(facture).isEmpty());
+
+		assertEquals(ResultatCorrection.Issue.REGENEREE, service.regenerer(lucie, 42L, 5L).issue());
+		assertEquals(3, enregistree.getLignes().size());
+	}
+
+	// US-56 : comptes 401 / 44566 absents ou désactivés dans le plan du dossier : validation refusée.
+	@Test
+	void us56CompteAbsentDuPlan() {
+		when(comptes.findByDossierIdAndNumero(42L, "401")).thenReturn(Optional.empty());
+		ResultatCorrection refus = service.valider(lucie, 42L, 5L, edf("186.40"));
+		assertEquals(ResultatCorrection.Issue.INVALIDE, refus.issue());
+		assertEquals("Le compte 401 n'est pas dans le plan comptable du dossier", refus.message());
+		assertEquals(Facture.Statut.RECUE, facture.getStatut());
+		assertNull(enregistree);
+
+		CompteComptable tva = CompteComptable.general(42L, "44566", "TVA déductible", MAINTENANT);
+		tva.setActif(false);
+		when(comptes.findByDossierIdAndNumero(42L, "401"))
+				.thenReturn(Optional.of(CompteComptable.general(42L, "401", "Fournisseurs", MAINTENANT)));
+		when(comptes.findByDossierIdAndNumero(42L, "44566")).thenReturn(Optional.of(tva));
+		assertEquals("Le compte 44566 est désactivé dans le plan comptable du dossier",
+				service.valider(lucie, 42L, 5L, edf("186.40")).message());
+	}
+
+	// US-56 RG4 : facture à plusieurs taux, une ligne de TVA par taux.
+	@Test
+	void us56Rg4PlusieursTaux() {
+		facture.terminerLecture(new ResultatLecture(true, "FOURNISSEUR", "Métro", "M-12", EMISE_LE,
+				euros("150.00"), euros("22.75"), null, euros("172.75"), "606", Map.of(), Set.of(),
+				List.of(new TvaParTaux(euros("20"), euros("100.00"), euros("20.00")),
+						new TvaParTaux(euros("5.5"), euros("50.00"), euros("2.75")))),
+				MAINTENANT);
+		InformationsFacture metro = new InformationsFacture("FOURNISSEUR", "Métro", "M-12", EMISE_LE,
+				euros("150.00"), euros("22.75"), null, euros("172.75"), "606");
+
+		List<VueEcriture.Ligne> lignes = service.valider(lucie, 42L, 5L, metro).facture().ecriture().lignes();
+
+		assertEquals(List.of("606", "44566", "44566", "401"),
+				lignes.stream().map(VueEcriture.Ligne::numeroCompte).toList());
+		assertEquals("Métro M-12 – TVA 20 %", lignes.get(1).libelle());
+		assertEquals(euros("20.00"), lignes.get(1).debit());
+		assertEquals("Métro M-12 – TVA 5,5 %", lignes.get(2).libelle());
+		assertEquals(euros("2.75"), lignes.get(2).debit());
+	}
+
+	// US-56 : une facture de vente validée ne génère pas d'écriture (US-57).
+	@Test
+	void us56PasDEcritureDeVente() {
+		ReflectionTestUtils.setField(facture, "sens", Facture.Sens.VENTE);
+		assertNull(service.valider(lucie, 42L, 5L, edf("186.40")).facture().ecriture());
+		verify(ecritures, never()).save(any());
 	}
 
 }

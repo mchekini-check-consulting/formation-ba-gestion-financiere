@@ -143,9 +143,36 @@ export interface Lecture {
   aRenseigner: ChampFacture[];
 }
 
+/** US-56 : ligne d'une écriture ; libelleCompte : libellé du compte dans le plan du dossier. */
+export interface LigneEcriture {
+  numeroCompte: string;
+  libelleCompte: string | null;
+  libelle: string;
+  debit: number;
+  credit: number;
+}
+
+/**
+ * US-56 RG6 : écriture d'une facture d'achat validée, au journal des achats (AC).
+ * exportee : « Re-générer les écritures » désactivé (CA3) ; aJour : faux après une correction (RG5).
+ */
+export interface VueEcriture {
+  journal: 'AC';
+  date: string;
+  libelle: string;
+  genereeLe: string;
+  genereePar: string;
+  exportee: boolean;
+  aJour: boolean;
+  lignes: LigneEcriture[];
+  totalDebit: number;
+  totalCredit: number;
+}
+
 /**
  * US-13 : en-tête de la page d'aperçu ; US-53 : résultat de la lecture (null : jamais lue).
- * US-55 : statut de traitement (une facture « Traitée » ne se modifie plus) et dernière modification (RG8).
+ * US-55 : statut de traitement et dernière modification (RG8).
+ * US-56 : écriture générée à la validation d'une facture d'achat (null : pas encore générée).
  */
 export interface VueFacture {
   id: number;
@@ -155,6 +182,18 @@ export interface VueFacture {
   statut: Statut;
   lecture: Lecture | null;
   modification: { par: string; le: string } | null;
+  ecriture: VueEcriture | null;
+}
+
+/**
+ * US-55, US-56 : informations modifiables, sauf pendant la lecture ; une facture « Traitée » ne se
+ * modifie plus, sauf une facture d'achat dont l'écriture n'est pas exportée (RG5).
+ */
+export function modifiable(f: VueFacture): boolean {
+  if (f.lecture === null || f.lecture.statut === 'EN_COURS') {
+    return false;
+  }
+  return f.statut !== 'TRAITEE' || (f.sens === 'ACHAT' && !f.ecriture?.exportee);
 }
 
 /**
@@ -221,6 +260,11 @@ export class FactureService {
   /** US-55 RG4 à RG6 : enregistrer puis passer la facture en « Traitée » (refus 400 : message à afficher). */
   valider(dossierId: number | string, factureId: number, informations: InformationsFacture): Observable<VueFacture> {
     return this.http.post<VueFacture>(`${this.url}/${dossierId}/factures/${factureId}/validation`, informations);
+  }
+
+  /** US-56 RG5 : « Re-générer les écritures » (refus 400 / 409 : message à afficher). */
+  regenererEcritures(dossierId: number | string, factureId: number): Observable<VueFacture> {
+    return this.http.post<VueFacture>(`${this.url}/${dossierId}/factures/${factureId}/ecriture`, null);
   }
 
   /** US-51 : changer le statut ; le motif n'est utile que pour « À compléter » (RG3). */

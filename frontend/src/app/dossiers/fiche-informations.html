@@ -74,10 +74,14 @@
             }
             <div class="actions">
               <button type="submit" class="bouton bouton--secondaire" [disabled]="envoiEnCours()">Enregistrer</button>
-              <button type="button" class="bouton" [disabled]="envoiEnCours()" (click)="valider(false)">Valider</button>
-              <button type="button" class="bouton" [disabled]="envoiEnCours()" (click)="valider(true)">
-                Valider et passer à la suivante
-              </button>
+              @if (f.statut !== 'TRAITEE') {
+                <button type="button" class="bouton" [disabled]="envoiEnCours()" (click)="valider(false)">
+                  Valider
+                </button>
+                <button type="button" class="bouton" [disabled]="envoiEnCours()" (click)="valider(true)">
+                  Valider et passer à la suivante
+                </button>
+              }
               <button type="button" class="lien" [disabled]="envoiEnCours()" (click)="annuler()">Annuler</button>
             </div>
           </form>
@@ -117,7 +121,9 @@
             }
           </ng-template>
           @if (modifiable(f)) {
-            <button type="button" class="bouton" (click)="modifier(l, 'TYPE_TIERS')">Vérifier et valider</button>
+            <button type="button" class="bouton" (click)="modifier(l, 'TYPE_TIERS')">
+              {{ f.statut === 'TRAITEE' ? 'Corriger' : 'Vérifier et valider' }}
+            </button>
           }
         }
         @if (l.tauxMultiple && !edition()) {

@@ -1,0 +1,84 @@
+@let f = facture();
+<section class="ecritures" aria-labelledby="titre-ecritures">
+  <header class="titre">
+    <h2 id="titre-ecritures">Écritures générées</h2>
+    @if (f.ecriture; as e) {
+      @if (e.exportee) {
+        <span class="marque marque--exportee">Exportée</span>
+      } @else if (!e.aJour) {
+        <!-- RG5 : facture corrigée depuis la génération -->
+        <span class="marque marque--a-regenerer">À re-générer</span>
+      }
+    }
+  </header>
+
+  @if (f.ecriture; as e) {
+    <p class="muted">
+      Journal des achats ({{ e.journal }}) · {{ date(e.date) }} · {{ e.libelle }}
+      <br />
+      Générée par {{ e.genereePar }} le {{ generee(e.genereeLe) }}
+    </p>
+    <div class="defilement">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Compte</th>
+            <th scope="col">Libellé</th>
+            <th scope="col" class="nombre">Débit</th>
+            <th scope="col" class="nombre">Crédit</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of e.lignes; track $index) {
+            <tr>
+              <td>
+                <span class="compte">{{ l.numeroCompte }}</span>
+                @if (l.libelleCompte) {
+                  <span class="muted libelle-compte">{{ l.libelleCompte }}</span>
+                }
+              </td>
+              <td>{{ l.libelle }}</td>
+              <td class="nombre">{{ montant(l.debit) }}</td>
+              <td class="nombre">{{ montant(l.credit) }}</td>
+            </tr>
+          }
+        </tbody>
+        <tfoot>
+          <!-- RG2 : total au débit = total au crédit -->
+          <tr>
+            <th scope="row" colspan="2">Total</th>
+            <td class="nombre">{{ total(e.totalDebit) }}</td>
+            <td class="nombre">{{ total(e.totalCredit) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  } @else if (f.statut === 'TRAITEE') {
+    <p class="muted">Aucune écriture pour cette facture : cliquez sur « Re-générer les écritures ».</p>
+  } @else {
+    <p class="muted">
+      Les écritures (compte de contrepartie, TVA déductible 44566, fournisseur 401) seront générées à la validation
+      de la facture.
+    </p>
+  }
+
+  @if (erreur(); as m) {
+    <p class="alerte" role="alert">{{ m }}</p>
+  }
+  @if (f.statut === 'TRAITEE') {
+    <div class="actions">
+      <button
+        type="button"
+        class="bouton bouton--secondaire"
+        [disabled]="envoiEnCours() || f.ecriture?.exportee"
+        (click)="regenerer()"
+      >
+        Re-générer les écritures
+      </button>
+      @if (f.ecriture?.exportee) {
+        <!-- CA3 -->
+        <span class="muted">Exportée</span>
+      }
+    </div>
+  }
+</section>

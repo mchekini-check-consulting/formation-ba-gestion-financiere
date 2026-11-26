@@ -21,9 +21,9 @@ import com.example.gestionfinanciere.plancomptable.ResultatCompte.Statut;
  * collaborateur d'un cabinet ; ici, mêmes droits que le dossier (US-11 RG3, US-20).
  * RG1 : le plan général est copié à la création du dossier ; la comptable ajoute des sous-comptes.
  * RG2 : chaque catégorie a son compte par défaut ; la banque utilise le 512.
- * RG3 : un compte déjà utilisé dans une écriture ne se supprime pas, il se désactive. Les écritures
- * arrivent avec l'US-30 : en attendant, les comptes du plan général ne se suppriment jamais et un
- * sous-compte se supprime librement.
+ * RG3 : un compte déjà utilisé dans une écriture ne se supprime pas, il se désactive. Les comptes du
+ * plan général ne se suppriment jamais ; un sous-compte se supprime tant qu'aucune écriture (US-56)
+ * ne l'utilise.
  */
 @Service
 @Loggable
@@ -110,12 +110,15 @@ public class PlanComptableService {
 		return resultat;
 	}
 
-	// RG3 : seuls les sous-comptes se suppriment ; un compte du plan général se désactive.
+	// RG3 : seuls les sous-comptes inutilisés se suppriment ; les autres se désactivent.
 	@Transactional
 	public ResultatCompte supprimer(Compte collaborateur, Long dossierId, String numero) {
 		ResultatCompte resultat = trouver(collaborateur, dossierId, numero).map(compte -> {
 			if (!compte.isSousCompte()) {
 				return ResultatCompte.de(Statut.COMPTE_GENERAL);
+			}
+			if (comptes.utiliseDansUneEcriture(dossierId, compte.getNumero())) {
+				return ResultatCompte.de(Statut.COMPTE_UTILISE);
 			}
 			comptes.delete(compte);
 			return ResultatCompte.de(Statut.SUPPRIME);

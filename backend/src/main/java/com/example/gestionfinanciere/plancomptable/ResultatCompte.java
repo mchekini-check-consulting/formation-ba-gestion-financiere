@@ -13,7 +13,9 @@ public record ResultatCompte(Statut statut, VueCompte compte, Map<String, String
 		DEJA_EXISTANT,
 		COMPTE_INTROUVABLE,
 		DOSSIER_INTROUVABLE,
-		COMPTE_GENERAL
+		COMPTE_GENERAL,
+		// RG3 : sous-compte utilisé dans une écriture, à désactiver plutôt que supprimer.
+		COMPTE_UTILISE
 	}
 
 	static ResultatCompte de(Statut statut) {

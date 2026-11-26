@@ -30,6 +30,8 @@ import com.example.gestionfinanciere.compte.HorlogeReglable;
 import com.example.gestionfinanciere.compte.RoleCabinet;
 import com.example.gestionfinanciere.dossier.Dossier;
 import com.example.gestionfinanciere.dossier.DossierRepository;
+import com.example.gestionfinanciere.ecriture.EcritureRepository;
+import com.example.gestionfinanciere.ecriture.EcritureService;
 import com.example.gestionfinanciere.logging.EvenementMetier;
 import com.example.gestionfinanciere.logging.JournalCapture;
 import com.example.gestionfinanciere.facture.lecture.DemandeLecture;
@@ -55,7 +57,8 @@ class FactureServiceTest {
 	private final Dossier fleurs = new Dossier(cabinet, "Fleurs Martin EURL", "812345679", jean, MAINTENANT);
 
 	private FactureService service() {
-		return new FactureService(factures, historique, new VuesFacture(champsLus, comptes, corrections), dossiers,
+		return new FactureService(factures, historique, new VuesFacture(champsLus, comptes, corrections,
+				new EcrituresFacture(new EcritureService(mock(EcritureRepository.class), comptes))), dossiers,
 				evenements, new HorlogeReglable(MAINTENANT));
 	}
 
@@ -117,7 +120,7 @@ class FactureServiceTest {
 		Facture facture = avecFichier(null);
 		when(factures.findByIdAndDossierId(5L, 42L)).thenReturn(Optional.of(facture));
 
-		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, Facture.Statut.RECUE, null, null)),
+		assertEquals(Optional.of(new VueFacture(5L, "edf.pdf", "application/pdf", Facture.Sens.ACHAT, Facture.Statut.RECUE, null, null, null)),
 				service().consulter(jean, 42L, 5L));
 		assertTrue(LigneFacture.de(facture).nouvelle());
 

@@ -3,7 +3,8 @@ import { FACTURE_EDF, adresseApi, creerDossier, nouveauCabinet } from './outils'
 
 // Factures d'un dossier, de l'écran jusqu'à la base : import par le cabinet (US-52), liste (US-12,
 // US-51, colonnes Tiers / Date / TTC), lecture automatique (US-53), aperçu (US-13) et fiche
-// vérifiée puis validée (US-55). Facture : PDF EDF d'exemple du backend (lu sans Tesseract).
+// vérifiée puis validée (US-55), écritures générées (US-56). Facture : PDF EDF d'exemple du backend
+// (lu sans Tesseract).
 
 /** Nouveau cabinet, nouveau dossier, facture EDF importée et lue. */
 async function factureEdfLue(page: Page): Promise<void> {
@@ -31,7 +32,9 @@ test.describe('Factures d’un dossier', () => {
     await expect(ligne).toContainText(/186,40\s€/);
   });
 
-  test('US-13, US-55 — aperçu, correction au clic, validation : la facture passe « Traitée »', async ({ page }) => {
+  test('US-13, US-55, US-56 — aperçu, correction au clic, validation : « Traitée » et écriture générée', async ({
+    page,
+  }) => {
     await factureEdfLue(page);
     await page.getByRole('link', { name: 'facture-electricite-octobre.pdf' }).click();
     await expect(page.getByRole('heading', { name: 'facture-electricite-octobre.pdf' })).toBeVisible();
@@ -55,8 +58,26 @@ test.describe('Factures d’un dossier', () => {
     await page.getByRole('button', { name: 'Valider', exact: true }).click();
     await expect(page.getByText('Traitée', { exact: true })).toBeVisible();
     await expect(page.getByText(/^Modifiée par Claire Martin le/)).toBeVisible();
-    // Une facture « Traitée » ne se modifie plus.
-    await expect(page.getByRole('button', { name: /^Modifier :/ })).toHaveCount(0);
+
+    // US-56 CA1 : écriture au journal des achats, équilibrée.
+    const ecritures = page.locator('app-ecritures-facture');
+    await expect(ecritures.getByRole('heading', { name: 'Écritures générées' })).toBeVisible();
+    const lignes = ecritures.locator('tbody tr');
+    await expect(lignes).toHaveCount(3);
+    await expect(lignes.nth(0)).toContainText('606');
+    await expect(lignes.nth(1)).toContainText('44566');
+    await expect(lignes.nth(2)).toContainText('401');
+    await expect(ecritures.locator('tfoot')).toContainText(/186,40\s€\s*186,40\s€/);
+
+    // US-56 CA2 : facture d'achat traitée corrigée (écriture non exportée), puis écriture re-générée.
+    await page.getByRole('button', { name: 'Corriger' }).click();
+    await page.getByLabel('Montant HT', { exact: true }).fill('160');
+    await page.getByLabel('Montant TTC', { exact: true }).fill('191,07');
+    await page.getByRole('button', { name: 'Enregistrer' }).click();
+    await expect(ecritures.getByText('À re-générer')).toBeVisible();
+    await ecritures.getByRole('button', { name: 'Re-générer les écritures' }).click();
+    await expect(ecritures.getByText('À re-générer')).toHaveCount(0);
+    await expect(ecritures.locator('tfoot')).toContainText(/191,07\s€\s*191,07\s€/);
 
     await page.getByRole('link', { name: '← Retour au dossier' }).click();
     await expect(ligneEdf(page)).toContainText('Traitée');

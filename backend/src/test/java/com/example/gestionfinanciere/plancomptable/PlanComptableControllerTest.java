@@ -89,6 +89,9 @@ class PlanComptableControllerTest {
 		ResponseEntity<Object> general = PlanComptableController.reponse(ResultatCompte.de(Statut.COMPTE_GENERAL));
 		assertEquals(HttpStatus.CONFLICT, general.getStatusCode());
 		assertEquals(new ErreurResponse(PlanComptableController.MESSAGE_COMPTE_GENERAL), general.getBody());
+		ResponseEntity<Object> utilise = PlanComptableController.reponse(ResultatCompte.de(Statut.COMPTE_UTILISE));
+		assertEquals(HttpStatus.CONFLICT, utilise.getStatusCode());
+		assertEquals(new ErreurResponse(PlanComptableController.MESSAGE_COMPTE_UTILISE), utilise.getBody());
 		assertEquals(HttpStatus.NOT_FOUND,
 				PlanComptableController.reponse(ResultatCompte.de(Statut.COMPTE_INTROUVABLE)).getStatusCode());
 		assertEquals(HttpStatus.NOT_FOUND,

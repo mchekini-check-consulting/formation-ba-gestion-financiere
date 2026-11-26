@@ -4,6 +4,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { FactureService, VueFacture } from './facture.service';
+import { EcrituresFacture } from './ecritures-facture';
 import { FicheInformations } from './fiche-informations';
 
 /** US-55 RG6 : « Valider et passer à la suivante » quand il n'en reste plus. */
@@ -31,9 +32,10 @@ export function affichage(typeFichier: string): Affichage {
  * ou « À renseigner » ; détail de la TVA d'une facture à plusieurs taux (US-54 CA2).
  * US-55 : vérification, correction et validation (FicheInformations) ; « Valider et passer à la
  * suivante » ouvre la facture suivante de l'onglet qui n'est pas encore « Traitée » (RG6).
+ * US-56 : écritures générées à la validation d'une facture fournisseur (EcrituresFacture).
  */
 @Component({
-  imports: [RouterLink, FicheInformations],
+  imports: [RouterLink, FicheInformations, EcrituresFacture],
   selector: 'app-apercu-facture',
   templateUrl: './apercu-facture.html',
   styleUrl: './apercu-facture.scss',

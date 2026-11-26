@@ -39,6 +39,8 @@ public class PlanComptableController {
 	static final String MESSAGE_FORMULAIRE = "Certains champs sont à corriger";
 	static final String MESSAGE_DEJA_EXISTANT = "Ce numéro de compte existe déjà dans le plan";
 	static final String MESSAGE_COMPTE_INTROUVABLE = "Compte introuvable dans le plan du dossier";
+	static final String MESSAGE_COMPTE_UTILISE =
+			"Ce compte est utilisé dans une écriture : il ne se supprime pas, désactivez-le";
 	static final String MESSAGE_COMPTE_GENERAL =
 			"Un compte du plan général ne peut pas être supprimé : désactivez-le";
 
@@ -109,6 +111,8 @@ public class PlanComptableController {
 					new ErreursFormulaire(MESSAGE_DEJA_EXISTANT, Map.of("numero", MESSAGE_DEJA_EXISTANT)));
 			case COMPTE_GENERAL -> ResponseEntity.status(HttpStatus.CONFLICT)
 					.body(new ErreurResponse(MESSAGE_COMPTE_GENERAL));
+			case COMPTE_UTILISE -> ResponseEntity.status(HttpStatus.CONFLICT)
+					.body(new ErreurResponse(MESSAGE_COMPTE_UTILISE));
 			case COMPTE_INTROUVABLE -> ResponseEntity.status(HttpStatus.NOT_FOUND)
 					.body(new ErreurResponse(MESSAGE_COMPTE_INTROUVABLE));
 			case DOSSIER_INTROUVABLE -> DossierController.introuvable();
