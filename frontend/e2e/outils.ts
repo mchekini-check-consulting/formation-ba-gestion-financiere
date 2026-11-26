@@ -55,6 +55,22 @@ export function lienDansEmail(texte: string, chemin: string): string {
   return lien!;
 }
 
+/** Tests lancés sur un environnement en ligne (E2E_URL) plutôt que sur le poste. */
+export const EN_LIGNE = !!process.env['E2E_URL'];
+
+/**
+ * Adresse du backend vue par le navigateur, calculée depuis celle de la page comme apiBase()
+ * (src/app/api.ts) : relais /api en local, gateway en ligne.
+ */
+export function adresseApi(page: Page): string {
+  const { origin, hostname } = new URL(page.url());
+  const [, projet, env, ...domaine] = hostname.split('.');
+  if (!projet || !env || domaine.length === 0) {
+    return `${origin}/api`;
+  }
+  return `https://gateway.${projet}.${env}.${domaine.join('.')}/backend`;
+}
+
 /** Envoie le formulaire de connexion et attend la réponse du backend (l'écran vide alors le mot de passe). */
 export async function saisirIdentifiants(page: Page, email: string, motDePasse: string): Promise<void> {
   await page.getByLabel('Email').fill(email);

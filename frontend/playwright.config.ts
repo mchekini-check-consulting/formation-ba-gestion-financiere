@@ -5,6 +5,11 @@ import { defineConfig, devices } from '@playwright/test';
 // local », skill lancer-en-local), backend en mode test (./mvnw spring-boot:run l'active). Le serveur de dev du frontend est démarré ici s'il
 // ne tourne pas déjà ; il relaie /api vers le backend (proxy.conf.json), comme le
 // gateway sur le cluster.
+//
+// Variante sur un environnement en ligne : E2E_URL=<adresse du frontend> npx playwright test --ui
+// Rien n'est démarré sur le poste ; les tests créent des cabinets fictifs dans cet environnement.
+const CIBLE = process.env['E2E_URL'];
+
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.e2e.ts',
@@ -16,14 +21,16 @@ export default defineConfig({
   retries: process.env['CI'] ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
-    baseURL: 'http://localhost:4200',
+    baseURL: CIBLE ?? 'http://localhost:4200',
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'npm start',
-    url: 'http://localhost:4200',
-    reuseExistingServer: true,
-    timeout: 180_000,
-  },
+  webServer: CIBLE
+    ? undefined
+    : {
+        command: 'npm start',
+        url: 'http://localhost:4200',
+        reuseExistingServer: true,
+        timeout: 180_000,
+      },
 });
