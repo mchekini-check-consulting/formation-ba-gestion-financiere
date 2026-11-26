@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import {
+  EN_LIGNE,
   MOT_DE_PASSE_CABINET,
   emailRecuApres,
   lienDansEmail,
@@ -27,6 +28,8 @@ test('US-06 CA2 — lien expiré ou inconnu -> « Ce lien a expiré, demandez-en
 });
 
 test('US-05 puis US-06 — compte bloqué après 3 échecs, débloqué par le lien reçu par email', async ({ page }) => {
+  // Le lien arrive dans Mailpit : celui d'un environnement en ligne demande une connexion (SSO).
+  test.skip(EN_LIGNE, 'Mailpit de l’environnement en ligne non lisible par les tests');
   const email = await nouveauCabinet(page);
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
 

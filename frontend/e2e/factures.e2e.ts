@@ -1,5 +1,5 @@
 import { Page, expect, test } from '@playwright/test';
-import { FACTURE_EDF, creerDossier, nouveauCabinet } from './outils';
+import { FACTURE_EDF, adresseApi, creerDossier, nouveauCabinet } from './outils';
 
 // Factures d'un dossier, de l'écran jusqu'à la base : import par le cabinet (US-52), liste (US-12,
 // US-51, colonnes Tiers / Date / TTC), lecture automatique (US-53), aperçu (US-13) et fiche
@@ -74,7 +74,7 @@ test.describe('Factures d’un dossier', () => {
     await page.getByRole('button', { name: 'Se déconnecter' }).click();
     await page.goto(adresse);
     await expect(page).toHaveURL(/\/connexion/);
-    const sansSession = await page.request.get(`/api${adresse}/fichier`);
+    const sansSession = await page.request.get(`${adresseApi(page)}${adresse}/fichier`);
     expect(sansSession.status()).toBe(401);
 
     await nouveauCabinet(page, 'Autre Cabinet');
