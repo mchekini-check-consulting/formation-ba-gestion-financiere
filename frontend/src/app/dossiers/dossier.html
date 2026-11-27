@@ -55,6 +55,10 @@
         <!-- US-45 : entrées et sorties d'argent du dossier -->
         <app-transactions-dossier [dossierId]="d.id" />
       }
+      @case ('ecritures') {
+        <!-- US-47 : journal du dossier et correction d'une écriture -->
+        <app-journal-ecritures [dossierId]="d.id" />
+      }
       @case ('plan') {
         <!-- US-41 : plan comptable du dossier et comptes par défaut -->
         <app-plan-comptable-dossier [dossierId]="d.id" />

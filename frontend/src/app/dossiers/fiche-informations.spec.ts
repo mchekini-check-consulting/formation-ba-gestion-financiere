@@ -199,6 +199,8 @@ describe('US-55 Vérifier, corriger et valider les informations d’une facture'
         libelle: 'Café Lumière F-2026-014',
         genereeLe: '2026-11-25T09:00:00Z',
         genereePar: 'Lucie Bernard',
+        modifieeLe: null,
+        modifieePar: null,
         exportee: true,
         aJour: true,
         lignes: [],

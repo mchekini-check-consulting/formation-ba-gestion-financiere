@@ -5,16 +5,21 @@ import { ComptablesDossierComponent } from './comptables-dossier';
 import { DossierClient, DossierService, EtatEspaceClient, LIBELLES_ETAT, formaterSiren } from './dossier.service';
 import { FacturesDossier } from './factures-dossier';
 import { InvitationDirigeant } from './invitation-dirigeant';
+import { JournalEcrituresComponent } from './journal-ecritures';
 import { PlanComptableDossier } from './plan-comptable-dossier';
 import { TransactionsDossier } from './transactions-dossier';
 
-/** US-11 RG2 : onglets du dossier, « Factures fournisseurs » ouvert par défaut ; US-45 : « Banque » ; US-41 : « Plan comptable ». */
-export type Onglet = 'fournisseurs' | 'clients' | 'banque' | 'plan';
+/**
+ * US-11 RG2 : onglets du dossier, « Factures fournisseurs » ouvert par défaut ; US-45 : « Banque » ;
+ * US-47 : « Écritures » ; US-41 : « Plan comptable ».
+ */
+export type Onglet = 'fournisseurs' | 'clients' | 'banque' | 'ecritures' | 'plan';
 
 export const ONGLETS: { id: Onglet; libelle: string }[] = [
   { id: 'fournisseurs', libelle: 'Factures fournisseurs' },
   { id: 'clients', libelle: 'Factures clients' },
   { id: 'banque', libelle: 'Banque' },
+  { id: 'ecritures', libelle: 'Écritures' },
   { id: 'plan', libelle: 'Plan comptable' },
 ];
 
@@ -24,7 +29,15 @@ const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réess
 
 /** US-11 Ouvrir un dossier (US-10 RG3 : le dossier créé s'ouvre ici). */
 @Component({
-  imports: [RouterLink, ComptablesDossierComponent, FacturesDossier, InvitationDirigeant, PlanComptableDossier, TransactionsDossier],
+  imports: [
+    RouterLink,
+    ComptablesDossierComponent,
+    FacturesDossier,
+    InvitationDirigeant,
+    JournalEcrituresComponent,
+    PlanComptableDossier,
+    TransactionsDossier,
+  ],
   selector: 'app-dossier',
   templateUrl: './dossier.html',
   styleUrl: './dossier.scss',

@@ -11,6 +11,8 @@ const ECRITURE: VueEcriture = {
   libelle: 'EDF F-2026-0611',
   genereeLe: '2026-11-26T09:00:00Z',
   genereePar: 'Lucie Moreau',
+  modifieeLe: null,
+  modifieePar: null,
   exportee: false,
   aJour: true,
   lignes: [
@@ -99,6 +101,15 @@ describe('US-56 Générer les écritures d’une facture fournisseur validée', 
     expect(texte(page.querySelector('tfoot tr'))).toBe('Total186,40 €186,40 €');
     expect(page.querySelector('.marque')).toBeNull();
     expect(bouton(page)?.disabled).toBe(false);
+  });
+
+  it('US-47 RG4 : écriture corrigée à la main depuis le journal', async () => {
+    const { page } = await afficher({
+      ...EDF,
+      ecriture: { ...ECRITURE, modifieePar: 'Lucie Moreau', modifieeLe: '2026-11-26T10:00:00Z' },
+    });
+    expect(texte(page.querySelector('p.muted'))).toContain('Corrigée à la main par Lucie Moreau le 26/11/2026 à 11:00');
+    expect(page.querySelector('.marque')).toBeNull();
   });
 
   it('CA2, RG5 : « À re-générer », puis « Re-générer les écritures » : fiche à jour', async () => {

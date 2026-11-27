@@ -1,6 +1,7 @@
 package com.example.gestionfinanciere.ecriture;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -42,8 +43,13 @@ public class EcritureService {
 		if (!calcul.equilibree()) {
 			return Optional.of(MESSAGE_DESEQUILIBREE);
 		}
-		return calcul.lignes().stream().map(CalculEcriture.Ligne::numeroCompte).distinct()
-				.map(numero -> refusCompte(dossierId, numero)).flatMap(Optional::stream).findFirst();
+		return refusComptes(dossierId, calcul.lignes().stream().map(CalculEcriture.Ligne::numeroCompte).toList());
+	}
+
+	// Comptes absents ou désactivés du plan du dossier : premier refus, ou vide (US-47 RG3 aussi).
+	Optional<String> refusComptes(Long dossierId, Collection<String> numeros) {
+		return numeros.stream().distinct().map(numero -> refusCompte(dossierId, numero)).flatMap(Optional::stream)
+				.findFirst();
 	}
 
 	private Optional<String> refusCompte(Long dossierId, String numero) {
@@ -73,15 +79,30 @@ public class EcritureService {
 
 	// RG6 : écriture affichée ; actuelle = calcul à partir de la facture d'aujourd'hui (null : non calculable).
 	public VueEcriture vue(Ecriture ecriture, CalculEcriture.Resultat actuelle) {
-		Map<String, String> libelles = comptes.findByDossierIdOrderByNumero(ecriture.getDossierId()).stream()
+		return vue(ecriture, ecriture.enValeur().equals(actuelle));
+	}
+
+	// RG6 : écriture affichée, aJour connu de l'appelant (US-47 : écriture corrigée à la main).
+	public VueEcriture vue(Ecriture ecriture, boolean aJour) {
+		return vue(ecriture, aJour, libelles(ecriture.getDossierId()));
+	}
+
+	// Libellés des comptes du plan du dossier, par numéro.
+	Map<String, String> libelles(Long dossierId) {
+		return comptes.findByDossierIdOrderByNumero(dossierId).stream()
 				.collect(Collectors.toMap(CompteComptable::getNumero, CompteComptable::getLibelle, (a, b) -> a));
+	}
+
+	VueEcriture vue(Ecriture ecriture, boolean aJour, Map<String, String> libelles) {
 		CalculEcriture.Resultat enregistree = ecriture.enValeur();
 		Function<CalculEcriture.Ligne, VueEcriture.Ligne> ligne = l -> new VueEcriture.Ligne(l.numeroCompte(),
 				libelles.get(l.numeroCompte()), l.libelle(), l.debit(), l.credit());
+		Compte modifieePar = ecriture.getModifieePar();
 		return new VueEcriture(ecriture.getJournal(), ecriture.getDateEcriture(), ecriture.getLibelle(),
-				ecriture.getGenereeLe(), ecriture.getGenereePar().getNomAffiche(), ecriture.isExportee(),
-				enregistree.equals(actuelle), enregistree.lignes().stream().map(ligne).toList(),
-				enregistree.totalDebit(), enregistree.totalCredit());
+				ecriture.getGenereeLe(), ecriture.getGenereePar().getNomAffiche(), ecriture.getModifieeLe(),
+				modifieePar == null ? null : modifieePar.getNomAffiche(), ecriture.isExportee(), aJour,
+				enregistree.lignes().stream().map(ligne).toList(), enregistree.totalDebit(),
+				enregistree.totalCredit());
 	}
 
 }

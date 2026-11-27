@@ -34,7 +34,8 @@ public final class CalculEcriture {
 
 	}
 
-	public record Resultat(LocalDate date, String libelle, List<Ligne> lignes) {
+	// piece : n° de pièce (US-47 RG1), le n° de la facture.
+	public record Resultat(LocalDate date, String piece, String libelle, List<Ligne> lignes) {
 
 		public Resultat {
 			lignes = List.copyOf(lignes);
@@ -62,7 +63,7 @@ public final class CalculEcriture {
 		ajouter(lignes, piece.compteContrepartie(), libelle, piece.montantHt(), true);
 		ajouterTva(lignes, piece, COMPTE_TVA_DEDUCTIBLE, true);
 		ajouter(lignes, COMPTE_FOURNISSEUR, libelle, piece.montantTtc(), false);
-		return new Resultat(piece.dateEmission(), libelle, lignes);
+		return new Resultat(piece.dateEmission(), piece.numeroFacture(), libelle, lignes);
 	}
 
 	// US-57 RG1 : client 411 au débit, produit et TVA collectée au crédit.
@@ -72,7 +73,7 @@ public final class CalculEcriture {
 		ajouter(lignes, COMPTE_CLIENT, libelle, piece.montantTtc(), true);
 		ajouter(lignes, piece.compteContrepartie(), libelle, piece.montantHt(), false);
 		ajouterTva(lignes, piece, COMPTE_TVA_COLLECTEE, false);
-		return new Resultat(piece.dateEmission(), libelle, lignes);
+		return new Resultat(piece.dateEmission(), piece.numeroFacture(), libelle, lignes);
 	}
 
 	private static String libelle(PieceAchat piece) {

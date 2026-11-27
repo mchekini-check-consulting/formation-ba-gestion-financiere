@@ -57,7 +57,7 @@ class CorrectionFactureServiceTest {
 	private final Dossier dossier = new Dossier(cabinet, "Boulangerie Martin", "812345679", lucie, MAINTENANT);
 	private final ApplicationEventPublisher evenements = mock(ApplicationEventPublisher.class);
 	private final EcritureRepository ecritures = mock(EcritureRepository.class);
-	private final EcrituresFacture ecrituresFacture = new EcrituresFacture(new EcritureService(ecritures, comptes));
+	private final EcrituresFacture ecrituresFacture = new EcrituresFacture(new EcritureService(ecritures, comptes), corrections);
 	private final CorrectionFactureService service = new CorrectionFactureService(factures, champsLus, historique,
 			corrections, comptes, dossiers, new VuesFacture(champsLus, comptes, corrections, ecrituresFacture),
 			new HorlogeReglable(MAINTENANT), evenements, ecrituresFacture);
@@ -542,6 +542,28 @@ class CorrectionFactureServiceTest {
 		assertEquals(ResultatCorrection.Issue.REGENEREE, service.regenerer(lucie, 42L, 5L).issue());
 		assertEquals(Ecriture.Journal.VT, enregistree.getJournal());
 		assertEquals(euros("1200.00"), enregistree.getLignes().get(0).getDebit());
+	}
+
+	// US-47 : écriture corrigée à la main ; « À re-générer » seulement si la facture est corrigée depuis,
+	// et la re-génération remplace la correction.
+	@Test
+	void us47EcritureCorrigeeALaMain() {
+		service.valider(lucie, 42L, 5L, edf("186.40"));
+		Instant corrigeeLe = MAINTENANT.plusSeconds(60);
+		ReflectionTestUtils.setField(enregistree, "modifieeLe", corrigeeLe);
+		ReflectionTestUtils.setField(enregistree, "modifieePar", lucie);
+
+		VueEcriture vue = ecrituresFacture.vue(facture).orElseThrow();
+		assertTrue(vue.aJour());
+		assertEquals("Lucie Bernard", vue.modifieePar());
+		assertEquals(corrigeeLe, vue.modifieeLe());
+
+		when(corrections.existsByFactureIdAndModifieLeAfter(5L, corrigeeLe)).thenReturn(true);
+		assertFalse(ecrituresFacture.vue(facture).orElseThrow().aJour());
+
+		assertEquals(ResultatCorrection.Issue.REGENEREE, service.regenerer(lucie, 42L, 5L).issue());
+		assertNull(enregistree.getModifieeLe());
+		assertNull(enregistree.getModifieePar());
 	}
 
 }

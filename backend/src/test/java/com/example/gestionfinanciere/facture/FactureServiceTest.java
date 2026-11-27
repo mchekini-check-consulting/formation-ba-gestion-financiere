@@ -58,7 +58,8 @@ class FactureServiceTest {
 
 	private FactureService service() {
 		return new FactureService(factures, historique, new VuesFacture(champsLus, comptes, corrections,
-				new EcrituresFacture(new EcritureService(mock(EcritureRepository.class), comptes))), dossiers,
+				new EcrituresFacture(new EcritureService(mock(EcritureRepository.class), comptes),
+						mock(CorrectionFactureRepository.class))), dossiers,
 				evenements, new HorlogeReglable(MAINTENANT));
 	}
 
