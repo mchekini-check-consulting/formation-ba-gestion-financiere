@@ -33,19 +33,17 @@ import com.example.gestionfinanciere.plancomptable.CompteComptableRepository;
  * Chaque modification garde son auteur et sa date (RG8). Une facture en cours de lecture ne se modifie pas.
  * US-56 : la validation d'une facture d'achat génère son écriture (RG1 à RG4). Une facture d'achat traitée
  * se corrige encore (informations complètes et cohérentes) tant que son écriture n'est pas exportée, puis
- * « Re-générer les écritures » la recalcule (RG5, CA2) ; exportée, plus rien ne change (CA3). Une facture
- * de vente traitée ne se modifie plus (écritures : US-57).
+ * « Re-générer les écritures » la recalcule (RG5, CA2) ; exportée, plus rien ne change (CA3).
+ * US-57 : mêmes règles pour une facture de vente, son écriture va au journal des ventes.
  */
 @Service
 @Loggable
 public class CorrectionFactureService {
 
-	static final String MESSAGE_TRAITEE = "Facture traitée : ses informations ne se modifient plus";
 	static final String MESSAGE_EXPORTEE = "Écriture exportée : la facture ne se modifie plus";
 	static final String MESSAGE_DEJA_VALIDEE =
 			"Facture déjà validée : enregistrez la correction puis re-générez les écritures";
 	static final String MESSAGE_NON_VALIDEE = "Validez la facture pour générer ses écritures";
-	static final String MESSAGE_SANS_ECRITURE = "Pas d'écriture pour une facture de vente";
 	static final String MESSAGE_LECTURE_EN_COURS = "Lecture en cours : réessayez dans quelques secondes";
 	static final String MESSAGE_INCOHERENTS = "Montants incohérents : HT + TVA ≠ TTC";
 	static final String MESSAGE_TYPE_TIERS = "Type de tiers : Fournisseur ou Client";
@@ -194,7 +192,7 @@ public class CorrectionFactureService {
 		if (refus.isEmpty() && complete) {
 			refus = incomplete(valeurs);
 		}
-		if (refus.isEmpty() && validation && EcrituresFacture.concernee(facture)) {
+		if (refus.isEmpty() && validation) {
 			refus = ecritures.refus(facture, valeurs);
 		}
 		return refus;
@@ -206,9 +204,6 @@ public class CorrectionFactureService {
 	}
 
 	private Optional<String> nonRegenerable(Facture facture) {
-		if (!EcrituresFacture.concernee(facture)) {
-			return Optional.of(MESSAGE_SANS_ECRITURE);
-		}
 		if (facture.getStatut() != Facture.Statut.TRAITEE) {
 			return Optional.of(MESSAGE_NON_VALIDEE);
 		}
@@ -231,11 +226,8 @@ public class CorrectionFactureService {
 		return Optional.empty();
 	}
 
-	// US-56 : une facture d'achat traitée se corrige tant que son écriture n'est pas exportée.
+	// US-56, US-57 : une facture traitée se corrige tant que son écriture n'est pas exportée.
 	private Optional<String> traiteeFigee(Facture facture, boolean validation) {
-		if (!EcrituresFacture.concernee(facture)) {
-			return Optional.of(MESSAGE_TRAITEE);
-		}
 		if (ecritures.exportee(facture)) {
 			return Optional.of(MESSAGE_EXPORTEE);
 		}

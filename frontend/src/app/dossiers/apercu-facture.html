@@ -22,8 +22,8 @@
   @if (information(); as i) {
     <p class="muted" role="status">{{ i }}</p>
   }
-  @if (f.sens === 'ACHAT' && f.lecture) {
-    <!-- US-56 : écritures d'une facture fournisseur validée -->
+  @if (f.lecture) {
+    <!-- US-56, US-57 : écritures d'une facture fournisseur ou client validée -->
     <app-ecritures-facture [dossierId]="dossierId()" [facture]="f" (modifiee)="facture.set($event)" />
   }
 

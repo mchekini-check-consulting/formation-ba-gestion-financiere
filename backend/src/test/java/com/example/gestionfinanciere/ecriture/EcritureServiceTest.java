@@ -60,7 +60,7 @@ class EcritureServiceTest {
 	@Test
 	void enregistrerPuisRegenerer() {
 		when(ecritures.save(any(Ecriture.class))).thenAnswer(appel -> appel.getArgument(0));
-		Ecriture creee = service.enregistrer(42L, 5L, edf("155.33", "186.40"), lucie, MAINTENANT);
+		Ecriture creee = service.enregistrer(42L, 5L, Ecriture.Journal.AC, edf("155.33", "186.40"), lucie, MAINTENANT);
 		assertEquals(Ecriture.Journal.AC, creee.getJournal());
 		assertEquals("EDF F-1", creee.getLibelle());
 		assertEquals(3, creee.getLignes().size());
@@ -69,7 +69,8 @@ class EcritureServiceTest {
 		assertNull(creee.getExporteeLe());
 
 		when(ecritures.findByFactureId(5L)).thenReturn(Optional.of(creee));
-		Ecriture regeneree = service.enregistrer(42L, 5L, edf("160.00", "191.07"), lucie, PLUS_TARD);
+		Ecriture regeneree = service.enregistrer(42L, 5L, Ecriture.Journal.AC, edf("160.00", "191.07"), lucie,
+				PLUS_TARD);
 		assertSame(creee, regeneree);
 		assertEquals(PLUS_TARD, regeneree.getGenereeLe());
 		assertEquals(lucie, regeneree.getGenereePar());

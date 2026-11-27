@@ -187,16 +187,33 @@ describe('US-55 Vérifier, corriger et valider les informations d’une facture'
     expect(page.querySelector('[role=alert]')?.textContent).toBe('Montant HT : nombre attendu');
   });
 
-  it('facture de vente « Traitée » ou écriture exportée : lecture seule ; RG8 dernière modification', async () => {
+  it('facture « Traitée » dont l’écriture est exportée : lecture seule ; RG8 dernière modification', async () => {
     const { page } = await afficher({
       ...EDF,
       sens: 'VENTE',
       statut: 'TRAITEE',
       modification: { par: 'Lucie Bernard', le: '2026-11-25T09:00:00Z' },
+      ecriture: {
+        journal: 'VT',
+        date: '2026-06-12',
+        libelle: 'Café Lumière F-2026-014',
+        genereeLe: '2026-11-25T09:00:00Z',
+        genereePar: 'Lucie Bernard',
+        exportee: true,
+        aJour: true,
+        lignes: [],
+        totalDebit: 0,
+        totalCredit: 0,
+      },
     });
     expect(page.querySelector('.traitee')?.textContent).toBe('Traitée');
     expect(page.querySelector('.valeur')).toBeNull();
     expect(page.querySelector('.modification')?.textContent).toBe('Modifiée par Lucie Bernard le 25/11/2026 à 10:00');
+  });
+
+  it('US-57 RG5 : facture de vente « Traitée », écriture non exportée : « Corriger »', async () => {
+    const { page } = await afficher({ ...EDF, sens: 'VENTE', statut: 'TRAITEE' });
+    expect(Array.from(page.querySelectorAll('button')).some((b) => b.textContent?.trim() === 'Corriger')).toBe(true);
   });
 
   it('US-56 RG5 : facture d’achat « Traitée », écriture non exportée : « Corriger », sans « Valider »', async () => {

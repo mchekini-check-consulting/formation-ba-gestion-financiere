@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, input, output, signal } from '@angular/core';
-import { FactureService, VueFacture, dateOuTiret, formaterDepot } from './facture.service';
+import { FactureService, VueEcriture, VueFacture, dateOuTiret, formaterDepot } from './facture.service';
 
 const MESSAGE_INDISPONIBLE = 'Le service est momentanément indisponible. Réessayez.';
 const EUROS = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
@@ -15,6 +15,7 @@ export function montantEcriture(valeur: number): string {
  * RG1 à RG4 : lignes au journal des achats, totaux débit / crédit (RG2). RG5 : « Re-générer les
  * écritures » recalcule l'écriture après une correction (« À re-générer »), tant qu'elle n'est pas
  * exportée ; CA3 : exportée, le bouton est désactivé avec la mention « Exportée ».
+ * US-57 : même bloc pour une facture client, au journal des ventes (VT).
  */
 @Component({
   selector: 'app-ecritures-facture',
@@ -52,6 +53,10 @@ export class EcrituresFacture {
 
   protected total(valeur: number): string {
     return EUROS.format(valeur);
+  }
+
+  protected nomJournal(journal: VueEcriture['journal']): string {
+    return journal === 'VT' ? 'Journal des ventes' : 'Journal des achats';
   }
 
   protected date(jour: string): string {
