@@ -24,7 +24,7 @@ import com.example.gestionfinanciere.dossier.DossierController;
 // /backend/dossiers/{id}/factures ; mêmes droits que le dossier (US-11 RG3), session obligatoire (US-07) :
 //   PUT  /dossiers/{id}/factures/{f}/informations  enregistrer les champs corrigés ou saisis (RG2, RG3, RG7)
 //   POST /dossiers/{id}/factures/{f}/validation    enregistrer puis passer en « Traitée » (RG4 à RG6) ;
-//                                                  facture d'achat : génère son écriture (US-56 RG1)
+//                                                  génère son écriture (achat : US-56 RG1, vente : US-57 RG1)
 //   POST /dossiers/{id}/factures/{f}/ecriture      « Re-générer les écritures », sans corps (US-56 RG5)
 // Corps : {"typeTiers","nomTiers","numeroFacture","dateEmission","montantHt","montantTva","tauxTva",
 // "montantTtc","compteContrepartie"} ; réponse : la fiche à jour, ou {"message"} (400, 404, 409).

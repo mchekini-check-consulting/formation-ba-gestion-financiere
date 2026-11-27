@@ -7,6 +7,8 @@ import java.util.List;
 /**
  * US-56 : informations d'une facture d'achat validée, d'où l'écriture est calculée (CalculEcriture).
  * tva : une entrée par taux (RG4) ; le taux est vide s'il n'est pas connu.
+ * US-57 : sert aussi pour une facture de vente (CalculEcriture.vente) ; la contrepartie est alors le
+ * compte de produit.
  */
 public record PieceAchat(String nomTiers, String numeroFacture, LocalDate dateEmission, BigDecimal montantHt,
 		List<TvaDuTaux> tva, BigDecimal montantTtc, String compteContrepartie) {

@@ -76,4 +76,40 @@ class CalculEcritureTest {
 		assertFalse(ecriture.equilibree());
 	}
 
+	// US-57 CA1 : facture client F-2026-014 de 1 440,00 TTC (HT 1 200,00, TVA 240,00), contrepartie 706.
+	@Test
+	void us57Ca1FactureClient() {
+		CalculEcriture.Resultat ecriture = CalculEcriture.vente(new PieceAchat("Café Lumière", "F-2026-014", EMISE_LE,
+				euros("1200.00"), List.of(new PieceAchat.TvaDuTaux(euros("20"), euros("240.00"))), euros("1440.00"),
+				"706"));
+
+		assertEquals(EMISE_LE, ecriture.date());
+		assertEquals("Café Lumière F-2026-014", ecriture.libelle());
+		assertEquals(List.of(ligne("411", "Café Lumière F-2026-014", "1440.00", "0"),
+				ligne("706", "Café Lumière F-2026-014", "0", "1200.00"),
+				ligne("44571", "Café Lumière F-2026-014 – TVA 20 %", "0", "240.00")), ecriture.lignes());
+		assertTrue(ecriture.equilibree());
+		assertEquals(euros("1440.00"), ecriture.totalDebit());
+	}
+
+	// US-57 RG4 et avoir client : une ligne de TVA collectée par taux ; montants négatifs inversés.
+	@Test
+	void us57PlusieursTauxEtAvoir() {
+		CalculEcriture.Resultat plusieurs = CalculEcriture.vente(new PieceAchat("Café Lumière", "0042", EMISE_LE,
+				euros("150.00"), List.of(new PieceAchat.TvaDuTaux(euros("20"), euros("20.00")),
+						new PieceAchat.TvaDuTaux(euros("10"), euros("5.00"))),
+				euros("175.00"), "706"));
+		assertEquals(List.of("411", "706", "44571", "44571"),
+				plusieurs.lignes().stream().map(CalculEcriture.Ligne::numeroCompte).toList());
+		assertEquals("Café Lumière 0042 – TVA 10 %", plusieurs.lignes().get(3).libelle());
+		assertTrue(plusieurs.equilibree());
+
+		CalculEcriture.Resultat avoir = CalculEcriture.vente(new PieceAchat("Café Lumière", "AV-2", EMISE_LE,
+				euros("-50.00"), List.of(new PieceAchat.TvaDuTaux(euros("20"), euros("-10.00"))), euros("-60.00"),
+				"706"));
+		assertEquals(List.of(ligne("411", "Café Lumière AV-2", "0", "60.00"), ligne("706", "Café Lumière AV-2", "50.00", "0"),
+				ligne("44571", "Café Lumière AV-2 – TVA 20 %", "10.00", "0")), avoir.lignes());
+		assertTrue(avoir.equilibree());
+	}
+
 }

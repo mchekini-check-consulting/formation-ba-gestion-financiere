@@ -14,7 +14,7 @@ import com.example.gestionfinanciere.facture.lecture.TvaParTaux;
 // US-13 : en-tête de la page d'aperçu (nom et type du fichier, onglet du dossier).
 // US-53 : résultat de la lecture automatique ; vide pour une facture jamais lue.
 // US-55 : statut de traitement et dernière modification (RG8).
-// US-56 : écriture générée à la validation d'une facture d'achat (vide sinon) ; une facture traitée ne
+// US-56, US-57 : écriture générée à la validation de la facture (vide avant) ; une facture traitée ne
 // se modifie plus une fois son écriture exportée (avant : elle se corrige puis se re-génère, RG5).
 public record VueFacture(Long id, String nomFichier, String typeFichier, Facture.Sens sens, Facture.Statut statut,
 		Lecture lecture, Modification modification, VueEcriture ecriture) {
