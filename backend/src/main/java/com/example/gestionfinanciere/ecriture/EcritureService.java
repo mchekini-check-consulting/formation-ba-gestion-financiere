@@ -16,7 +16,7 @@ import com.example.gestionfinanciere.plancomptable.CompteComptable;
 import com.example.gestionfinanciere.plancomptable.CompteComptableRepository;
 
 /**
- * US-56 Écritures des factures d'achat validées. L'appelant vérifie les droits sur le dossier et
+ * US-56 Écritures des factures d'achat validées ; US-57 des factures de vente validées. L'appelant vérifie les droits sur le dossier et
  * appelle refus() avant enregistrer(). RG2 : une écriture est toujours équilibrée ; comme pour
  * l'US-30, elle n'utilise que des comptes actifs du plan comptable du dossier (US-41 RG3).
  */
@@ -65,15 +65,15 @@ public class EcritureService {
 	 * RG1 : crée l'écriture de la facture ; RG5 : la recalcule si elle existe déjà. L'appelant a
 	 * vérifié qu'elle n'est pas exportée et que refus() est vide.
 	 */
-	public Ecriture enregistrer(Long dossierId, Long factureId, CalculEcriture.Resultat calcul, Compte auteur,
-			Instant quand) {
+	public Ecriture enregistrer(Long dossierId, Long factureId, Ecriture.Journal journal,
+			CalculEcriture.Resultat calcul, Compte auteur, Instant quand) {
 		Optional<Ecriture> existante = ecritures.findByFactureId(factureId);
-		Ecriture ecriture = existante.orElseGet(() -> Ecriture.achat(dossierId, factureId));
+		Ecriture ecriture = existante.orElseGet(() -> Ecriture.au(journal, dossierId, factureId));
 		ecriture.remplir(calcul, auteur, quand);
 		Ecriture enregistree = ecritures.save(ecriture);
 		EvenementMetier.de("ecriture.generation", existante.isPresent() ? "regeneree" : "generee")
 				.avec(auteur.identifiantsPourLogs()).avec("dossierId", dossierId).avec("factureId", factureId)
-				.avec("lignes", calcul.lignes().size()).info();
+				.avec("journal", journal).avec("lignes", calcul.lignes().size()).info();
 		return enregistree;
 	}
 

@@ -270,15 +270,9 @@ class CorrectionFactureServiceTest {
 		return service.enregistrer(lucie, 42L, 5L, informations).message();
 	}
 
-	// Une facture de vente traitée ou une facture en cours de lecture ne se modifie pas.
+	// Une facture en cours de lecture ne se modifie pas.
 	@Test
 	void factureFigee() {
-		ReflectionTestUtils.setField(facture, "sens", Facture.Sens.VENTE);
-		facture.valider();
-		ResultatCorrection traitee = service.enregistrer(lucie, 42L, 5L, edf("186.40"));
-		assertEquals(ResultatCorrection.Issue.FIGEE, traitee.issue());
-		assertEquals("Facture traitée : ses informations ne se modifient plus", traitee.message());
-
 		Facture enLecture = new Facture(dossier, Facture.Sens.ACHAT, "ticket.png", "image/png", MAINTENANT, lucie,
 				new byte[] { 1 });
 		enLecture.demarrerLecture();
@@ -420,7 +414,7 @@ class CorrectionFactureServiceTest {
 		assertTrue(ecrituresFacture.vue(facture).orElseThrow().exportee());
 	}
 
-	// US-56 RG5 : re-générer une facture non validée, de vente, introuvable ou incomplète.
+	// US-56 RG5 : re-générer une facture non validée, introuvable ou incomplète.
 	@Test
 	void us56RegenerationRefusee() {
 		assertEquals("Validez la facture pour générer ses écritures", service.regenerer(lucie, 42L, 5L).message());
@@ -432,9 +426,6 @@ class CorrectionFactureServiceTest {
 		assertEquals(ResultatCorrection.Issue.INVALIDE, incoherente.issue());
 		assertEquals("Montants incohérents : HT + TVA ≠ TTC", incoherente.message());
 		assertNull(enregistree);
-
-		ReflectionTestUtils.setField(facture, "sens", Facture.Sens.VENTE);
-		assertEquals("Pas d'écriture pour une facture de vente", service.regenerer(lucie, 42L, 5L).message());
 	}
 
 	// US-56 : une facture traitée avant l'US-56 reçoit son écriture au premier « Re-générer ».
@@ -488,12 +479,69 @@ class CorrectionFactureServiceTest {
 		assertEquals(euros("2.75"), lignes.get(2).debit());
 	}
 
-	// US-56 : une facture de vente validée ne génère pas d'écriture (US-57).
-	@Test
-	void us56PasDEcritureDeVente() {
+	// US-57 : facture client F-2026-014, contrepartie 706 (comptes du plan du dossier).
+	private InformationsFacture f2026014(String contrepartie) {
 		ReflectionTestUtils.setField(facture, "sens", Facture.Sens.VENTE);
-		assertNull(service.valider(lucie, 42L, 5L, edf("186.40")).facture().ecriture());
+		when(champsLus.findByFactureId(5L)).thenReturn(List.of());
+		when(comptes.findByDossierIdAndNumero(42L, "706"))
+				.thenReturn(Optional.of(CompteComptable.general(42L, "706", "Prestations de services", MAINTENANT)));
+		when(comptes.findByDossierIdAndNumero(42L, "411"))
+				.thenReturn(Optional.of(CompteComptable.general(42L, "411", "Clients", MAINTENANT)));
+		when(comptes.findByDossierIdAndNumero(42L, "44571"))
+				.thenReturn(Optional.of(CompteComptable.general(42L, "44571", "TVA collectée", MAINTENANT)));
+		return new InformationsFacture("CLIENT", "Café Lumière", "F-2026-014", EMISE_LE, euros("1200.00"),
+				euros("240.00"), euros("20"), euros("1440.00"), contrepartie);
+	}
+
+	// US-57 CA1 : la validation d'une facture client génère son écriture au journal des ventes.
+	@Test
+	void us57Ca1EcritureDeVente() {
+		ResultatCorrection resultat = service.valider(lucie, 42L, 5L, f2026014("706"));
+
+		assertEquals(ResultatCorrection.Issue.VALIDEE, resultat.issue());
+		VueEcriture ecriture = resultat.facture().ecriture();
+		assertEquals(Ecriture.Journal.VT, ecriture.journal());
+		assertEquals(Ecriture.Journal.VT, enregistree.getJournal());
+		assertEquals(List.of("411", "706", "44571"),
+				ecriture.lignes().stream().map(VueEcriture.Ligne::numeroCompte).toList());
+		assertEquals(euros("1440.00"), ecriture.lignes().get(0).debit());
+		assertEquals(euros("1200.00"), ecriture.lignes().get(1).credit());
+		assertEquals(euros("240.00"), ecriture.lignes().get(2).credit());
+		assertEquals(euros("1440.00"), ecriture.totalDebit());
+		assertEquals(euros("1440.00"), ecriture.totalCredit());
+		assertTrue(ecriture.aJour());
+	}
+
+	// US-57 CA2 : contrepartie absente du plan comptable du dossier, aucune écriture.
+	@Test
+	void us57Ca2CompteAbsentDuPlan() {
+		ResultatCorrection refus = service.valider(lucie, 42L, 5L, f2026014("708"));
+		assertEquals(ResultatCorrection.Issue.INVALIDE, refus.issue());
+		assertEquals("Le compte 708 n'est pas dans le plan comptable du dossier", refus.message());
+		assertEquals(Facture.Statut.RECUE, facture.getStatut());
 		verify(ecritures, never()).save(any());
+
+		// 411 ou 44571 absent du plan : validation refusée aussi.
+		InformationsFacture valeurs = f2026014("706");
+		when(comptes.findByDossierIdAndNumero(42L, "44571")).thenReturn(Optional.empty());
+		assertEquals("Le compte 44571 n'est pas dans le plan comptable du dossier",
+				service.valider(lucie, 42L, 5L, valeurs).message());
+		assertNull(enregistree);
+	}
+
+	// US-57 RG5 : une facture client traitée se corrige puis se re-génère, tant qu'elle n'est pas exportée.
+	@Test
+	void us57CorrectionEtRegeneration() {
+		service.valider(lucie, 42L, 5L, f2026014("706"));
+		InformationsFacture corrigee = new InformationsFacture("CLIENT", "Café Lumière", "F-2026-014", EMISE_LE,
+				euros("1000.00"), euros("200.00"), euros("20"), euros("1200.00"), "706");
+
+		assertEquals(ResultatCorrection.Issue.ENREGISTREE, service.enregistrer(lucie, 42L, 5L, corrigee).issue());
+		assertFalse(ecrituresFacture.vue(facture).orElseThrow().aJour());
+
+		assertEquals(ResultatCorrection.Issue.REGENEREE, service.regenerer(lucie, 42L, 5L).issue());
+		assertEquals(Ecriture.Journal.VT, enregistree.getJournal());
+		assertEquals(euros("1200.00"), enregistree.getLignes().get(0).getDebit());
 	}
 
 	// US-47 : écriture corrigée à la main ; « À re-générer » seulement si la facture est corrigée depuis,

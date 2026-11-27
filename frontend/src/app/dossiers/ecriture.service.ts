@@ -13,7 +13,7 @@ export interface Periode {
 /** US-47 Écriture du journal ; exportee : lecture seule (RG2, CA3) ; modifiee* : dernière correction (RG4). */
 export interface EcritureJournal {
   id: number;
-  journal: 'AC';
+  journal: 'AC' | 'VT';
   date: string;
   piece: string | null;
   libelle: string;
@@ -43,6 +43,7 @@ export interface CorrectionEcriture {
 /** Journaux connus, pour le filtre « Journal ». */
 export const LIBELLES_JOURNAUX: Record<string, string> = {
   AC: 'AC – Achats',
+  VT: 'VT – Ventes',
 };
 
 /** US-47 Journal d'un dossier : appels au backend (via le gateway). */

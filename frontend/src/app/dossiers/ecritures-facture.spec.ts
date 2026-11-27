@@ -172,9 +172,62 @@ describe('US-56 Générer les écritures d’une facture fournisseur validée', 
     expect(modifiable(EDF)).toBe(true);
     expect(modifiable({ ...EDF, ecriture: null })).toBe(true);
     expect(modifiable({ ...EDF, ecriture: { ...ECRITURE, exportee: true } })).toBe(false);
-    expect(modifiable({ ...EDF, sens: 'VENTE' })).toBe(false);
+    // US-57 : une facture client traitée se corrige aussi tant que son écriture n'est pas exportée.
+    expect(modifiable({ ...EDF, sens: 'VENTE' })).toBe(true);
+    expect(modifiable({ ...EDF, sens: 'VENTE', ecriture: { ...ECRITURE, exportee: true } })).toBe(false);
     expect(modifiable({ ...EDF, statut: 'RECUE' })).toBe(true);
     expect(modifiable({ ...EDF, lecture: null })).toBe(false);
     expect(modifiable({ ...EDF, lecture: { ...EDF.lecture!, statut: 'EN_COURS' } })).toBe(false);
+  });
+});
+
+describe('US-57 Générer les écritures d’une facture client validée', () => {
+  const VENTE: VueEcriture = {
+    ...ECRITURE,
+    journal: 'VT',
+    libelle: 'Café Lumière F-2026-014',
+    lignes: [
+      { numeroCompte: '411', libelleCompte: 'Clients', libelle: 'Café Lumière F-2026-014', debit: 1440, credit: 0 },
+      { numeroCompte: '706', libelleCompte: 'Prestations de services', libelle: 'Café Lumière F-2026-014', debit: 0, credit: 1200 },
+      { numeroCompte: '44571', libelleCompte: 'TVA collectée', libelle: 'Café Lumière F-2026-014 – TVA 20 %', debit: 0, credit: 240 },
+    ],
+    totalDebit: 1440,
+    totalCredit: 1440,
+  };
+  const F2026014: VueFacture = { ...EDF, sens: 'VENTE', ecriture: VENTE };
+
+  beforeEach(async () => {
+    sessionStorage.clear();
+    await TestBed.configureTestingModule({
+      imports: [EcrituresFacture],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+  });
+
+  async function afficher(facture: VueFacture): Promise<HTMLElement> {
+    const fixture = TestBed.createComponent(EcrituresFacture);
+    fixture.componentRef.setInput('dossierId', '42');
+    fixture.componentRef.setInput('facture', facture);
+    await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('CA1 : 411 au débit, 706 et 44571 au crédit, au journal des ventes', async () => {
+    const page = await afficher(F2026014);
+    expect(texte(page.querySelector('p.muted'))).toContain('Journal des ventes (VT) · 12/06/2026 · Café Lumière F-2026-014');
+    const lignes = Array.from(page.querySelectorAll('tbody tr')).map((tr) =>
+      Array.from(tr.querySelectorAll('td')).map((td) => texte(td)),
+    );
+    expect(lignes).toEqual([
+      ['411Clients', 'Café Lumière F-2026-014', '1 440,00 €', ''],
+      ['706Prestations de services', 'Café Lumière F-2026-014', '', '1 200,00 €'],
+      ['44571TVA collectée', 'Café Lumière F-2026-014 – TVA 20 %', '', '240,00 €'],
+    ]);
+    expect(texte(page.querySelector('tfoot tr'))).toBe('Total1 440,00 €1 440,00 €');
+  });
+
+  it('pas encore validée : comptes de vente annoncés', async () => {
+    const page = await afficher({ ...F2026014, statut: 'RECUE', ecriture: null });
+    expect(texte(page.querySelector('p.muted'))).toContain('client 411, compte de produit, TVA collectée 44571');
   });
 });

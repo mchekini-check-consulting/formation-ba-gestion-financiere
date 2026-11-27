@@ -153,12 +153,13 @@ export interface LigneEcriture {
 }
 
 /**
- * US-56 RG6 : écriture d'une facture d'achat validée, au journal des achats (AC).
+ * US-56 RG6 : écriture d'une facture d'achat validée, au journal des achats (AC) ; US-57 : d'une
+ * facture de vente validée, au journal des ventes (VT).
  * exportee : « Re-générer les écritures » désactivé (CA3) ; aJour : faux après une correction (RG5).
  * US-47 RG4 : modifieePar, modifieeLe : dernière correction à la main depuis le journal (null sinon).
  */
 export interface VueEcriture {
-  journal: 'AC';
+  journal: 'AC' | 'VT';
   date: string;
   libelle: string;
   genereeLe: string;
@@ -189,14 +190,14 @@ export interface VueFacture {
 }
 
 /**
- * US-55, US-56 : informations modifiables, sauf pendant la lecture ; une facture « Traitée » ne se
- * modifie plus, sauf une facture d'achat dont l'écriture n'est pas exportée (RG5).
+ * US-55, US-56, US-57 : informations modifiables, sauf pendant la lecture ; une facture « Traitée »
+ * (achat ou vente) ne se modifie plus une fois son écriture exportée (RG5).
  */
 export function modifiable(f: VueFacture): boolean {
   if (f.lecture === null || f.lecture.statut === 'EN_COURS') {
     return false;
   }
-  return f.statut !== 'TRAITEE' || (f.sens === 'ACHAT' && !f.ecriture?.exportee);
+  return f.statut !== 'TRAITEE' || !f.ecriture?.exportee;
 }
 
 /**

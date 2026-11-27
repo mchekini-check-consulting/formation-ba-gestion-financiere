@@ -450,6 +450,40 @@ class FactureIT {
 		assertThat(appel("PUT", dossier + "/ecritures/999999", corrigee, jeton).statusCode()).isEqualTo(404);
 	}
 
+	// US-57 CA1 et CA2 : écriture au journal des ventes à la validation d'une facture client ; contrepartie
+	// absente du plan : refus, aucune écriture.
+	@Test
+	void us57EcrituresDUneFactureClientValidee() throws Exception {
+		String jeton = jeanConnecte();
+		String dossier = dossier(jeton);
+		HttpResponse<String> importee = importer(dossier + "/factures?sens=VENTE", "facture-client-0042.pdf",
+				fichierDExemple("facture-client-0042.pdf"), jeton);
+		Matcher id = ID.matcher(importee.body());
+		assertThat(id.find()).isTrue();
+		String fiche = dossier + "/factures/" + id.group(1);
+		Awaitility.await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(200))
+				.until(() -> !appel("GET", fiche, null, jeton).body().contains("\"statut\":\"EN_COURS\""));
+
+		String facture = """
+				{"typeTiers":"CLIENT","nomTiers":"Café Lumière","numeroFacture":"F-2026-014","dateEmission":"2026-06-12",
+				"montantHt":1200.00,"montantTva":240.00,"tauxTva":20,"montantTtc":1440.00,"compteContrepartie":"7099"}""";
+		HttpResponse<String> refus = appel("POST", fiche + "/validation", facture, jeton);
+		assertThat(refus.statusCode()).isEqualTo(400);
+		assertThat(refus.body()).contains("Le compte 7099 n'est pas dans le plan comptable du dossier");
+		assertThat(jdbc.queryForObject("select count(*) from ecriture where facture_id = ?", Integer.class,
+				Long.valueOf(id.group(1)))).isZero();
+
+		HttpResponse<String> validee = appel("POST", fiche + "/validation", facture.replace("7099", "706"), jeton);
+		assertThat(validee.statusCode()).isEqualTo(200);
+		assertThat(validee.body()).contains("\"journal\":\"VT\"", "\"libelle\":\"Café Lumière F-2026-014\"",
+				"{\"numeroCompte\":\"411\",\"libelleCompte\":\"Clients\",\"libelle\":\"Café Lumière F-2026-014\",\"debit\":1440.00,\"credit\":0.00}",
+				"{\"numeroCompte\":\"706\",\"libelleCompte\":\"Prestations de services\",\"libelle\":\"Café Lumière F-2026-014\",\"debit\":0.00,\"credit\":1200.00}",
+				"{\"numeroCompte\":\"44571\"", "\"credit\":240.00", "\"totalDebit\":1440.00,\"totalCredit\":1440.00");
+		assertThat(jdbc.queryForObject("select journal from ecriture where facture_id = ?", String.class,
+				Long.valueOf(id.group(1)))).isEqualTo("VT");
+		controleSql();
+	}
+
 	// US-56 / US-30 : les deux requêtes de contrôle renvoient zéro ligne.
 	private void controleSql() {
 		assertThat(jdbc.queryForList("""

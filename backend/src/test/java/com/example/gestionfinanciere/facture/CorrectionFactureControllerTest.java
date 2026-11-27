@@ -65,10 +65,10 @@ class CorrectionFactureControllerTest {
 		assertEquals(new ErreurResponse("Indiquez le numéro de facture"), invalide.getBody());
 
 		when(corrections.enregistrer(lucie, 42L, 5L, informations)).thenReturn(ResultatCorrection
-				.refuse(ResultatCorrection.Issue.FIGEE, CorrectionFactureService.MESSAGE_TRAITEE));
+				.refuse(ResultatCorrection.Issue.FIGEE, CorrectionFactureService.MESSAGE_EXPORTEE));
 		ResponseEntity<Object> figee = controller.enregistrer(AUTORISATION, "42", "5", informations);
 		assertEquals(HttpStatus.CONFLICT, figee.getStatusCode());
-		assertEquals(new ErreurResponse("Facture traitée : ses informations ne se modifient plus"), figee.getBody());
+		assertEquals(new ErreurResponse("Écriture exportée : la facture ne se modifie plus"), figee.getBody());
 
 		when(corrections.enregistrer(lucie, 42L, 6L, informations))
 				.thenReturn(ResultatCorrection.refuse(ResultatCorrection.Issue.INTROUVABLE, null));

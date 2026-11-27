@@ -14,7 +14,7 @@
 
   @if (f.ecriture; as e) {
     <p class="muted">
-      Journal des achats ({{ e.journal }}) · {{ date(e.date) }} · {{ e.libelle }}
+      {{ nomJournal(e.journal) }} ({{ e.journal }}) · {{ date(e.date) }} · {{ e.libelle }}
       <br />
       Générée par {{ e.genereePar }} le {{ generee(e.genereeLe) }}
       @if (e.modifieePar && e.modifieeLe) {
@@ -62,8 +62,13 @@
     <p class="muted">Aucune écriture pour cette facture : cliquez sur « Re-générer les écritures ».</p>
   } @else {
     <p class="muted">
-      Les écritures (compte de contrepartie, TVA déductible 44566, fournisseur 401) seront générées à la validation
-      de la facture.
+      @if (f.sens === 'VENTE') {
+        Les écritures (client 411, compte de produit, TVA collectée 44571) seront générées à la validation de la
+        facture.
+      } @else {
+        Les écritures (compte de contrepartie, TVA déductible 44566, fournisseur 401) seront générées à la validation
+        de la facture.
+      }
     </p>
   }
 

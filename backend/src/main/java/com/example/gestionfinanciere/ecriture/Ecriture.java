@@ -21,16 +21,17 @@ import jakarta.persistence.Table;
 
 import com.example.gestionfinanciere.compte.Compte;
 
-// US-56 Écriture d'une facture d'achat validée (V27__ecriture.sql), au journal des achats.
+// US-56 Écriture d'une facture d'achat validée (V27__ecriture.sql), au journal des achats ;
+// US-57 d'une facture de vente validée, au journal des ventes.
 // RG5 : re-générée (lignes remplacées) tant qu'elle n'est pas exportée. Supprimée avec sa facture.
 // US-47 (V28__journal_ecritures.sql) : n° de pièce, correction à la main tant qu'elle n'est pas exportée.
 @Entity
 @Table(name = "ecriture")
 public class Ecriture {
 
-	// Journal des achats.
+	// Journal des achats (US-56) ou des ventes (US-57, V28__ecriture_vente.sql).
 	public enum Journal {
-		AC
+		AC, VT
 	}
 
 	@Id
@@ -85,10 +86,15 @@ public class Ecriture {
 
 	// RG1 : écriture d'une facture d'achat, au journal des achats.
 	public static Ecriture achat(Long dossierId, Long factureId) {
+		return au(Journal.AC, dossierId, factureId);
+	}
+
+	// US-57 RG1 : écriture d'une facture de vente au journal des ventes (VT).
+	public static Ecriture au(Journal journal, Long dossierId, Long factureId) {
 		Ecriture ecriture = new Ecriture();
 		ecriture.dossierId = dossierId;
 		ecriture.factureId = factureId;
-		ecriture.journal = Journal.AC;
+		ecriture.journal = journal;
 		return ecriture;
 	}
 

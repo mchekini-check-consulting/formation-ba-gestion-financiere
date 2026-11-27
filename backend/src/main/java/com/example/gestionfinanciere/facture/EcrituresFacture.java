@@ -16,7 +16,7 @@ import com.example.gestionfinanciere.ecriture.VueEcriture;
 import com.example.gestionfinanciere.facture.lecture.TvaParTaux;
 
 /**
- * US-56 : écriture d'une facture d'achat (factures de vente : US-57). Calculée à partir des
+ * US-56 : écriture d'une facture d'achat ; US-57 : d'une facture de vente (sens inversé). Calculée à partir des
  * informations de la facture : RG4, une ligne de TVA par taux pour une facture à plusieurs taux
  * (US-54 CA2) dont le détail fait bien le montant de TVA ; sinon une seule ligne de TVA.
  */
@@ -31,8 +31,9 @@ public class EcrituresFacture {
 		this.corrections = corrections;
 	}
 
-	static boolean concernee(Facture facture) {
-		return facture.getSens() == Facture.Sens.ACHAT;
+	// Journal de la facture : achats (US-56) ou ventes (US-57).
+	static Ecriture.Journal journal(Facture facture) {
+		return facture.getSens() == Facture.Sens.VENTE ? Ecriture.Journal.VT : Ecriture.Journal.AC;
 	}
 
 	// Informations à enregistrer sur la facture (valeurs) -> écriture ; vide s'il manque une information.
@@ -42,9 +43,10 @@ public class EcrituresFacture {
 				|| valeurs.compteContrepartie() == null) {
 			return Optional.empty();
 		}
-		return Optional.of(CalculEcriture.achat(new PieceAchat(valeurs.nomTiers(), valeurs.numeroFacture(),
-				valeurs.dateEmission(), valeurs.montantHt(), tva(facture, valeurs), valeurs.montantTtc(),
-				valeurs.compteContrepartie())));
+		PieceAchat piece = new PieceAchat(valeurs.nomTiers(), valeurs.numeroFacture(), valeurs.dateEmission(),
+				valeurs.montantHt(), tva(facture, valeurs), valeurs.montantTtc(), valeurs.compteContrepartie());
+		return Optional.of(journal(facture) == Ecriture.Journal.VT ? CalculEcriture.vente(piece)
+				: CalculEcriture.achat(piece));
 	}
 
 	static Optional<CalculEcriture.Resultat> calcul(Facture facture) {
@@ -78,13 +80,10 @@ public class EcrituresFacture {
 		return ecritures.deLaFacture(facture.getId()).map(Ecriture::isExportee).orElse(false);
 	}
 
-	// RG1, RG5 : écriture (re)générée à partir des informations enregistrées d'une facture d'achat.
+	// RG1, RG5 : écriture (re)générée à partir des informations enregistrées de la facture.
 	void generer(Facture facture, Compte auteur, Instant quand) {
-		if (!concernee(facture)) {
-			return;
-		}
-		calcul(facture).ifPresent(
-				calcul -> ecritures.enregistrer(facture.getDossier().getId(), facture.getId(), calcul, auteur, quand));
+		calcul(facture).ifPresent(calcul -> ecritures.enregistrer(facture.getDossier().getId(), facture.getId(),
+				journal(facture), calcul, auteur, quand));
 	}
 
 	/**
@@ -92,7 +91,7 @@ public class EcrituresFacture {
 	 * US-47 : une écriture corrigée à la main n'est « À re-générer » que si la facture a été corrigée depuis.
 	 */
 	Optional<VueEcriture> vue(Facture facture) {
-		if (!concernee(facture) || facture.getId() == null) {
+		if (facture.getId() == null) {
 			return Optional.empty();
 		}
 		return ecritures.deLaFacture(facture.getId()).map(ecriture -> ecriture.isModifiee()
