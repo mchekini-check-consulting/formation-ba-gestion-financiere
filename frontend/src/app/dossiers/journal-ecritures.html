@@ -23,12 +23,14 @@
       <section class="journal" aria-label="Journal">
         <!-- RG1 : période, journal, recherche -->
         <div class="filtres">
-          <select aria-label="Période" [value]="j.periode" (change)="charger(valeur($event))">
+          <label class="filtre-libelle" for="filtre-periode">Période</label>
+          <select id="filtre-periode" [value]="j.periode" (change)="charger(valeur($event))">
             @for (p of j.periodes; track p.code) {
               <option [value]="p.code" [selected]="p.code === j.periode">{{ p.libelle }}</option>
             }
           </select>
-          <select aria-label="Journal" (change)="filtreJournal.set(valeur($event))">
+          <label class="filtre-libelle" for="filtre-journal">Journal</label>
+          <select id="filtre-journal" (change)="filtreJournal.set(valeur($event))">
             <option value="">Tous les journaux</option>
             @for (o of journaux(); track o.code) {
               <option [value]="o.code">{{ o.libelle }}</option>

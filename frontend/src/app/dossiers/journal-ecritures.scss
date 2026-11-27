@@ -62,6 +62,12 @@ h3 {
   gap: 10px;
   padding: 14px 16px;
   border-bottom: 1px solid $bord;
+  align-items: center;
+
+  .filtre-libelle {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
 
   select,
   input {

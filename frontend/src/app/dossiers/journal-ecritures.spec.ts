@@ -92,9 +92,9 @@ describe('US-47 Consulter le journal et corriger une écriture', () => {
   it('RG1 : journal du dernier mois (date, pièce, libellé, comptes, débit, crédit) et total de la période', async () => {
     const { page } = await afficher();
     expect(texte(page.querySelector('header .muted'))).toBe('Journal de juin 2026 · 1 écriture');
-    const options = Array.from(page.querySelectorAll('select[aria-label="Période"] option')).map((o) => texte(o));
+    const options = Array.from(page.querySelectorAll('#filtre-periode option')).map((o) => texte(o));
     expect(options).toEqual(['Juin 2026', 'Mai 2026', 'Exercice 2026']);
-    const journaux = Array.from(page.querySelectorAll('select[aria-label="Journal"] option')).map((o) => texte(o));
+    const journaux = Array.from(page.querySelectorAll('#filtre-journal option')).map((o) => texte(o));
     expect(journaux).toEqual(['Tous les journaux', 'AC – Achats']);
     const lignes = Array.from(page.querySelectorAll('tbody tr')).map((tr) =>
       Array.from(tr.querySelectorAll('td')).map((td) => texte(td)),
@@ -109,7 +109,7 @@ describe('US-47 Consulter le journal et corriger une écriture', () => {
 
   it('RG1 : changer de période recharge le journal ; recherche et filtre journal', async () => {
     const { fixture, page } = await afficher();
-    const periode = page.querySelector<HTMLSelectElement>('select[aria-label="Période"]')!;
+    const periode = page.querySelector<HTMLSelectElement>('#filtre-periode')!;
     periode.value = '2026';
     periode.dispatchEvent(new Event('change'));
     await fixture.whenStable();
@@ -132,7 +132,7 @@ describe('US-47 Consulter le journal et corriger une écriture', () => {
     expect(texte(page.querySelector('tbody'))).toBe('Aucune écriture ne correspond à la recherche.');
 
     saisir(page, 'Pièce, libellé ou compte', '');
-    const journal = page.querySelector<HTMLSelectElement>('select[aria-label="Journal"]')!;
+    const journal = page.querySelector<HTMLSelectElement>('#filtre-journal')!;
     journal.value = 'AC';
     journal.dispatchEvent(new Event('change'));
     await fixture.whenStable();
