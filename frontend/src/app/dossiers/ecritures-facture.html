@@ -17,6 +17,11 @@
       Journal des achats ({{ e.journal }}) · {{ date(e.date) }} · {{ e.libelle }}
       <br />
       Générée par {{ e.genereePar }} le {{ generee(e.genereeLe) }}
+      @if (e.modifieePar && e.modifieeLe) {
+        <!-- US-47 RG4 : corrigée depuis le journal -->
+        <br />
+        Corrigée à la main par {{ e.modifieePar }} le {{ generee(e.modifieeLe) }}
+      }
     </p>
     <div class="defilement">
       <table>

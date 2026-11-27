@@ -1,0 +1,223 @@
+@if (journal(); as j) {
+  <header class="entete">
+    <div>
+      <h2>Écritures</h2>
+      @if (j.periode) {
+        <p class="muted">Journal de {{ libellePeriode().toLowerCase() }} · {{ j.ecritures.length }} écriture{{ j.ecritures.length > 1 ? 's' : '' }}</p>
+      }
+    </div>
+  </header>
+
+  @if (erreur(); as m) {
+    <p class="alerte" role="alert">{{ m }}</p>
+  }
+
+  @if (j.periode === null) {
+    <!-- État vide : aucune écriture dans le dossier -->
+    <div class="vide">
+      <strong>Aucune écriture sur cette période</strong>
+      <span class="muted">Les écritures apparaissent quand une facture ou une transaction est validée.</span>
+    </div>
+  } @else {
+    <div class="contenu">
+      <section class="journal" aria-label="Journal">
+        <!-- RG1 : période, journal, recherche -->
+        <div class="filtres">
+          <select aria-label="Période" [value]="j.periode" (change)="charger(valeur($event))">
+            @for (p of j.periodes; track p.code) {
+              <option [value]="p.code" [selected]="p.code === j.periode">{{ p.libelle }}</option>
+            }
+          </select>
+          <select aria-label="Journal" (change)="filtreJournal.set(valeur($event))">
+            <option value="">Tous les journaux</option>
+            @for (o of journaux(); track o.code) {
+              <option [value]="o.code">{{ o.libelle }}</option>
+            }
+          </select>
+          <input
+            type="search"
+            aria-label="Pièce, libellé ou compte"
+            placeholder="Pièce, libellé ou compte"
+            [value]="recherche()"
+            (input)="recherche.set(valeur($event))"
+          />
+        </div>
+
+        <div class="defilement">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">N° de pièce</th>
+                <th scope="col">Libellé</th>
+                <th scope="col">Compte</th>
+                <th scope="col" class="nombre">Débit</th>
+                <th scope="col" class="nombre">Crédit</th>
+                <th scope="col"><span class="invisible">Action</span></th>
+              </tr>
+            </thead>
+            @for (e of ecritures(); track e.id) {
+              <tbody [class.selectionnee]="ouverte()?.id === e.id">
+                @for (l of e.lignes; track $index; let premiere = $first) {
+                  <tr>
+                    <td>{{ premiere ? date(e.date) : '' }}</td>
+                    <td>
+                      @if (premiere) {
+                        <strong>{{ e.piece ?? '—' }}</strong>
+                      }
+                    </td>
+                    <td>
+                      @if (premiere) {
+                        {{ e.libelle }}
+                        @if (e.modifieePar && e.modifieeLe) {
+                          <span class="muted modifiee">Modifiée par {{ e.modifieePar }} le {{ quand(e.modifieeLe) }}</span>
+                        }
+                      }
+                    </td>
+                    <td>
+                      <span class="compte">{{ l.numeroCompte }}</span>
+                      @if (l.libelleCompte) {
+                        <span class="muted"> {{ l.libelleCompte }}</span>
+                      }
+                    </td>
+                    <td class="nombre">{{ montant(l.debit) }}</td>
+                    <td class="nombre">{{ montant(l.credit) }}</td>
+                    <td class="action">
+                      @if (premiere) {
+                        @if (e.exportee) {
+                          <span class="marque">Exportée</span>
+                          <button type="button" class="lien" [attr.aria-label]="'Consulter l’écriture ' + (e.piece ?? e.libelle)" (click)="ouvrir(e)">
+                            Consulter
+                          </button>
+                        } @else {
+                          <button type="button" class="lien" [attr.aria-label]="'Modifier l’écriture ' + (e.piece ?? e.libelle)" (click)="ouvrir(e)">
+                            Modifier
+                          </button>
+                        }
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            } @empty {
+              <tbody>
+                <tr>
+                  <td colspan="7" class="muted">Aucune écriture ne correspond à la recherche.</td>
+                </tr>
+              </tbody>
+            }
+            <tfoot>
+              <tr>
+                <th scope="row" colspan="4">Total de la période</th>
+                <td class="nombre">{{ total(j.totalDebit) }}</td>
+                <td class="nombre">{{ total(j.totalCredit) }}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      @if (ouverte(); as e) {
+        <section class="panneau" aria-labelledby="titre-modifier">
+          <header class="titre">
+            <h3 id="titre-modifier">{{ e.exportee ? 'Écriture' : 'Modifier l’écriture' }} {{ e.piece ?? '' }}</h3>
+            @if (e.exportee) {
+              <span class="marque">Exportée</span>
+            } @else {
+              <span class="marque marque--ouverte">Non exportée</span>
+            }
+          </header>
+          <p class="muted">Date {{ date(e.date) }} · Pièce {{ e.piece ?? '—' }}</p>
+
+          <label class="champ">
+            <span>Libellé</span>
+            <input aria-label="Libellé" [value]="libelle()" [disabled]="e.exportee" (input)="changerLibelle(valeur($event))" />
+          </label>
+
+          <table class="lignes">
+            <thead>
+              <tr>
+                <th scope="col">Compte</th>
+                <th scope="col" class="nombre">Débit</th>
+                <th scope="col" class="nombre">Crédit</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of lignes(); track $index; let i = $index) {
+                <tr>
+                  <td>
+                    <input
+                      [attr.aria-label]="'Compte de la ligne ' + (i + 1)"
+                      [value]="l.numeroCompte"
+                      [disabled]="e.exportee"
+                      (input)="changerLigne(i, 'numeroCompte', valeur($event))"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      class="nombre"
+                      inputmode="decimal"
+                      [attr.aria-label]="'Débit de la ligne ' + (i + 1)"
+                      [value]="l.debit"
+                      [disabled]="e.exportee"
+                      (input)="changerLigne(i, 'debit', valeur($event))"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      class="nombre"
+                      inputmode="decimal"
+                      [attr.aria-label]="'Crédit de la ligne ' + (i + 1)"
+                      [value]="l.credit"
+                      [disabled]="e.exportee"
+                      (input)="changerLigne(i, 'credit', valeur($event))"
+                    />
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Total</th>
+                <td class="nombre">{{ total(totalDebit()) }}</td>
+                <td class="nombre">{{ total(totalCredit()) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          @if (!e.exportee) {
+            @if (desequilibre(); as d) {
+              <p class="alerte" role="alert">{{ d }}</p>
+            } @else if (montantsInvalides()) {
+              <p class="alerte" role="alert">{{ messageMontant }}</p>
+            }
+          }
+          @if (erreurFormulaire(); as m) {
+            <p class="alerte" role="alert">{{ m }}</p>
+          }
+          @if (e.modifieePar && e.modifieeLe) {
+            <!-- RG4 -->
+            <p class="muted modification">Modifiée par {{ e.modifieePar }} le {{ quand(e.modifieeLe) }}</p>
+          }
+          @if (enregistree()) {
+            <p class="succes" role="status">Écriture enregistrée</p>
+          }
+
+          <div class="actions">
+            <button type="button" class="bouton bouton--secondaire" (click)="fermer()">
+              {{ e.exportee ? 'Fermer' : 'Annuler' }}
+            </button>
+            @if (!e.exportee) {
+              <button type="button" class="bouton" [disabled]="!enregistrable()" (click)="enregistrer()">Enregistrer</button>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  }
+} @else if (erreur(); as m) {
+  <p class="alerte" role="alert">{{ m }}</p>
+} @else {
+  <p class="muted">Chargement…</p>
+}

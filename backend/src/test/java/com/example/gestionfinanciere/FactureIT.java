@@ -386,6 +386,70 @@ class FactureIT {
 		assertThat(appel("PUT", fiche + "/informations", edf, jeton).statusCode()).isEqualTo(409);
 	}
 
+	// US-47 RG1 à RG4, CA1 à CA3 : journal du dossier, correction d'une écriture, refus, écriture exportée.
+	@Test
+	void us47JournalEtCorrection() throws Exception {
+		String jeton = jeanConnecte();
+		String dossier = dossier(jeton);
+		assertThat(appel("GET", dossier + "/ecritures", null, jeton).body()).contains("\"periode\":null",
+				"\"ecritures\":[]");
+		HttpResponse<String> importee = importer(dossier + "/factures?sens=ACHAT", "facture-electricite-octobre.pdf",
+				fichierDExemple("facture-electricite-octobre.pdf"), jeton);
+		Matcher id = ID.matcher(importee.body());
+		assertThat(id.find()).isTrue();
+		String fiche = dossier + "/factures/" + id.group(1);
+		Awaitility.await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(200))
+				.until(() -> !appel("GET", fiche, null, jeton).body().contains("\"statut\":\"EN_COURS\""));
+		assertThat(appel("POST", fiche + "/validation", """
+				{"typeTiers":"FOURNISSEUR","nomTiers":"EDF","numeroFacture":"F-2026-0611","dateEmission":"2026-06-12",
+				"montantHt":155.33,"montantTva":31.07,"tauxTva":20,"montantTtc":186.40,"compteContrepartie":"607"}""",
+				jeton).statusCode()).isEqualTo(200);
+
+		// RG1 : journal du dernier mois, n° de pièce = n° de facture.
+		HttpResponse<String> juin = appel("GET", dossier + "/ecritures", null, jeton);
+		assertThat(juin.statusCode()).isEqualTo(200);
+		assertThat(juin.body()).contains("\"periode\":\"2026-06\"", "{\"code\":\"2026-06\",\"libelle\":\"Juin 2026\"}",
+				"{\"code\":\"2026\",\"libelle\":\"Exercice 2026\"}", "\"piece\":\"F-2026-0611\"",
+				"\"exportee\":false", "\"modifieePar\":null", "\"totalDebit\":186.40,\"totalCredit\":186.40");
+		Long ecriture = jdbc.queryForObject("select id from ecriture where facture_id = ?", Long.class,
+				Long.valueOf(id.group(1)));
+		String route = dossier + "/ecritures/" + ecriture;
+
+		// CA2 : débit à 196,40 sans changer le crédit : refusé, rien n'est enregistré.
+		String corrigee = """
+				{"libelle":"EDF – facture F-2026-0611","lignes":[{"numeroCompte":"6061","debit":155.33},
+				{"numeroCompte":"44566","debit":31.07},{"numeroCompte":"401","credit":186.40}]}""";
+		HttpResponse<String> desequilibree = appel("PUT", route, corrigee.replace("155.33", "165.33"), jeton);
+		assertThat(desequilibree.statusCode()).isEqualTo(400);
+		assertThat(desequilibree.body()).contains("Écriture déséquilibrée : écart de 10,00 €");
+
+		// RG3 : 6061 pas encore dans le plan du dossier.
+		assertThat(appel("PUT", route, corrigee, jeton).body())
+				.contains("Le compte 6061 n'est pas dans le plan comptable du dossier");
+		assertThat(jdbc.queryForObject("select modifiee_le is null from ecriture where id = ?", Boolean.class, ecriture))
+				.isTrue();
+
+		// CA1, RG4 : 607 remplacé par 6061, auteur et date gardés ; la fiche facture reste à jour.
+		assertThat(appel("POST", dossier + "/plan-comptable", """
+				{"numero":"6061","libelle":"Fournitures non stockables (eau, énergie)"}""", jeton).statusCode())
+				.isEqualTo(201);
+		HttpResponse<String> modifiee = appel("PUT", route, corrigee, jeton);
+		assertThat(modifiee.statusCode()).isEqualTo(200);
+		assertThat(modifiee.body()).contains("\"libelle\":\"EDF – facture F-2026-0611\"",
+				"{\"numeroCompte\":\"6061\",\"libelleCompte\":\"Fournitures non stockables (eau, énergie)\"",
+				"\"modifieePar\":\"Jean Dupont\"");
+		assertThat(appel("GET", fiche, null, jeton).body()).contains("\"aJour\":true", "\"modifieePar\":\"Jean Dupont\"");
+		controleSql();
+
+		// CA3 : écriture exportée, en lecture seule.
+		jdbc.update("update ecriture set exportee_le = now() where id = ?", ecriture);
+		assertThat(appel("GET", dossier + "/ecritures?periode=2026", null, jeton).body()).contains("\"exportee\":true");
+		HttpResponse<String> exportee = appel("PUT", route, corrigee, jeton);
+		assertThat(exportee.statusCode()).isEqualTo(409);
+		assertThat(exportee.body()).contains("Écriture exportée : elle ne se modifie plus");
+		assertThat(appel("PUT", dossier + "/ecritures/999999", corrigee, jeton).statusCode()).isEqualTo(404);
+	}
+
 	// US-56 / US-30 : les deux requêtes de contrôle renvoient zéro ligne.
 	private void controleSql() {
 		assertThat(jdbc.queryForList("""

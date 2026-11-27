@@ -24,9 +24,11 @@ import com.example.gestionfinanciere.facture.lecture.TvaParTaux;
 public class EcrituresFacture {
 
 	private final EcritureService ecritures;
+	private final CorrectionFactureRepository corrections;
 
-	public EcrituresFacture(EcritureService ecritures) {
+	public EcrituresFacture(EcritureService ecritures, CorrectionFactureRepository corrections) {
 		this.ecritures = ecritures;
+		this.corrections = corrections;
 	}
 
 	static boolean concernee(Facture facture) {
@@ -85,13 +87,18 @@ public class EcrituresFacture {
 				calcul -> ecritures.enregistrer(facture.getDossier().getId(), facture.getId(), calcul, auteur, quand));
 	}
 
-	// RG6 : bloc « Écritures générées » de la fiche ; vide tant qu'aucune écriture n'est générée.
+	/**
+	 * RG6 : bloc « Écritures générées » de la fiche ; vide tant qu'aucune écriture n'est générée.
+	 * US-47 : une écriture corrigée à la main n'est « À re-générer » que si la facture a été corrigée depuis.
+	 */
 	Optional<VueEcriture> vue(Facture facture) {
 		if (!concernee(facture) || facture.getId() == null) {
 			return Optional.empty();
 		}
-		return ecritures.deLaFacture(facture.getId())
-				.map(ecriture -> ecritures.vue(ecriture, calcul(facture).orElse(null)));
+		return ecritures.deLaFacture(facture.getId()).map(ecriture -> ecriture.isModifiee()
+				? ecritures.vue(ecriture,
+						!corrections.existsByFactureIdAndModifieLeAfter(facture.getId(), ecriture.getModifieeLe()))
+				: ecritures.vue(ecriture, calcul(facture).orElse(null)));
 	}
 
 }

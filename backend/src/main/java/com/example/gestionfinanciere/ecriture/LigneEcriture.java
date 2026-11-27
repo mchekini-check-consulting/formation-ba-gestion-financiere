@@ -51,6 +51,14 @@ public class LigneEcriture {
 		this.credit = ligne.credit();
 	}
 
+	// US-47 RG2 : correction à la main.
+	void corriger(String compte, String nouveauLibelle, BigDecimal nouveauDebit, BigDecimal nouveauCredit) {
+		numeroCompte = compte;
+		libelle = nouveauLibelle;
+		debit = nouveauDebit;
+		credit = nouveauCredit;
+	}
+
 	CalculEcriture.Ligne enValeur() {
 		return new CalculEcriture.Ligne(numeroCompte, libelle, debit, credit);
 	}

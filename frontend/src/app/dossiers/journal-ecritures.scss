@@ -1,0 +1,268 @@
+// US-47 Onglet Écritures : mêmes couleurs que la maquette « Dossier – Écritures (journal) ».
+$encre: #0b1b3a;
+$creme: #fcfdff;
+$or: #1d4ed8;
+$bord: #dbe4f0;
+$champ: #cbd6e6;
+$gris: #42526b;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 20px;
+  color: $encre;
+}
+
+h3 {
+  margin: 0;
+  font-size: 16px;
+  color: $encre;
+}
+
+.muted {
+  margin: 0;
+  color: $gris;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 8px;
+  text-align: center;
+}
+
+.contenu {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.journal {
+  flex: 999 1 640px;
+  min-width: 0;
+  border: 1px solid $bord;
+  border-radius: 16px;
+  background: $creme;
+  overflow: hidden;
+}
+
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid $bord;
+
+  select,
+  input {
+    padding: 9px 12px;
+    border: 1px solid $champ;
+    border-radius: 10px;
+    background: #fff;
+    color: $encre;
+    font: inherit;
+    font-size: 14px;
+  }
+
+  input {
+    min-width: 200px;
+  }
+}
+
+.defilement {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.journal table {
+  min-width: 900px;
+}
+
+th,
+td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+thead tr {
+  background: #f7f9fd;
+  color: $gris;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+tbody tr,
+tfoot tr {
+  border-top: 1px solid #e3eaf4;
+}
+
+tbody.selectionnee {
+  background: #f7f9fd;
+}
+
+tfoot {
+  font-weight: 700;
+  background: #f7f9fd;
+}
+
+.nombre {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.compte {
+  font-weight: 600;
+}
+
+.modifiee {
+  display: block;
+  font-size: 12px;
+}
+
+.action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.invisible {
+  position: absolute;
+  left: -9999px;
+}
+
+.marque {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e8eef8;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--ouverte {
+    background: #ebf1f9;
+    color: #1e40af;
+  }
+}
+
+.lien {
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: $or;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.panneau {
+  flex: 1 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid $bord;
+  border-radius: 16px;
+  background: $creme;
+
+  .titre {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 11px;
+    border: 1px solid $champ;
+    border-radius: 10px;
+    background: #fff;
+    color: $encre;
+    font: inherit;
+    font-size: 14px;
+
+    &:disabled {
+      background: #eef2f7;
+      color: $gris;
+    }
+  }
+
+  .lignes td {
+    padding: 6px 6px;
+  }
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.bouton {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: $or;
+  color: $creme;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &--secondaire {
+    border: 1px solid $champ;
+    background: $creme;
+    color: $encre;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.alerte {
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #feeceb;
+  color: #a11d13;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.succes {
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: #e3f5ea;
+  color: #116035;
+  font-size: 14px;
+}

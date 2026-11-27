@@ -155,6 +155,7 @@ export interface LigneEcriture {
 /**
  * US-56 RG6 : écriture d'une facture d'achat validée, au journal des achats (AC).
  * exportee : « Re-générer les écritures » désactivé (CA3) ; aJour : faux après une correction (RG5).
+ * US-47 RG4 : modifieePar, modifieeLe : dernière correction à la main depuis le journal (null sinon).
  */
 export interface VueEcriture {
   journal: 'AC';
@@ -162,6 +163,8 @@ export interface VueEcriture {
   libelle: string;
   genereeLe: string;
   genereePar: string;
+  modifieeLe: string | null;
+  modifieePar: string | null;
   exportee: boolean;
   aJour: boolean;
   lignes: LigneEcriture[];

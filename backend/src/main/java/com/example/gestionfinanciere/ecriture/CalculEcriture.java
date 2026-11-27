@@ -30,7 +30,8 @@ public final class CalculEcriture {
 
 	}
 
-	public record Resultat(LocalDate date, String libelle, List<Ligne> lignes) {
+	// piece : n° de pièce (US-47 RG1), le n° de la facture.
+	public record Resultat(LocalDate date, String piece, String libelle, List<Ligne> lignes) {
 
 		public Resultat {
 			lignes = List.copyOf(lignes);
@@ -60,7 +61,7 @@ public final class CalculEcriture {
 			ajouter(lignes, COMPTE_TVA_DEDUCTIBLE, libelleTva, tva.montant(), true);
 		}
 		ajouter(lignes, COMPTE_FOURNISSEUR, libelle, piece.montantTtc(), false);
-		return new Resultat(piece.dateEmission(), libelle, lignes);
+		return new Resultat(piece.dateEmission(), piece.numeroFacture(), libelle, lignes);
 	}
 
 	private static void ajouter(List<Ligne> lignes, String compte, String libelle, BigDecimal montant,
