@@ -38,8 +38,15 @@ public class BouchonTransactions implements FournisseurTransactions {
 	private static final String SEPARATEUR = ";";
 	private static final int COLONNES = 5;
 
-	// Une ligne du fichier : la date est calculée au moment de l'appel.
-	record LigneBouchon(int ilYaJours, String libelle, String tiers, BigDecimal montant, Transaction.Sens sens) {
+	// Une ligne du fichier : la date est calculée au moment de l'appel ; numero = n° de ligne du fichier.
+	record LigneBouchon(int numero, int ilYaJours, String libelle, String tiers, BigDecimal montant,
+			Transaction.Sens sens) {
+
+		// US-30 : référence stable (la date, elle, glisse chaque jour).
+		String reference() {
+			return "bouchon-" + numero;
+		}
+
 	}
 
 	private final List<LigneBouchon> lignes;
@@ -53,8 +60,8 @@ public class BouchonTransactions implements FournisseurTransactions {
 	@Override
 	public List<Transaction> transactions(Dossier dossier) {
 		LocalDate aujourdhui = LocalDate.ofInstant(horloge.instant(), PARIS);
-		return lignes.stream().map(ligne -> new Transaction(aujourdhui.minusDays(ligne.ilYaJours()), ligne.libelle(),
-				ligne.tiers(), ligne.montant(), ligne.sens(), Transaction.Source.BOUCHON)).toList();
+		return lignes.stream().map(ligne -> new Transaction(ligne.reference(), aujourdhui.minusDays(ligne.ilYaJours()),
+				ligne.libelle(), ligne.tiers(), ligne.montant(), ligne.sens(), Transaction.Source.BOUCHON)).toList();
 	}
 
 	static InputStream ouvrir(String fichier) {
@@ -112,7 +119,7 @@ public class BouchonTransactions implements FournisseurTransactions {
 		if (ilYaJours < 0 || montant.signum() <= 0 || libelle.isEmpty()) {
 			throw erreur(numero, "nombre de jours positif, montant supérieur à 0 et libellé obligatoires");
 		}
-		return new LigneBouchon(ilYaJours, libelle, colonnes[2].strip(), montant, sens);
+		return new LigneBouchon(numero, ilYaJours, libelle, colonnes[2].strip(), montant, sens);
 	}
 
 	private static IllegalArgumentException erreur(int numero, String raison) {

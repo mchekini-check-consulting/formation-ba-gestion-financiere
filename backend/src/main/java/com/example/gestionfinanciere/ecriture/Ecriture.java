@@ -28,9 +28,9 @@ import com.example.gestionfinanciere.compte.Compte;
 @Table(name = "ecriture")
 public class Ecriture {
 
-	// Journal des achats (US-56) ou des ventes (US-57, V28__ecriture_vente.sql).
+	// Journal des achats (US-56), des ventes (US-57, V28__ecriture_vente.sql) ou de banque (US-30, V29).
 	public enum Journal {
-		AC, VT
+		AC, VT, BQ
 	}
 
 	@Id
@@ -40,8 +40,12 @@ public class Ecriture {
 	@Column(name = "dossier_id", nullable = false)
 	private Long dossierId;
 
-	@Column(name = "facture_id", nullable = false)
+	// Facture (US-56, US-57) ou opération bancaire validée (US-30) : l'un des deux, jamais les deux.
+	@Column(name = "facture_id")
 	private Long factureId;
+
+	@Column(name = "operation_id")
+	private Long operationId;
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "journal", nullable = false)
@@ -85,6 +89,15 @@ public class Ecriture {
 		return ecriture;
 	}
 
+	// US-30 RG1 : écriture d'une opération bancaire validée, au journal de banque.
+	public static Ecriture operation(Long dossierId, Long operationId) {
+		Ecriture ecriture = new Ecriture();
+		ecriture.dossierId = dossierId;
+		ecriture.operationId = operationId;
+		ecriture.journal = Journal.BQ;
+		return ecriture;
+	}
+
 	// RG1, RG3, RG4 ; RG5 : les lignes précédentes sont remplacées.
 	void remplir(CalculEcriture.Resultat calcul, Compte auteur, Instant quand) {
 		dateEcriture = calcul.date();
@@ -117,6 +130,10 @@ public class Ecriture {
 
 	public Long getFactureId() {
 		return factureId;
+	}
+
+	public Long getOperationId() {
+		return operationId;
 	}
 
 	public Journal getJournal() {

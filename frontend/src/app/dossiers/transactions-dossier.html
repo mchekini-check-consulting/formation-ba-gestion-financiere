@@ -59,10 +59,11 @@
           <th scope="col">Tiers</th>
           <th scope="col" class="montant">Montant</th>
           <th scope="col">Sens</th>
+          <th scope="col">Comptabilité</th>
         </tr>
       </thead>
       <tbody>
-        @for (t of lignes(); track $index) {
+        @for (t of lignes(); track t.reference) {
           <!-- RG1 : Entrée en vert, Sortie en rouge -->
           <tr [class.entree]="t.sens === 'ENTREE'" [class.sortie]="t.sens === 'SORTIE'">
             <td>{{ date(t) }}</td>
@@ -72,7 +73,110 @@
             <td>
               <span class="badge">{{ t.sens === 'ENTREE' ? 'Entrée' : 'Sortie' }}</span>
             </td>
+            <td class="compta">
+              @if (t.validation) {
+                <!-- US-30 : opération validée, écriture générée -->
+                <span class="validee">Validée</span>
+                <button type="button" class="lien" [attr.aria-expanded]="ecritureOuverte() === t.reference" (click)="basculerEcriture(t)">
+                  Écriture
+                </button>
+              } @else if (enValidation() !== t.reference) {
+                <button type="button" class="bouton-valider" (click)="ouvrirValidation(t)">Valider</button>
+              }
+            </td>
           </tr>
+          @if (enValidation() === t.reference) {
+            <!-- US-30 RG1 : catégorie, compte et taux de TVA de l'opération -->
+            <tr class="detail">
+              <td colspan="6">
+                <form class="validation" (ngSubmit)="valider(t)">
+                  <label class="champ">
+                    Catégorie
+                    <select name="categorie" [ngModel]="saisie.categorie" (ngModelChange)="choisirCategorie($event)">
+                      @for (c of categories(); track c.code) {
+                        <option [value]="c.code">{{ c.libelle }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="champ">
+                    Compte
+                    @if (comptes().length > 0) {
+                      <select name="numeroCompte" [(ngModel)]="saisie.numeroCompte">
+                        @for (c of comptesProposes(); track c.numero) {
+                          <option [value]="c.numero">{{ c.numero }}{{ c.libelle ? ' – ' + c.libelle : '' }}</option>
+                        }
+                      </select>
+                    } @else {
+                      <input name="numeroCompte" class="compte" [(ngModel)]="saisie.numeroCompte" />
+                    }
+                  </label>
+                  <label class="champ">
+                    Taux de TVA
+                    <select name="tauxTva" [(ngModel)]="saisie.tauxTva">
+                      @for (valeur of tauxTva; track valeur) {
+                        <option [ngValue]="valeur">{{ taux(valeur) }}</option>
+                      }
+                    </select>
+                  </label>
+                  <div class="actions">
+                    <button type="submit" class="bouton-valider" [disabled]="envoiEnCours()">Valider l'opération</button>
+                    <button type="button" class="lien" (click)="annulerValidation()">Annuler</button>
+                  </div>
+                  @if (erreurValidation(); as m) {
+                    <p class="alerte" role="alert">{{ m }}</p>
+                  }
+                </form>
+              </td>
+            </tr>
+          }
+          @if (ecritureOuverte() === t.reference && t.validation; as v) {
+            <tr class="detail">
+              <td colspan="6">
+                <div class="ecriture">
+                  <p class="muted">
+                    {{ libelleCategorie(v.categorie) }} · compte {{ v.numeroCompte }} · TVA {{ taux(v.tauxTva) }} ·
+                    validée par {{ v.valideePar }}
+                  </p>
+                  @if (v.ecriture; as e) {
+                    <p class="muted">Journal de banque ({{ e.journal }}) · {{ e.libelle }}</p>
+                    <table class="lignes-ecriture">
+                      <thead>
+                        <tr>
+                          <th scope="col">Compte</th>
+                          <th scope="col">Libellé</th>
+                          <th scope="col" class="montant">Débit</th>
+                          <th scope="col" class="montant">Crédit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (l of e.lignes; track $index) {
+                          <tr>
+                            <td>
+                              {{ l.numeroCompte }}
+                              @if (l.libelleCompte) {
+                                <span class="muted">{{ l.libelleCompte }}</span>
+                              }
+                            </td>
+                            <td>{{ l.libelle }}</td>
+                            <td class="montant">{{ montantLigne(l.debit) }}</td>
+                            <td class="montant">{{ montantLigne(l.credit) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                      <tfoot>
+                        <!-- RG2 : total au débit = total au crédit -->
+                        <tr>
+                          <th scope="row" colspan="2">Total</th>
+                          <td class="montant">{{ montant(e.totalDebit) }}</td>
+                          <td class="montant">{{ montant(e.totalCredit) }}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
         }
       </tbody>
     </table>
