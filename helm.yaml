@@ -13,7 +13,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: 2ab133a
-      qualif: "2309674"
+      qualif: 2ab133a
       preprod: ""
       prod: ""
     containerPort: 8080
@@ -107,7 +107,7 @@ applications:
     # remplace tout jusqu'à la fin de la ligne.
     tag:
       dev: 2ab133a
-      qualif: "2309674"
+      qualif: 2ab133a
       preprod: ""
       prod: ""
     containerPort: 8080
