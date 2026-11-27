@@ -158,7 +158,8 @@ export interface LigneEcriture {
  * exportee : « Re-générer les écritures » désactivé (CA3) ; aJour : faux après une correction (RG5).
  */
 export interface VueEcriture {
-  journal: 'AC' | 'VT';
+  /** US-30 : BQ = journal de banque (opération bancaire validée). */
+  journal: 'AC' | 'VT' | 'BQ';
   date: string;
   libelle: string;
   genereeLe: string;

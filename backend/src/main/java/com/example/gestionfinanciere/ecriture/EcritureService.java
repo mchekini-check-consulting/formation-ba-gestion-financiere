@@ -71,6 +71,27 @@ public class EcritureService {
 		return enregistree;
 	}
 
+	public Optional<Ecriture> deLOperation(Long operationId) {
+		return ecritures.findByOperationId(operationId);
+	}
+
+	// US-30 RG1 : crée l'écriture d'une opération bancaire validée. L'appelant a vérifié que refus() est vide.
+	public Ecriture enregistrerOperation(Long dossierId, Long operationId, CalculEcriture.Resultat calcul,
+			Compte auteur, Instant quand) {
+		Ecriture ecriture = Ecriture.operation(dossierId, operationId);
+		ecriture.remplir(calcul, auteur, quand);
+		Ecriture enregistree = ecritures.save(ecriture);
+		EvenementMetier.de("ecriture.generation", "generee").avec(auteur.identifiantsPourLogs())
+				.avec("dossierId", dossierId).avec("operationId", operationId).avec("journal", Ecriture.Journal.BQ)
+				.avec("lignes", calcul.lignes().size()).info();
+		return enregistree;
+	}
+
+	// US-30 : écriture d'une opération, toujours à jour (l'opération ne change pas après validation).
+	public VueEcriture vue(Ecriture ecriture) {
+		return vue(ecriture, ecriture.enValeur());
+	}
+
 	// RG6 : écriture affichée ; actuelle = calcul à partir de la facture d'aujourd'hui (null : non calculable).
 	public VueEcriture vue(Ecriture ecriture, CalculEcriture.Resultat actuelle) {
 		Map<String, String> libelles = comptes.findByDossierIdOrderByNumero(ecriture.getDossierId()).stream()

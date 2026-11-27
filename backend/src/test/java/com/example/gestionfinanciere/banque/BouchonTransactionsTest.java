@@ -43,9 +43,10 @@ class BouchonTransactionsTest {
 	}
 
 	// Exemple de rapprochement (US-25) : prélèvement EDF de 186,40 €, il y a 2 jours.
+	// US-30 : référence stable = n° de ligne du fichier.
 	@Test
 	void prelevementEdf() {
-		assertTrue(bouchon.transactions(null).contains(new Transaction(AUJOURDHUI.minusDays(2),
+		assertTrue(bouchon.transactions(null).contains(new Transaction("bouchon-22", AUJOURDHUI.minusDays(2),
 				"PRLV SEPA EDF - Facture electricite octobre", "EDF", new BigDecimal("186.40"),
 				Transaction.Sens.SORTIE, Transaction.Source.BOUCHON)));
 	}
@@ -60,7 +61,7 @@ class BouchonTransactionsTest {
 				0; Vente ;Client A;12,50;entree
 				"""));
 
-		assertEquals(List.of(new BouchonTransactions.LigneBouchon(0, "Vente", "Client A", new BigDecimal("12.50"),
+		assertEquals(List.of(new BouchonTransactions.LigneBouchon(4, 0, "Vente", "Client A", new BigDecimal("12.50"),
 				Transaction.Sens.ENTREE)), lignes);
 	}
 

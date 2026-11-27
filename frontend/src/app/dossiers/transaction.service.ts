@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { apiBase } from '../api';
+import { VueEcriture } from './facture.service';
 
 /** US-58 : l'argent arrive (crédit) ou part (débit) du compte. */
 export type SensTransaction = 'ENTREE' | 'SORTIE';
@@ -9,14 +10,39 @@ export type SensTransaction = 'ENTREE' | 'SORTIE';
 /** US-45 RG2 : filtre sens, « toutes » par défaut. */
 export type FiltreSens = 'TOUTES' | SensTransaction;
 
-/** US-58 Transaction bancaire d'un dossier ; montant toujours positif, date « 2026-11-17 ». */
+/**
+ * US-30 Opération validée : catégorie (US-41 : ACHAT, VENTE, FRAIS_BANCAIRES), compte, taux de TVA
+ * et son écriture au journal de banque (BQ).
+ */
+export interface Validation {
+  categorie: string;
+  numeroCompte: string;
+  tauxTva: number;
+  valideePar: string;
+  valideeLe: string;
+  ecriture: VueEcriture | null;
+}
+
+/** US-30 Corps de la validation ; compte vide = compte par défaut de la catégorie. */
+export interface DemandeValidation {
+  categorie: string;
+  numeroCompte: string | null;
+  tauxTva: number;
+}
+
+/**
+ * US-58 Transaction bancaire d'un dossier ; montant toujours positif, date « 2026-11-17 ».
+ * US-30 : reference stable ; validation null tant que l'opération n'est pas validée.
+ */
 export interface Transaction {
+  reference: string;
   date: string;
   libelle: string;
   tiers: string;
   montant: number;
   sens: SensTransaction;
   source: 'BOUCHON' | 'BANQUE';
+  validation: Validation | null;
 }
 
 /** US-45 RG3 : totaux de la période. */
@@ -35,6 +61,27 @@ export class TransactionService {
   lister(dossierId: number): Observable<Transaction[]> {
     return this.http.get<Transaction[]>(`${this.url}/${dossierId}/transactions`);
   }
+
+  /** US-30 : valider l'opération et générer son écriture ; renvoie la ligne à jour. */
+  valider(dossierId: number, reference: string, demande: DemandeValidation): Observable<Transaction> {
+    return this.http.post<Transaction>(
+      `${this.url}/${dossierId}/transactions/${encodeURIComponent(reference)}/validation`,
+      demande,
+    );
+  }
+}
+
+/** US-30 : taux de TVA proposés à la validation d'une opération. */
+export const TAUX_TVA = [20, 10, 5.5, 2.1, 0];
+
+/** US-30 : catégorie proposée par défaut selon le sens (sortie : Achat, entrée : Vente). */
+export function categorieParDefaut(sens: SensTransaction): string {
+  return sens === 'SORTIE' ? 'ACHAT' : 'VENTE';
+}
+
+/** US-30 : taux proposé par défaut (les frais bancaires sont en général sans TVA). */
+export function tauxParDefaut(categorie: string): number {
+  return categorie === 'FRAIS_BANCAIRES' ? 0 : 20;
 }
 
 /** Mois « 2026-11 » de la date donnée, à l'heure de Paris (RG2 : mois en cours par défaut). */

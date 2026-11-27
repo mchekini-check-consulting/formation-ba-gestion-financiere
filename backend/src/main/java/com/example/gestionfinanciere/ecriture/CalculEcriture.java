@@ -20,6 +20,8 @@ public final class CalculEcriture {
 	public static final String COMPTE_TVA_DEDUCTIBLE = "44566";
 	public static final String COMPTE_CLIENT = "411";
 	public static final String COMPTE_TVA_COLLECTEE = "44571";
+	public static final String COMPTE_BANQUE = "512";
+	private static final BigDecimal CENT = BigDecimal.valueOf(100);
 
 	private CalculEcriture() {
 	}
@@ -73,6 +75,31 @@ public final class CalculEcriture {
 		ajouter(lignes, piece.compteContrepartie(), libelle, piece.montantHt(), false);
 		ajouterTva(lignes, piece, COMPTE_TVA_COLLECTEE, false);
 		return new Resultat(piece.dateEmission(), libelle, lignes);
+	}
+
+	/**
+	 * US-30 RG1 : écriture d'une opération bancaire validée, libellé de l'opération, datée de
+	 * l'opération. Le montant (TTC) est réparti en HT et TVA au taux donné (HT arrondi au centime,
+	 * TVA = TTC - HT : toujours équilibrée, RG2). Sortie d'argent : compte de la catégorie et TVA
+	 * au débit, banque 512 au crédit ; entrée d'argent : l'inverse.
+	 */
+	public static Resultat operation(LocalDate date, String libelle, BigDecimal montant, boolean sortie,
+			String compte, String compteTva, BigDecimal tauxTva) {
+		BigDecimal ttc = montant.setScale(2, RoundingMode.HALF_UP);
+		BigDecimal ht = ttc.multiply(CENT).divide(CENT.add(tauxTva), 2, RoundingMode.HALF_UP);
+		BigDecimal tva = ttc.subtract(ht);
+		String libelleTva = libelle + " – TVA " + taux(tauxTva) + " %";
+		List<Ligne> lignes = new ArrayList<>();
+		if (sortie) {
+			ajouter(lignes, compte, libelle, ht, true);
+			ajouter(lignes, compteTva, libelleTva, tva, true);
+			ajouter(lignes, COMPTE_BANQUE, libelle, ttc, false);
+		} else {
+			ajouter(lignes, COMPTE_BANQUE, libelle, ttc, true);
+			ajouter(lignes, compte, libelle, ht, false);
+			ajouter(lignes, compteTva, libelleTva, tva, false);
+		}
+		return new Resultat(date, libelle, lignes);
 	}
 
 	private static String libelle(PieceAchat piece) {

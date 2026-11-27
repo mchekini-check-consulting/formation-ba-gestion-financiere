@@ -14,6 +14,105 @@ $rouge-fond: #fdecea;
   gap: 16px;
 }
 
+// US-30 : validation d'une opération et son écriture.
+.compta {
+  white-space: nowrap;
+}
+
+.validee {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: $vert-fond;
+  color: $vert;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bouton-valider {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: $or;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.lien {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $or;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+tr.detail > td {
+  background: #f7f9fc;
+}
+
+.validation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .alerte {
+    flex-basis: 100%;
+    margin: 0;
+  }
+}
+
+.ecriture {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.lignes-ecriture {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 4px 8px;
+    border-bottom: 1px solid $bord;
+    text-align: left;
+  }
+
+  .montant {
+    text-align: right;
+  }
+
+  .muted {
+    margin-left: 6px;
+    color: $gris;
+  }
+}
+
 .filtres {
   display: flex;
   flex-wrap: wrap;

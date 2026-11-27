@@ -92,6 +92,23 @@ class CalculEcritureTest {
 		assertEquals(euros("1440.00"), ecriture.totalDebit());
 	}
 
+	// US-30 CA1 et RG2 : prélèvement EDF de 186,40 € en « Achat » ; le HT est arrondi, la TVA complète
+	// le montant : l'écriture reste équilibrée quel que soit le taux.
+	@Test
+	void us30OperationBancaire() {
+		CalculEcriture.Resultat edf = CalculEcriture.operation(EMISE_LE, "PRLV SEPA EDF", euros("186.40"), true, "607",
+				"44566", euros("20"));
+		assertEquals(List.of(ligne("607", "PRLV SEPA EDF", "155.33", "0"),
+				ligne("44566", "PRLV SEPA EDF – TVA 20 %", "31.07", "0"), ligne("512", "PRLV SEPA EDF", "0", "186.40")),
+				edf.lignes());
+		assertTrue(edf.equilibree());
+
+		for (String taux : List.of("0", "2.1", "5.5", "10", "20")) {
+			assertTrue(CalculEcriture.operation(EMISE_LE, "X", euros("0.07"), false, "707", "44571", euros(taux))
+					.equilibree());
+		}
+	}
+
 	// US-57 RG4 et avoir client : une ligne de TVA collectée par taux ; montants négatifs inversés.
 	@Test
 	void us57PlusieursTauxEtAvoir() {

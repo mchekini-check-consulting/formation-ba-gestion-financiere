@@ -8,9 +8,10 @@ import java.time.LocalDate;
  * (données de démonstration) ou, plus tard, la connexion bancaire (US-21, US-22). Les écrans
  * (US-45, US-61) ne lisent que ce format : remplacer le bouchon ne les change pas.
  * Montant toujours positif ; le sens dit si l'argent entre ou sort du compte.
+ * US-30 : reference identifie la transaction d'un jour à l'autre (sa validation y est rattachée).
  */
-public record Transaction(LocalDate date, String libelle, String tiers, BigDecimal montant, Sens sens,
-		Source source) {
+public record Transaction(String reference, LocalDate date, String libelle, String tiers, BigDecimal montant,
+		Sens sens, Source source) {
 
 	public enum Sens {
 		ENTREE,
